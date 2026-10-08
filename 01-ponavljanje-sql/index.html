@@ -439,7 +439,7 @@ const TASKS = [
     check: 'SELECT * FROM nastavnik_karlovac ORDER BY id;', ordered: true,
     sol: "CREATE VIEW nastavnik_karlovac AS\n  SELECT id, ime, prezime, grad\n    FROM nastavnik WHERE grad = 'Karlovac';",
     hints: ['Pogled se temelji na običnom SELECT-u.', 'CREATE VIEW naziv AS SELECT …'] },
-  { id: 'G3', s: 'G', slide: 58, title: 'Upit nad pogledom',
+  { id: 'G3', s: 'G', slide: 56, title: 'Upit nad pogledom',
     text: 'Koristeći pogled nastavnik_ects, ispiši prezime nastavnika s najviše ECTS bodova i taj broj bodova.',
     note: 'Ako pogled nastavnik_ects još ne postoji, napravit će se automatski.',
     setup: 'CREATE VIEW IF NOT EXISTS nastavnik_ects AS SELECT n.id, SUM(k.ects) AS ukupni_ects FROM nastavnik AS n JOIN predaje AS p ON n.id = p.nastavnik_id JOIN kolegij AS k USING (kolegij_naziv) GROUP BY n.id;',
