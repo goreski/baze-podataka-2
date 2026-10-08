@@ -27,14 +27,16 @@ h1 { font-size: 34px; line-height: 1.15; }
 .eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); margin-bottom: 6px; }
 .lead { color: var(--muted); margin: 10px 0 0; max-width: 62ch; }
 .list { list-style: none; margin: 36px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-.item a { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 4px 16px; align-items: baseline; padding: 18px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; color: inherit; text-decoration: none; }
-.item a:hover { border-color: var(--muted); }
+.item { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 4px 16px; align-items: baseline; padding: 18px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
 .item a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.actions { grid-column: 2; display: flex; flex-wrap: wrap; gap: 8px 10px; margin-top: 12px; }
+.actions a { display: inline-flex; align-items: baseline; gap: 6px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; font-size: 14px; font-weight: 500; text-decoration: none; color: var(--ink); }
+.actions a:hover { border-color: var(--muted); }
+.actions a.primary { background: var(--ok); border-color: var(--ok); color: var(--surface); }
+.actions small { font-weight: 400; color: var(--muted); }
 .num { font: 600 22px var(--f-mono); color: var(--navy); }
 .item h2 { font-size: 20px; }
 .item p { grid-column: 2; margin: 0; color: var(--muted); font-size: 14px; }
-.go { grid-row: 1; grid-column: 3; font-size: 14px; color: var(--ok); font-weight: 500; white-space: nowrap; }
-.item.soon a { pointer-events: none; opacity: .55; }
 .tags { grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .tags span { font: 12px var(--f-mono); color: var(--olive); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; }
 .howto { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
@@ -42,8 +44,7 @@ h1 { font-size: 34px; line-height: 1.15; }
 .howto ul { margin: 0; padding-left: 18px; }
 footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
 @media (max-width: 520px) {
-  .item a { grid-template-columns: 40px minmax(0, 1fr); }
-  .go { grid-row: auto; grid-column: 2; }
+  .item { grid-template-columns: 40px minmax(0, 1fr); }
   h1 { font-size: 28px; }
 }
 </style>
@@ -52,17 +53,18 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
 <div class="wrap">
   <div class="eyebrow">Fakultet informatike u Puli · Sveučilište Jurja Dobrile</div>
   <h1>Baze podataka II – SQL vježbaonice</h1>
-  <p class="lead">Interaktivne vježbe uz predavanja. Upiti se izvršavaju izravno u pregledniku nad pravom SQLite bazom, a rješenja se provjeravaju automatski. Nije potrebna instalacija ni prijava.</p>
+  <p class="lead">Interaktivne vježbe uz predavanja. Upiti se izvršavaju izravno u pregledniku nad pravom SQLite bazom, a rješenja se provjeravaju automatski. Za vježbaonicu nije potrebna instalacija ni prijava.</p>
 
   <ul class="list">
     <li class="item">
-      <a href="01-ponavljanje-sql/">
-        <span class="num">01</span>
-        <h2>Ponavljanje I: SQL jezik</h2>
-        <span class="go">Otvori →</span>
-        <p>29 zadataka nad bazom nastavnik, predaje, kolegij i student.</p>
-        <div class="tags"><span>ORDER BY</span><span>GROUP BY</span><span>HAVING</span><span>podupiti</span><span>UPDATE / DELETE</span><span>JOIN</span><span>VIEW</span></div>
-      </a>
+      <span class="num">01</span>
+      <h2>Ponavljanje I: SQL jezik</h2>
+      <p>29 zadataka nad bazom nastavnik, predaje, kolegij i student.</p>
+      <div class="tags"><span>ORDER BY</span><span>GROUP BY</span><span>HAVING</span><span>podupiti</span><span>UPDATE / DELETE</span><span>JOIN</span><span>VIEW</span></div>
+      <div class="actions">
+        <a class="primary" href="01-ponavljanje-sql/">Vježbaonica →</a>
+        <a href="https://notebook.google.com/notebook/b4074a6c-5329-49c8-8565-5c3777267d4c" target="_blank" rel="noopener">Pitaj asistenta ↗ <small>Gemini Notebook</small></a>
+      </div>
     </li>
   </ul>
 
@@ -72,6 +74,7 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
       <li>Upit izvršiš gumbom <b>Izvrši</b> ili tipkama Ctrl + Enter, a gumb <b>Provjeri rješenje</b> uspoređuje tvoj rezultat s očekivanim.</li>
       <li>Prihvaća se svaki ispravan upit, ne samo onaj s predavanja.</li>
       <li>Napredak se pamti samo u tvom pregledniku. Na drugom računalu krećeš ispočetka.</li>
+      <li><b>Asistent</b> (Gemini Notebook) odgovara na pitanja iz gradiva predavanja i pomaže kad zapneš sa zadatkom, ali ne daje gotova rješenja. Prijavi se svojim UNIPU Google računom.</li>
       <li>Vježbaonica koristi SQLite, pa se ponekad ponaša malo drugačije od MySQL-a. Takva mjesta označena su napomenom uz zadatak.</li>
     </ul>
   </section>

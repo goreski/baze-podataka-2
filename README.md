@@ -8,7 +8,7 @@ Svaka vježbaonica je jedna samostalna HTML stranica. Baza podataka (SQLite, bib
 
 | # | Predavanje | Zadataka |
 |---|------------|---------:|
-| 01 | [Ponavljanje I: SQL jezik](01-ponavljanje-sql/) | 29 |
+| 01 | [Ponavljanje I: SQL jezik](01-ponavljanje-sql/) · [asistent](https://notebook.google.com/notebook/b4074a6c-5329-49c8-8565-5c3777267d4c) | 29 |
 
 ## Struktura
 

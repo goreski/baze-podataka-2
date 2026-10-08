@@ -43,7 +43,12 @@ button { font: inherit; cursor: pointer; }
 header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding-block: 18px 16px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
 header.top h1 { font-size: 24px; letter-spacing: .01em; }
 header.top .sub { color: var(--muted); font-size: 13px; }
-.progress { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ask { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r); padding: 6px 12px; font-size: 13px; font-weight: 500; text-decoration: none; }
+.ask:hover { border-color: var(--muted); }
+.ask small { color: var(--muted); font-weight: 400; }
+.hints .more { font-size: 13px; color: var(--muted); }
+.hints .more a { color: var(--navy); }
+.progress { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .bar { width: 140px; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
 .bar > i { display: block; height: 100%; background: var(--ok); width: 0; transition: width .3s; }
 
@@ -133,6 +138,7 @@ aside.schema { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px)
       <h1>SQL vježbaonica</h1>
       <div class="sub">Baze podataka II · Ponavljanje I: SQL jezik · FIPU</div>
     </div>
+    <a class="ask" href="https://notebook.google.com/notebook/b4074a6c-5329-49c8-8565-5c3777267d4c" target="_blank" rel="noopener">Pitaj asistenta ↗ <small>Gemini Notebook</small></a>
     <div class="progress" aria-live="polite">
       <span id="progTxt">0 / 29 riješeno</span>
       <div class="bar" aria-hidden="true"><i id="progBar"></i></div>
@@ -523,6 +529,7 @@ function evaluate(SQL, task, studentSql) {
 </script>
 <script>
 (function () {
+  const NB_URL = 'https://notebook.google.com/notebook/b4074a6c-5329-49c8-8565-5c3777267d4c';
   const $ = id => document.getElementById(id);
   const store = {
     get(k, d) { try { const v = localStorage.getItem('sqlvj:' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -665,7 +672,12 @@ function evaluate(SQL, task, studentSql) {
     $('hints').appendChild(d);
     hintsShown++;
     $('hintBtn').textContent = `Naputak (${hintsShown}/${t.hints.length})`;
-    if (hintsShown >= t.hints.length) $('hintBtn').disabled = true;
+    if (hintsShown >= t.hints.length) {
+      $('hintBtn').disabled = true;
+      const m = document.createElement('div'); m.className = 'more';
+      m.innerHTML = `Još nije jasno? <a href="${NB_URL}" target="_blank" rel="noopener">Pitaj asistenta</a> i navedi oznaku zadatka (${t.id}).`;
+      $('hints').appendChild(m);
+    }
   }
 
   function solution() {
