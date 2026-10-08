@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL vježbaonica BP2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: zaglavlje s napretkom; ispod tri stupca — popis zadataka | radna ploča (zadatak, editor, rezultat) | shema baze. Uži ekrani slažu stupce jedan ispod drugog. */
+:root {
+  --bg: #f4f6f8; --surface: #ffffff; --ink: #18212d; --muted: #586474; --line: #dbe1e8;
+  --code-bg: #eef2f6; --navy: #1f3b63; --olive: #765a00; --olive-bg: #f7f0dc;
+  --ok: #23704a; --ok-bg: #e3f3ea; --err: #a8261d; --err-bg: #fbe7e5; --focus: #3b6fd8;
+  --f-body: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --f-head: "IBM Plex Sans Condensed", "Arial Narrow", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", "Courier New", monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #10151c; --surface: #171f29; --ink: #e3e8ee; --muted: #9aa6b5; --line: #2a3443;
+  --code-bg: #0c1117; --navy: #a9c6f5; --olive: #e2bb5c; --olive-bg: #2a2412;
+  --ok: #73cf9b; --ok-bg: #12291d; --err: #ff8f84; --err-bg: #331412; --focus: #8fb4ff; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #10151c; --surface: #171f29; --ink: #e3e8ee; --muted: #9aa6b5; --line: #2a3443;
+  --code-bg: #0c1117; --navy: #a9c6f5; --olive: #e2bb5c; --olive-bg: #2a2412;
+  --ok: #73cf9b; --ok-bg: #12291d; --err: #ff8f84; --err-bg: #331412; --focus: #8fb4ff; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+.back { display: inline-block; font-size: 13px; color: var(--muted); text-decoration: none; margin-bottom: 4px; }
+.back:hover { color: var(--ink); text-decoration: underline; }
+html, body { background: var(--bg); color: var(--ink); }
+body { font: 15px/1.55 var(--f-body); }
+.wrap { max-width: 1440px; margin: 0 auto; padding-inline: 20px; padding-block: 0 40px; }
+h1, h2, h3 { font-family: var(--f-head); font-weight: 600; text-wrap: balance; margin: 0; }
+code, pre, textarea, .mono { font-family: var(--f-mono); }
+button { font: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding-block: 18px 16px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+header.top h1 { font-size: 24px; letter-spacing: .01em; }
+header.top .sub { color: var(--muted); font-size: 13px; }
+.progress { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { width: 140px; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--ok); width: 0; transition: width .3s; }
+
+.grid { display: grid; grid-template-columns: 250px minmax(0, 1fr) 290px; gap: 20px; align-items: start; }
+@media (max-width: 1180px) { .grid { grid-template-columns: 230px minmax(0, 1fr); } aside.schema { grid-column: 1 / -1; } }
+@media (max-width: 780px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Popis zadataka */
+nav.tasks { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); max-height: calc(100vh - 24px); overflow: auto; padding-right: 4px; }
+@media (max-width: 780px) { nav.tasks { position: static; max-height: none; } }
+.sec { margin-bottom: 14px; }
+.sec h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 8px; }
+.sec h3 span { font-family: var(--f-body); text-transform: none; letter-spacing: 0; font-weight: 400; }
+.sec ul { list-style: none; margin: 0; padding: 0; }
+@media (max-width: 780px) { .sec ul { display: flex; flex-wrap: wrap; gap: 6px; } }
+.tbtn { width: 100%; display: flex; align-items: baseline; gap: 8px; text-align: left; background: none; border: 0; border-radius: var(--r); padding: 5px 8px; color: var(--ink); }
+.tbtn:hover { background: var(--surface); }
+.tbtn[aria-current="true"] { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-weight: 500; }
+.tbtn .tid { font-family: var(--f-mono); font-size: 12px; color: var(--muted); min-width: 22px; }
+.tbtn .dot { margin-left: auto; width: 16px; text-align: center; color: var(--ok); font-weight: 600; }
+@media (max-width: 780px) { .tbtn { width: auto; border: 1px solid var(--line); padding: 4px 8px; } .tbtn .ttl { display: none; } .tbtn .dot { margin-left: 0; width: auto; } }
+
+/* Radna ploča */
+main.work { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.task { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; }
+.meta { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.task h2 { font-size: 22px; margin: 4px 0 8px; }
+.task .text { color: var(--olive); font-style: italic; font-size: 16px; margin: 0; max-width: 70ch; }
+.task .note { margin: 10px 0 0; font-size: 13px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px; max-width: 75ch; }
+
+.editor { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.editor textarea { display: block; width: 100%; min-height: 150px; resize: vertical; border: 0; padding: 14px 16px; background: var(--code-bg); color: var(--navy); font-size: 14px; line-height: 1.6; font-weight: 600; tab-size: 2; }
+.editor textarea::placeholder { color: var(--muted); font-weight: 400; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--line); }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r); padding: 6px 14px; font-weight: 500; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--navy); color: var(--surface); border-color: var(--navy); }
+.btn.check { background: var(--ok); color: var(--surface); border-color: var(--ok); }
+.btn:disabled { opacity: .5; cursor: default; }
+.kbd { font-size: 12px; color: var(--muted); margin-left: auto; }
+@media (max-width: 520px) { .kbd { display: none; } }
+
+.feedback { border-radius: var(--r); padding: 10px 14px; font-weight: 500; }
+.feedback.ok { background: var(--ok-bg); color: var(--ok); }
+.feedback.err { background: var(--err-bg); color: var(--err); }
+.feedback .lnk { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; font-weight: 400; margin-left: 6px; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.panel > .ph { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 9px 14px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.panel > .ph b { color: var(--ink); font-weight: 600; }
+.out { margin: 0; padding: 12px 14px; overflow-x: auto; font-size: 13px; line-height: 1.45; color: var(--ink); white-space: pre; }
+.out.msg { white-space: pre-wrap; font-family: var(--f-body); color: var(--muted); }
+.out.error { white-space: pre-wrap; color: var(--err); }
+
+.hints { display: flex; flex-direction: column; gap: 8px; }
+.hint { background: var(--olive-bg); border-radius: var(--r); padding: 9px 14px; font-size: 14px; }
+.hint b { font-family: var(--f-head); margin-right: 6px; }
+.solution pre { margin: 0; padding: 12px 14px; background: var(--code-bg); color: var(--navy); font-weight: 600; overflow-x: auto; font-size: 13.5px; }
+.solution .toolbar { border-top: 1px solid var(--line); }
+
+.pager { display: flex; justify-content: space-between; gap: 10px; }
+
+/* Shema */
+aside.schema { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+@media (max-width: 1180px) { aside.schema { position: static; } }
+.schema .panel { padding-bottom: 6px; }
+.tbl { padding: 10px 14px 6px; }
+.tbl + .tbl { border-top: 1px dashed var(--line); }
+.tbl h4 { margin: 0 0 4px; font: 600 14px var(--f-mono); color: var(--navy); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.tbl h4 button { font: 12px var(--f-body); background: none; border: 0; color: var(--muted); text-decoration: underline; padding: 0; }
+.tbl ul { list-style: none; margin: 0; padding: 0; font: 12.5px/1.6 var(--f-mono); }
+.tbl li { display: flex; justify-content: space-between; gap: 8px; }
+.tbl li span:last-child { color: var(--muted); }
+.tbl li.pk span:first-child { text-decoration: underline; }
+.schema .foot { padding: 8px 14px 4px; font-size: 12.5px; color: var(--muted); }
+.schema .foot .btn { margin-top: 8px; width: 100%; }
+
+.loading { padding: 40px 0; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <a class="back" href="../">← Sve vježbaonice</a>
+      <h1>SQL vježbaonica</h1>
+      <div class="sub">Baze podataka II · Ponavljanje I: SQL jezik · FIPU</div>
+    </div>
+    <div class="progress" aria-live="polite">
+      <span id="progTxt">0 / 29 riješeno</span>
+      <div class="bar" aria-hidden="true"><i id="progBar"></i></div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <nav class="tasks" id="taskNav" aria-label="Zadaci"></nav>
+
+    <main class="work" id="work">
+      <section class="task" aria-labelledby="tTitle">
+        <div class="meta"><span id="tMeta">A1 · Osnove i sortiranje</span><span id="tSlide">slajd 13</span></div>
+        <h2 id="tTitle">Nastavnici Fizike</h2>
+        <p class="text" id="tText">Ispiši prezime i primanja svih nastavnika s fakulteta Fizika.</p>
+        <p class="note" id="tNote" hidden></p>
+      </section>
+
+      <div class="editor">
+        <label for="sql" style="position:absolute;left:-9999px">SQL upit</label>
+        <textarea id="sql" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="-- ovdje napiši svoj upit, npr.&#10;SELECT * FROM nastavnik;"></textarea>
+        <div class="toolbar">
+          <button class="btn primary" id="runBtn" disabled>Izvrši</button>
+          <button class="btn check" id="checkBtn" disabled>Provjeri rješenje</button>
+          <button class="btn" id="hintBtn">Naputak</button>
+          <button class="btn" id="solBtn">Rješenje</button>
+          <span class="kbd">Ctrl + Enter izvršava upit</span>
+        </div>
+      </div>
+
+      <div class="feedback" id="feedback" hidden></div>
+      <div class="panel" id="expPanel" hidden>
+        <div class="ph"><b>Očekivani rezultat</b><span id="expInfo"></span></div>
+        <pre class="out" id="expOut"></pre>
+      </div>
+
+      <div class="hints" id="hints"></div>
+
+      <div class="panel solution" id="solPanel" hidden>
+        <div class="ph"><b>Referentno rješenje</b><span>prihvaća se svaki upit koji daje isti rezultat</span></div>
+        <pre id="solOut"></pre>
+        <div class="toolbar"><button class="btn" id="solCopy">Prepiši u editor</button></div>
+      </div>
+
+      <div class="panel">
+        <div class="ph"><b id="resTitle">Rezultat</b><span id="resInfo"></span></div>
+        <pre class="out msg" id="resOut">Učitavam bazu podataka…</pre>
+      </div>
+
+      <div class="pager">
+        <button class="btn" id="prevBtn">← Prethodni</button>
+        <button class="btn" id="nextBtn">Sljedeći →</button>
+      </div>
+    </main>
+
+    <aside class="schema" aria-label="Shema baze">
+      <div class="panel">
+        <div class="ph"><b>Shema baze</b><span>baza unipu</span></div>
+        <div id="schemaList"></div>
+        <div class="foot">
+          Upiti u editoru mijenjaju tvoju kopiju baze. Provjera rješenja uvijek radi na izvornim podacima.
+          <button class="btn" id="resetBtn" disabled>Vrati bazu na početno stanje</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-asm.js"></script>
+<script>
+const INIT_SQL = `
+CREATE TABLE nastavnik (
+  id INT PRIMARY KEY,
+  prezime VARCHAR(30) NOT NULL,
+  ime VARCHAR(30) NOT NULL,
+  zvanje VARCHAR(30),
+  fakultet VARCHAR(30),
+  primanja NUMERIC(8,2),
+  grad VARCHAR(30)
+);
+INSERT INTO nastavnik VALUES
+ (1,'Horvat','Ivan','redoviti profesor','Strojarstvo',15264.00,'Zagreb'),
+ (2,'Vidaković','Ana','docent','Fizika',11805.00,'Rijeka'),
+ (3,'Bogdan','Karlo','docent','Informatika',10200.00,'Karlovac'),
+ (4,'Topić','Luka','redoviti profesor','Fizika',15223.00,'Zagreb'),
+ (5,'Galić','Petra','asistent','Medicina',8600.00,'Osijek'),
+ (6,'Bašić','Bernard','viši asistent','Strojarstvo',9800.00,'Karlovac'),
+ (7,'Jurišić','Tomislav','docent','Strojarstvo',10065.00,'Rijeka'),
+ (8,'Tadić','Marina','docent','Strojarstvo',10000.00,'Split'),
+ (9,'Špoljarić','Dario','izvanredni profesor','Fizika',13369.00,'Pula'),
+ (10,'Petrić','Gabriel','viši asistent','Književnost',8952.00,'Zagreb'),
+ (11,'Jelić','Dora','docent','Medicina',9100.00,'Split'),
+ (12,'Bašić','Michele','redoviti profesor','Kemija',10500.00,'Sisak'),
+ (13,'Dujmović','Martino','redoviti profesor','Književnost',11200.00,'Zagreb'),
+ (14,'Barić','Ivana','docent','Fizika',11805.00,'Pula'),
+ (15,'Kovačević','Mislav','asistent','Medicina',9053.00,'Rijeka'),
+ (16,'Šimunović','Nikolina','asistent','Književnost',8952.00,'Pula'),
+ (17,'Novak','Patrick','izvanredni profesor','Medicina',10500.00,'Pula'),
+ (18,'Marić','Ana','docent','Književnost',9500.00,'Zadar'),
+ (19,'Knežević','Josip','asistent','Književnost',8100.00,'Osijek'),
+ (20,'Perić','Lucija','izvanredni profesor','Informatika',11500.00,'Pula'),
+ (21,'Vuković','Marko','docent','Informatika',9866.00,'Zagreb'),
+ (22,'Babić','Sanja','redoviti profesor','Informatika',12300.00,'Rijeka'),
+ (23,'Grgić','Filip','asistent','Informatika',9000.00,'Pula'),
+ (24,'Pavlović','Maja','docent','Kemija',12400.00,'Zagreb'),
+ (25,'Lovrić','Hrvoje','izvanredni profesor','Kemija',11887.00,'Varaždin'),
+ (26,'Matić','Iva','docent','Književnost',9800.00,'Split'),
+ (27,'Božić','Nikola','izvanredni profesor','Književnost',10200.00,'Zagreb'),
+ (28,'Radić','Katarina','docent','Književnost',9619.00,'Rijeka'),
+ (29,'Kralj','Tena','viši asistent','Književnost',9400.00,'Zadar'),
+ (30,'Šarić','Mislav','docent','Medicina',9100.00,'Zagreb');
+
+CREATE TABLE kolegij (
+  kolegij_naziv VARCHAR(10) PRIMARY KEY,
+  puni_naziv VARCHAR(60) NOT NULL,
+  ects INT,
+  semestar INT
+);
+INSERT INTO kolegij VALUES
+ ('BP1','Baze podataka I',6,3),
+ ('BP2','Baze podataka II',6,4),
+ ('PROG','Programiranje',7,1),
+ ('OOP','Objektno orijentirano programiranje',6,2),
+ ('MR','Metodologija rada',4,1),
+ ('STAT','Statistika',5,2),
+ ('PIS','Projektiranje informacijskih sustava',6,5),
+ ('SPI','Sigurnost podataka i informacija',5,5),
+ ('FIZ','Fizika 1',6,1),
+ ('KEM','Opća kemija',5,1),
+ ('ANAT','Anatomija',8,1),
+ ('TERM','Termodinamika',6,3);
+
+CREATE TABLE predaje (
+  nastavnik_id INT REFERENCES nastavnik(id),
+  kolegij_naziv VARCHAR(10) REFERENCES kolegij(kolegij_naziv),
+  PRIMARY KEY (nastavnik_id, kolegij_naziv)
+);
+INSERT INTO predaje VALUES
+ (1,'SPI'),(2,'FIZ'),(3,'PROG'),(3,'OOP'),(4,'FIZ'),(7,'STAT'),(9,'STAT'),
+ (10,'MR'),(12,'PIS'),(12,'SPI'),(13,'MR'),(14,'FIZ'),(16,'STAT'),(17,'STAT'),
+ (18,'MR'),(20,'BP1'),(20,'BP2'),(21,'PROG'),(22,'PIS'),(22,'BP2'),(23,'OOP'),
+ (24,'KEM'),(25,'KEM');
+
+CREATE TABLE student (
+  jmbag CHAR(10) PRIMARY KEY,
+  prezime VARCHAR(30) NOT NULL,
+  ime VARCHAR(30) NOT NULL,
+  godina INT
+);
+INSERT INTO student VALUES
+ ('0303011001','Horvat','Lana',1),
+ ('0303011002','Novak','Toni',2),
+ ('0303011003','Bašić','Iva',2),
+ ('0303011004','Ivić','Marko',3),
+ ('0303011005','Lukić','Petra',1),
+ ('0303011006','Zorić','Ante',3),
+ ('0303011007','Marić','Lea',2),
+ ('0303011008','Perković','Nina',1),
+ ('0303011009','Kovačević','Ivan',3),
+ ('0303011010','Rajić','Mia',2),
+ ('0303011011','Horvat','Dino',3),
+ ('0303011012','Šimić','Jan',1);
+`;
+
+const SECTIONS = [
+  { id: 'A', title: 'Osnove i sortiranje', slides: '5–14' },
+  { id: 'B', title: 'Agregacija i grupiranje', slides: '16–21' },
+  { id: 'C', title: 'WHERE i HAVING', slides: '22–24' },
+  { id: 'D', title: 'Podupiti', slides: '26–35' },
+  { id: 'E', title: 'Izmjena podataka', slides: '36–42' },
+  { id: 'F', title: 'Spajanje tablica', slides: '44–54' },
+  { id: 'G', title: 'Pogledi', slides: '56–64' },
+];
+
+const TASKS = [
+  // A — osnove i sortiranje
+  { id: 'A1', s: 'A', slide: 13, title: 'Nastavnici Fizike',
+    text: 'Ispiši prezime i primanja svih nastavnika s fakulteta Fizika.',
+    sol: "SELECT prezime, primanja FROM nastavnik\n  WHERE fakultet = 'Fizika';",
+    hints: ['Trebaju ti dva stupca u SELECT dijelu i jedan uvjet u WHERE dijelu.', "Tekstualne vrijednosti pišu se u jednostrukim navodnicima: 'Fizika'."] },
+  { id: 'A2', s: 'A', slide: 13, title: 'Sortiranje po primanjima', ordered: true,
+    text: 'Isti upit kao u A1, ali sortiraj rezultat po primanjima uzlazno. Kod jednakih primanja sortiraj po prezimenu.',
+    sol: "SELECT prezime, primanja FROM nastavnik\n  WHERE fakultet = 'Fizika'\n  ORDER BY primanja, prezime;",
+    hints: ['ORDER BY dolazi na kraj upita.', 'Više atributa za sortiranje odvajaš zarezom: ORDER BY a1, a2.'] },
+  { id: 'A3', s: 'A', slide: 14, title: 'Dva smjera sortiranja', ordered: true,
+    text: 'Ispiši prezimena svih nastavnika i fakultete na kojima rade, tako da su fakulteti poredani silazno, a prezimena uzlazno.',
+    note: 'SQLite slova s dijakriticima (Č, Ć, Š, Ž) sortira iza Z, a MySQL s hrvatskom kolacijom na njihovo mjesto u abecedi.',
+    sol: 'SELECT prezime, fakultet FROM nastavnik\n  ORDER BY fakultet DESC, prezime ASC;',
+    hints: ['Svaki atribut u ORDER BY može imati svoj smjer.', 'Iza naziva atributa dodaj DESC ili ASC.'] },
+  { id: 'A4', s: 'A', slide: 10, title: 'Docenti iz Zagreba i Rijeke',
+    text: 'Ispiši ime, prezime i grad svih docenata koji žive u Zagrebu ili Rijeci.',
+    sol: "SELECT ime, prezime, grad FROM nastavnik\n  WHERE zvanje = 'docent'\n    AND (grad = 'Zagreb' OR grad = 'Rijeka');",
+    hints: ['AND ima prednost pred OR. Što se dogodi bez zagrada?', "Umjesto OR možeš napisati grad IN ('Zagreb', 'Rijeka')."] },
+
+  // B — agregacija
+  { id: 'B1', s: 'B', slide: 17, title: 'Prosjek na Medicini',
+    text: 'Izračunaj prosječna primanja nastavnika na Medicini.',
+    sol: "SELECT AVG(primanja) FROM nastavnik\n  WHERE fakultet = 'Medicina';",
+    hints: ['Funkcija za prosjek je AVG.', 'WHERE se primjenjuje prije agregacije, pa prvo filtriraš Medicinu.'] },
+  { id: 'B2', s: 'B', slide: 19, title: 'Broj fakulteta',
+    text: 'Na koliko različitih fakulteta rade nastavnici? Rezultat je jedan broj.',
+    sol: 'SELECT COUNT(DISTINCT fakultet) FROM nastavnik;',
+    hints: ['COUNT(fakultet) broji retke, a ne različite fakultete.', 'DISTINCT se može staviti unutar funkcije agregacije.'] },
+  { id: 'B3', s: 'B', slide: 20, title: 'Prosjek po fakultetu',
+    text: 'Za svaki fakultet ispiši naziv fakulteta i prosječna primanja nastavnika.',
+    sol: 'SELECT fakultet, AVG(primanja) AS p_primanja\n  FROM nastavnik GROUP BY fakultet;',
+    hints: ['Treba ti GROUP BY.', 'Atribut po kojem grupiraš smije stajati u SELECT dijelu uz funkciju agregacije.'] },
+  { id: 'B4', s: 'B', slide: 21, title: 'Grupiranje po dva atributa',
+    text: 'Za svaki par (fakultet, zvanje) ispiši koliko nastavnika ima to zvanje na tom fakultetu.',
+    sol: 'SELECT fakultet, zvanje, COUNT(*) AS broj\n  FROM nastavnik GROUP BY fakultet, zvanje;',
+    hints: ['Grupirati se može po više atributa odjednom.', 'COUNT(*) broji retke u svakoj grupi.'] },
+
+  // C — WHERE i HAVING
+  { id: 'C1', s: 'C', slide: 24, title: 'Imena koja se ponavljaju',
+    text: 'Ispiši fakultet, ime i broj pojavljivanja za imena koja se na istom fakultetu pojavljuju više od jednom.',
+    sol: 'SELECT fakultet, ime, COUNT(*) FROM nastavnik\n  GROUP BY fakultet, ime\n  HAVING COUNT(*) > 1;',
+    hints: ['Uvjet nad rezultatom agregacije ne može ići u WHERE.', 'HAVING dolazi iza GROUP BY.'] },
+  { id: 'C2', s: 'C', slide: 23, title: 'Dobro plaćeni fakulteti',
+    text: 'Ispiši fakultete i prosječna primanja, ali samo za fakultete na kojima su prosječna primanja veća od 11000.',
+    sol: 'SELECT fakultet, AVG(primanja) FROM nastavnik\n  GROUP BY fakultet\n  HAVING AVG(primanja) > 11000;',
+    hints: ['Prvo izračunaj prosjek po fakultetu (kao u B3).', 'Zatim dodaj HAVING s uvjetom nad AVG(primanja).'] },
+  { id: 'C3', s: 'C', slide: 22, title: 'WHERE i HAVING zajedno',
+    text: 'Za svaki fakultet ispiši koliko nastavnika ima primanja veća od 10000, ali prikaži samo fakultete na kojima je takvih nastavnika barem troje.',
+    sol: 'SELECT fakultet, COUNT(*) FROM nastavnik\n  WHERE primanja > 10000\n  GROUP BY fakultet\n  HAVING COUNT(*) >= 3;',
+    hints: ['Redoslijed izvršavanja: WHERE, pa GROUP BY, pa HAVING.', 'Uvjet nad pojedinim retkom ide u WHERE, uvjet nad grupom u HAVING.'] },
+
+  // D — podupiti
+  { id: 'D1', s: 'D', slide: 18, title: 'Povratak na slajd 18',
+    text: 'Ispiši prezime i primanja nastavnika s najvišim primanjima na sveučilištu. Upit sa slajda 18 ovdje ne pomaže.',
+    sol: 'SELECT prezime, primanja FROM nastavnik\n  WHERE primanja = (SELECT MAX(primanja) FROM nastavnik);',
+    hints: ['Najviša primanja dobiješ upitom SELECT MAX(primanja) FROM nastavnik.', 'Taj upit stavi kao skalarni podupit u WHERE dio.'] },
+  { id: 'D2', s: 'D', slide: 29, title: 'Najniža primanja',
+    text: 'Na kojem fakultetu radi nastavnik s najnižim primanjima? Ispiši samo fakultet.',
+    sol: 'SELECT fakultet FROM nastavnik\n  WHERE primanja = (SELECT MIN(primanja) FROM nastavnik);',
+    hints: ['Isti obrazac kao u D1, samo s MIN.'] },
+  { id: 'D3', s: 'D', slide: 30, title: 'Nastavnici i studenti',
+    text: 'Ispiši prezimena koja se pojavljuju i među nastavnicima i među studentima. Svako prezime samo jednom.',
+    sol: 'SELECT DISTINCT prezime FROM nastavnik\n  WHERE prezime IN (SELECT prezime FROM student);',
+    hints: ['Podupit vraća skup prezimena iz tablice student.', 'Bez DISTINCT će se neka prezimena pojaviti dvaput. Koja i zašto?'] },
+  { id: 'D4', s: 'D', slide: 29, title: 'Iznad prosjeka',
+    text: 'Ispiši prezime, fakultet i primanja nastavnika koji zarađuju više od prosjeka cijelog sveučilišta.',
+    sol: 'SELECT prezime, fakultet, primanja FROM nastavnik\n  WHERE primanja > (SELECT AVG(primanja) FROM nastavnik);',
+    hints: ['Prosjek sveučilišta je skalarni podupit.', 'Usporedi primanja s njim operatorom >.'] },
+  { id: 'D5', s: 'D', slide: 31, title: 'Najbolje plaćeni po fakultetu',
+    text: 'Za svaki fakultet ispiši cijeli redak (sve atribute) nastavnika s najvišim primanjima na tom fakultetu.',
+    sol: 'SELECT * FROM nastavnik\n  WHERE (fakultet, primanja) IN\n    (SELECT fakultet, MAX(primanja)\n       FROM nastavnik GROUP BY fakultet);',
+    hints: ['Prvi korak: SELECT fakultet, MAX(primanja) FROM nastavnik GROUP BY fakultet.', 'Drugi korak: usporedi par (fakultet, primanja) s rezultatom prvog koraka pomoću IN.'] },
+  { id: 'D6', s: 'D', slide: 33, title: 'Gradovi bez HAVING',
+    text: 'Ispiši gradove u kojima živi više od dva nastavnika i broj nastavnika u njima. Pokušaj bez HAVING, s podupitom u FROM dijelu.',
+    note: 'SQLite ne prihvaća popis stupaca uz alias (AS broj(grad, n)). Nazive stupaca daj unutar podupita.',
+    sol: 'SELECT grad, broj_profesora FROM (\n  SELECT grad, COUNT(*) AS broj_profesora\n    FROM nastavnik GROUP BY grad) AS t\n  WHERE broj_profesora > 2;',
+    hints: ['Unutarnji upit grupira po gradu i broji nastavnike.', 'Vanjski upit filtrira izvedenu relaciju običnim WHERE.'] },
+  { id: 'D7', s: 'D', slide: 35, title: 'Agregiranje agregata',
+    text: 'Ispiši fakultet s najvećim ukupnim izdacima za plaće i iznos tih izdataka.',
+    sol: 'SELECT fakultet, SUM(primanja) AS ukupna_primanja\n  FROM nastavnik GROUP BY fakultet\n  HAVING SUM(primanja) = (\n    SELECT MAX(uk) FROM (\n      SELECT SUM(primanja) AS uk\n        FROM nastavnik GROUP BY fakultet) AS t);',
+    hints: ['MAX(SUM(...)) se ne može napisati u jednom SELECT-u.', 'Izračunaj sume po fakultetu u podupitu, pa nad njim traži MAX.'] },
+
+  // E — izmjena podataka
+  { id: 'E1', s: 'E', slide: 39, title: 'Povišica od 5 %',
+    text: 'Svim nastavnicima s primanjima manjim od 12000 povećaj primanja za 5 %.',
+    check: 'SELECT id, primanja FROM nastavnik ORDER BY id;', ordered: true,
+    sol: 'UPDATE nastavnik\n  SET primanja = primanja * 1.05\n  WHERE primanja < 12000;',
+    hints: ['Koristi UPDATE … SET … WHERE.', 'U SET dijelu smiješ koristiti aritmetiku nad atributom: primanja * 1.05.'] },
+  { id: 'E2', s: 'E', slide: 42, title: 'NULL i COUNT',
+    text: "Dodaj nastavnika: id 32, Ćosić Marko, asistent, fakultet nepoznat, primanja 11760, grad Pula. Zatim jednim upitom ispiši ukupan broj nastavnika i broj nastavnika s upisanim fakultetom.",
+    sol: "INSERT INTO nastavnik\n  VALUES (32, 'Ćosić', 'Marko', 'asistent', NULL, 11760, 'Pula');\nSELECT COUNT(*), COUNT(fakultet) FROM nastavnik;",
+    hints: ['Nepoznatu vrijednost upisuješ kao NULL, bez navodnika.', 'COUNT(*) broji retke, a COUNT(fakultet) samo retke gdje fakultet nije NULL.'] },
+  { id: 'E3', s: 'E', slide: 37, title: 'Kolegiji bez nastavnika',
+    text: 'Obriši sve kolegije koje nitko ne predaje.',
+    check: 'SELECT kolegij_naziv FROM kolegij ORDER BY kolegij_naziv;', ordered: true,
+    sol: 'DELETE FROM kolegij\n  WHERE kolegij_naziv NOT IN (SELECT kolegij_naziv FROM predaje);',
+    hints: ['DELETE … WHERE može sadržavati podupit.', 'Koji kolegiji se ne pojavljuju u tablici predaje?'] },
+
+  // F — spajanje tablica
+  { id: 'F1', s: 'F', slide: 44, title: 'Tko što predaje',
+    text: 'Ispiši prezime nastavnika i oznaku svakog kolegija koji predaje.',
+    sol: 'SELECT n.prezime, p.kolegij_naziv\n  FROM nastavnik AS n\n  INNER JOIN predaje AS p ON n.id = p.nastavnik_id;',
+    hints: ['Nastavnik i predaje povezani su preko n.id = p.nastavnik_id.', 'Sintaksa: tablica1 INNER JOIN tablica2 ON uvjet.'] },
+  { id: 'F2', s: 'F', slide: 46, title: 'Tri tablice',
+    text: 'Ispiši prezime nastavnika, puni naziv kolegija koji predaje i broj ECTS bodova tog kolegija.',
+    sol: 'SELECT n.prezime, k.puni_naziv, k.ects\n  FROM nastavnik AS n\n  JOIN predaje AS p ON n.id = p.nastavnik_id\n  JOIN kolegij AS k ON p.kolegij_naziv = k.kolegij_naziv;',
+    hints: ['Spoji nastavnik s predaje, a rezultat s kolegij.', 'Drugi join ide preko kolegij_naziv.'] },
+  { id: 'F3', s: 'F', slide: 50, title: 'Broj kolegija, i nula',
+    text: 'Za svakog nastavnika ispiši id, prezime i broj kolegija koje predaje. Nastavnici bez kolegija moraju biti u rezultatu s brojem 0.',
+    sol: 'SELECT n.id, n.prezime, COUNT(p.kolegij_naziv) AS broj\n  FROM nastavnik AS n\n  LEFT JOIN predaje AS p ON n.id = p.nastavnik_id\n  GROUP BY n.id, n.prezime;',
+    hints: ['INNER JOIN izbacuje nastavnike bez kolegija. Treba ti LEFT JOIN.', 'COUNT(*) bi nastavniku bez kolegija dao 1. Što treba brojati?'] },
+  { id: 'F4', s: 'F', slide: 50, title: 'Nastavnici bez kolegija',
+    text: 'Ispiši prezime i ime nastavnika koji ne predaju nijedan kolegij.',
+    sol: 'SELECT n.prezime, n.ime\n  FROM nastavnik AS n\n  LEFT JOIN predaje AS p ON n.id = p.nastavnik_id\n  WHERE p.nastavnik_id IS NULL;',
+    hints: ['Nakon LEFT JOIN-a nastavnici bez para imaju NULL u stupcima tablice predaje.', 'Provjeru radi s IS NULL, nikako s = NULL.'] },
+  { id: 'F5', s: 'F', slide: 51, title: 'USING',
+    text: 'Za svaki kolegij ispiši puni naziv i broj nastavnika koji ga predaju, uključujući kolegije koje nitko ne predaje. Spoji tablice pomoću USING.',
+    sol: 'SELECT k.puni_naziv, COUNT(p.nastavnik_id) AS broj\n  FROM kolegij AS k\n  LEFT JOIN predaje AS p USING (kolegij_naziv)\n  GROUP BY k.kolegij_naziv, k.puni_naziv;',
+    hints: ['Stupac kolegij_naziv ima isti naziv u obje tablice.', 'Sintaksa: LEFT JOIN predaje USING (kolegij_naziv).'] },
+
+  // G — pogledi
+  { id: 'G1', s: 'G', slide: 60, title: 'Pogled nastavnik_ects',
+    text: 'Napravi pogled nastavnik_ects koji za svakog nastavnika koji predaje barem jedan kolegij daje id i ukupan broj ECTS bodova (ukupni_ects).',
+    check: 'SELECT * FROM nastavnik_ects ORDER BY id;', ordered: true,
+    sol: 'CREATE VIEW nastavnik_ects AS\n  SELECT n.id, SUM(k.ects) AS ukupni_ects\n    FROM nastavnik AS n\n    JOIN predaje AS p ON n.id = p.nastavnik_id\n    JOIN kolegij AS k USING (kolegij_naziv)\n    GROUP BY n.id;',
+    hints: ['Prvo napiši SELECT koji daje traženi rezultat.', 'Kad radi, ispred njega dodaj CREATE VIEW nastavnik_ects AS.'] },
+  { id: 'G2', s: 'G', slide: 64, title: 'Pogled nastavnik_karlovac',
+    text: 'Napravi pogled nastavnik_karlovac s atributima id, ime, prezime i grad za nastavnike iz Karlovca.',
+    note: 'U SQLite-u su pogledi samo za čitanje, pa INSERT kroz pogled (slajdovi 63 i 64) ovdje javlja grešku. U MySQL-u prolazi.',
+    check: 'SELECT * FROM nastavnik_karlovac ORDER BY id;', ordered: true,
+    sol: "CREATE VIEW nastavnik_karlovac AS\n  SELECT id, ime, prezime, grad\n    FROM nastavnik WHERE grad = 'Karlovac';",
+    hints: ['Pogled se temelji na običnom SELECT-u.', 'CREATE VIEW naziv AS SELECT …'] },
+  { id: 'G3', s: 'G', slide: 58, title: 'Upit nad pogledom',
+    text: 'Koristeći pogled nastavnik_ects, ispiši prezime nastavnika s najviše ECTS bodova i taj broj bodova.',
+    note: 'Ako pogled nastavnik_ects još ne postoji, napravit će se automatski.',
+    setup: 'CREATE VIEW IF NOT EXISTS nastavnik_ects AS SELECT n.id, SUM(k.ects) AS ukupni_ects FROM nastavnik AS n JOIN predaje AS p ON n.id = p.nastavnik_id JOIN kolegij AS k USING (kolegij_naziv) GROUP BY n.id;',
+    sol: 'SELECT n.prezime, e.ukupni_ects\n  FROM nastavnik_ects AS e\n  JOIN nastavnik AS n ON n.id = e.id\n  WHERE e.ukupni_ects = (SELECT MAX(ukupni_ects) FROM nastavnik_ects);',
+    hints: ['Pogled koristiš kao običnu tablicu.', 'Spoji pogled s tablicom nastavnik da dobiješ prezime, a maksimum nađi podupitom.'] },
+];
+
+
+
+</script>
+<script>
+// Shared logic: running SQL and comparing results (used by the page and by the test script).
+function freshDb(SQL, task) {
+  const db = new SQL.Database();
+  db.exec('PRAGMA foreign_keys = OFF;');
+  db.exec(INIT_SQL);
+  if (task && task.setup) db.exec(task.setup);
+  return db;
+}
+
+// Runs every statement; returns the last result set, or null if no statement returned rows.
+function runLast(db, sql, task) {
+  const res = db.exec(sql);
+  if (task && task.check) {
+    const c = db.exec(task.check);
+    return c.length ? c[c.length - 1] : { columns: [], values: [] };
+  }
+  return res.length ? res[res.length - 1] : null;
+}
+
+function normCell(v) {
+  if (v === null || v === undefined) return '\u0000NULL';
+  if (typeof v === 'number') return (Math.round(v * 100) / 100).toFixed(2);
+  return String(v);
+}
+
+function compareResults(exp, got, ordered) {
+  if (!got) return { ok: false, msg: 'Tvoj upit nije vratio nijedan rezultat. Treba završiti SELECT naredbom.' };
+  const ec = exp.columns.length, gc = got.columns.length;
+  if (ec !== gc) return { ok: false, msg: `Očekivani rezultat ima ${ec} ${ec === 1 ? 'stupac' : 'stupca'}, a tvoj ${gc}. Provjeri popis atributa u SELECT dijelu.` };
+  const er = exp.values.map(r => r.map(normCell)), gr = got.values.map(r => r.map(normCell));
+  if (er.length !== gr.length) return { ok: false, msg: `Očekivano ${er.length} ${plural(er.length)}, a tvoj rezultat ima ${gr.length}.` };
+  const key = r => JSON.stringify(r);
+  let a = er.map(key), b = gr.map(key);
+  if (!ordered) { a = a.slice().sort(); b = b.slice().sort(); }
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {
+      if (ordered) {
+        const sa = a.slice().sort(), sb = b.slice().sort();
+        if (sa.every((x, j) => x === sb[j])) return { ok: false, msg: 'Redovi su ispravni, ali redoslijed nije. Provjeri ORDER BY.' };
+      }
+      return { ok: false, msg: 'Broj redova se slaže, ali vrijednosti se razlikuju od očekivanih.' };
+    }
+  }
+  return { ok: true, msg: 'Točno!' };
+}
+
+function plural(n) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return 'redak';
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'retka';
+  return 'redaka';
+}
+
+function evaluate(SQL, task, studentSql) {
+  const dbE = freshDb(SQL, task);
+  const exp = runLast(dbE, task.sol, task);
+  dbE.close();
+  const dbG = freshDb(SQL, task);
+  let got;
+  try { got = runLast(dbG, studentSql, task); }
+  catch (e) { dbG.close(); return { ok: false, msg: 'Greška: ' + e.message, expected: exp }; }
+  dbG.close();
+  const r = compareResults(exp, got, !!task.ordered);
+  r.expected = exp;
+  return r;
+}
+
+
+
+</script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('sqlvj:' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('sqlvj:' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  let SQL = null, db = null;
+  let solved = new Set(store.get('solved', []));
+  let cur = 0, hintsShown = 0;
+  const idx = Object.fromEntries(TASKS.map((t, i) => [t.id, i]));
+  const startId = store.get('current', 'A1');
+  if (idx[startId] !== undefined) cur = idx[startId];
+
+  const SCHEMA = [
+    { t: 'nastavnik', cols: [['id', 'INT', 1], ['prezime', 'VARCHAR(30)'], ['ime', 'VARCHAR(30)'], ['zvanje', 'VARCHAR(30)'], ['fakultet', 'VARCHAR(30)'], ['primanja', 'NUMERIC(8,2)'], ['grad', 'VARCHAR(30)']] },
+    { t: 'predaje', cols: [['nastavnik_id', 'INT', 1], ['kolegij_naziv', 'VARCHAR(10)', 1]] },
+    { t: 'kolegij', cols: [['kolegij_naziv', 'VARCHAR(10)', 1], ['puni_naziv', 'VARCHAR(60)'], ['ects', 'INT'], ['semestar', 'INT']] },
+    { t: 'student', cols: [['jmbag', 'CHAR(10)', 1], ['prezime', 'VARCHAR(30)'], ['ime', 'VARCHAR(30)'], ['godina', 'INT']] },
+  ];
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+  // Rezultat kao u MySQL klijentu (kao na slajdovima)
+  function fmt(v) {
+    if (v === null || v === undefined) return 'NULL';
+    if (typeof v === 'number') return Number.isInteger(v) ? String(v) : String(Number(v.toFixed(6)));
+    return String(v);
+  }
+  function ascii(res) {
+    const cols = res.columns, rows = res.values.map(r => r.map(fmt));
+    const isNum = cols.map((_, j) => res.values.length > 0 && res.values.every(r => typeof r[j] === 'number' || r[j] === null));
+    const w = cols.map((c, j) => Math.max(c.length, ...rows.map(r => r[j].length)));
+    const sep = '+' + w.map(n => '-'.repeat(n + 2)).join('+') + '+';
+    const line = (cells, num) => '| ' + cells.map((c, j) => num && isNum[j] ? c.padStart(w[j]) : c.padEnd(w[j])).join(' | ') + ' |';
+    const out = [sep, line(cols, false), sep];
+    rows.forEach(r => out.push(line(r, true)));
+    out.push(sep);
+    return out.join('\n');
+  }
+  function showResult(res, title) {
+    $('resTitle').textContent = title || 'Rezultat';
+    const o = $('resOut');
+    if (res.error) { o.className = 'out error'; o.textContent = 'Greška: ' + res.error; $('resInfo').textContent = ''; return; }
+    if (res.message) { o.className = 'out msg'; o.textContent = res.message; $('resInfo').textContent = ''; return; }
+    o.className = 'out';
+    o.textContent = res.values.length ? ascii(res) : ascii(res) + '\nEmpty set';
+    $('resInfo').textContent = res.values.length + ' ' + plural(res.values.length);
+  }
+
+  function renderNav() {
+    const nav = $('taskNav');
+    nav.innerHTML = SECTIONS.map(s => {
+      const items = TASKS.filter(t => t.s === s.id).map(t => {
+        const i = idx[t.id];
+        return `<li><button class="tbtn" data-i="${i}" aria-current="${i === cur}"><span class="tid">${t.id}</span><span class="ttl">${esc(t.title)}</span><span class="dot" aria-label="${solved.has(t.id) ? 'riješeno' : ''}">${solved.has(t.id) ? '✓' : ''}</span></button></li>`;
+      }).join('');
+      return `<div class="sec"><h3>${esc(s.title)} <span>sl. ${s.slides}</span></h3><ul>${items}</ul></div>`;
+    }).join('');
+    nav.querySelectorAll('.tbtn').forEach(b => b.addEventListener('click', () => go(+b.dataset.i)));
+    const n = TASKS.filter(t => solved.has(t.id)).length;
+    $('progTxt').textContent = `${n} / ${TASKS.length} riješeno`;
+    $('progBar').style.width = (100 * n / TASKS.length) + '%';
+  }
+
+  function renderSchema() {
+    $('schemaList').innerHTML = SCHEMA.map(s => `<div class="tbl"><h4>${s.t}<button data-t="${s.t}">prikaži</button></h4><ul>${s.cols.map(c => `<li class="${c[2] ? 'pk' : ''}"><span>${c[0]}</span><span>${c[1]}</span></li>`).join('')}</ul></div>`).join('');
+    $('schemaList').querySelectorAll('button[data-t]').forEach(b => b.addEventListener('click', () => {
+      if (!db) return;
+      try { const r = db.exec(`SELECT * FROM ${b.dataset.t};`); showResult(r[0] || { columns: [], values: [] }, 'Sadržaj tablice ' + b.dataset.t); }
+      catch (e) { showResult({ error: e.message }); }
+    }));
+  }
+
+  function go(i) {
+    saveDraft();
+    cur = Math.max(0, Math.min(TASKS.length - 1, i));
+    store.set('current', TASKS[cur].id);
+    hintsShown = 0;
+    const t = TASKS[cur], s = SECTIONS.find(x => x.id === t.s);
+    $('tMeta').textContent = `${t.id} · ${s.title}`;
+    $('tSlide').textContent = 'slajd ' + t.slide;
+    $('tTitle').textContent = t.title;
+    $('tText').textContent = t.text;
+    $('tNote').hidden = !t.note; $('tNote').textContent = t.note || '';
+    $('sql').value = store.get('draft:' + t.id, '');
+    $('feedback').hidden = true; $('expPanel').hidden = true; $('solPanel').hidden = true;
+    $('hints').innerHTML = '';
+    $('hintBtn').disabled = false; $('hintBtn').textContent = `Naputak (0/${t.hints.length})`;
+    $('prevBtn').disabled = cur === 0; $('nextBtn').disabled = cur === TASKS.length - 1;
+    renderNav();
+  }
+  function saveDraft() { const t = TASKS[cur]; if (t) store.set('draft:' + t.id, $('sql').value); }
+
+  function run() {
+    if (!db) return;
+    const sql = $('sql').value.trim();
+    if (!sql) { showResult({ message: 'Editor je prazan. Napiši upit pa klikni Izvrši.' }); return; }
+    saveDraft();
+    try {
+      const t = TASKS[cur];
+      if (t.setup) db.exec(t.setup);
+      const res = db.exec(sql);
+      if (res.length) showResult(res[res.length - 1]);
+      else showResult({ message: `Naredba je izvršena. Promijenjeno redaka: ${db.getRowsModified()}.` });
+    } catch (e) { showResult({ error: e.message }); }
+  }
+
+  function check() {
+    if (!SQL) return;
+    const t = TASKS[cur], sql = $('sql').value.trim();
+    const fb = $('feedback');
+    $('expPanel').hidden = true;
+    if (!sql) { fb.hidden = false; fb.className = 'feedback err'; fb.textContent = 'Editor je prazan.'; return; }
+    saveDraft();
+    const r = evaluate(SQL, t, sql);
+    fb.hidden = false;
+    if (r.ok) {
+      fb.className = 'feedback ok';
+      fb.textContent = t.check ? 'Točno! Stanje baze nakon tvojih naredbi odgovara očekivanom.' : 'Točno! Rezultat odgovara očekivanom.';
+      if (!solved.has(t.id)) { solved.add(t.id); store.set('solved', [...solved]); renderNav(); }
+    } else {
+      fb.className = 'feedback err';
+      fb.textContent = r.msg + ' ';
+      if (r.expected) {
+        const b = document.createElement('button'); b.className = 'lnk'; b.textContent = 'Prikaži očekivani rezultat';
+        b.addEventListener('click', () => {
+          $('expOut').textContent = ascii(r.expected);
+          $('expInfo').textContent = (t.check ? 'stanje nakon izmjene · ' : '') + r.expected.values.length + ' ' + plural(r.expected.values.length);
+          $('expPanel').hidden = false; b.remove();
+        });
+        fb.appendChild(b);
+      }
+    }
+  }
+
+  function hint() {
+    const t = TASKS[cur];
+    if (hintsShown >= t.hints.length) return;
+    const d = document.createElement('div'); d.className = 'hint';
+    d.innerHTML = `<b>Naputak ${hintsShown + 1}.</b>${esc(t.hints[hintsShown])}`;
+    $('hints').appendChild(d);
+    hintsShown++;
+    $('hintBtn').textContent = `Naputak (${hintsShown}/${t.hints.length})`;
+    if (hintsShown >= t.hints.length) $('hintBtn').disabled = true;
+  }
+
+  function solution() {
+    const p = $('solPanel');
+    p.hidden = !p.hidden;
+    $('solOut').textContent = TASKS[cur].sol;
+  }
+
+  function resetDb() {
+    if (db) db.close();
+    db = freshDb(SQL);
+    showResult({ message: 'Baza je vraćena na početno stanje.' });
+  }
+
+  // Događaji
+  $('runBtn').addEventListener('click', run);
+  $('checkBtn').addEventListener('click', check);
+  $('hintBtn').addEventListener('click', hint);
+  $('solBtn').addEventListener('click', solution);
+  $('solCopy').addEventListener('click', () => { $('sql').value = TASKS[cur].sol; saveDraft(); $('sql').focus(); });
+  $('resetBtn').addEventListener('click', resetDb);
+  $('prevBtn').addEventListener('click', () => go(cur - 1));
+  $('nextBtn').addEventListener('click', () => go(cur + 1));
+  $('sql').addEventListener('input', () => saveDraft());
+  $('sql').addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); }
+    else if (e.key === 'Tab' && !e.shiftKey) {
+      e.preventDefault();
+      const ta = e.target, s = ta.selectionStart, en = ta.selectionEnd;
+      ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(en);
+      ta.selectionStart = ta.selectionEnd = s + 2;
+    }
+  });
+
+  renderSchema();
+  go(cur);
+
+  if (typeof initSqlJs !== 'function') {
+    showResult({ error: 'Biblioteka sql.js se nije učitala. Provjeri internetsku vezu i osvježi stranicu.' });
+    return;
+  }
+  initSqlJs().then(S => {
+    SQL = S; db = freshDb(SQL);
+    ['runBtn', 'checkBtn', 'resetBtn'].forEach(id => $(id).disabled = false);
+    const r = db.exec('SELECT * FROM nastavnik LIMIT 5;');
+    showResult(r[0], 'Pregled: prvih 5 redaka tablice nastavnik');
+  }).catch(e => showResult({ error: 'Baza se nije mogla pokrenuti: ' + e.message }));
+})();
+</script>
+</body>
+</html>
