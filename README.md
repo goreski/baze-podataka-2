@@ -9,12 +9,15 @@ Svaka vježbaonica je jedna samostalna HTML stranica. Baza podataka (SQLite, bib
 | # | Predavanje | Zadataka |
 |---|------------|---------:|
 | 01 | [Ponavljanje I: SQL jezik](01-ponavljanje-sql/) · [asistent](https://notebook.google.com/notebook/b4074a6c-5329-49c8-8565-5c3777267d4c) | 29 |
+| 02 | [Ponavljanje II: SQL DDL](02-ponavljanje-ddl/) · [asistent](https://notebook.google.com/notebook/6bf7da5d-018a-4929-9d2d-359e3d9baf5e) | 19 |
 
 ## Struktura
 
 ```
 index.html                 početna stranica s popisom vježbaonica
 01-ponavljanje-sql/        jedna mapa po predavanju
+  index.html
+02-ponavljanje-ddl/
   index.html
 .nojekyll                  GitHub Pages poslužuje datoteke bez obrade
 ```

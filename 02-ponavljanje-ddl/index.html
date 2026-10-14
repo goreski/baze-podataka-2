@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL DDL vježbaonica BP2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: zaglavlje s napretkom; ispod tri stupca — popis zadataka | radna ploča (zadatak, editor, rezultat) | shema baze. Uži ekrani slažu stupce jedan ispod drugog. */
+:root {
+  --bg: #f4f6f8; --surface: #ffffff; --ink: #18212d; --muted: #586474; --line: #dbe1e8;
+  --code-bg: #eef2f6; --navy: #1f3b63; --olive: #765a00; --olive-bg: #f7f0dc;
+  --ok: #23704a; --ok-bg: #e3f3ea; --err: #a8261d; --err-bg: #fbe7e5; --focus: #3b6fd8;
+  --f-body: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --f-head: "IBM Plex Sans Condensed", "Arial Narrow", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", "Courier New", monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #10151c; --surface: #171f29; --ink: #e3e8ee; --muted: #9aa6b5; --line: #2a3443;
+  --code-bg: #0c1117; --navy: #a9c6f5; --olive: #e2bb5c; --olive-bg: #2a2412;
+  --ok: #73cf9b; --ok-bg: #12291d; --err: #ff8f84; --err-bg: #331412; --focus: #8fb4ff; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #10151c; --surface: #171f29; --ink: #e3e8ee; --muted: #9aa6b5; --line: #2a3443;
+  --code-bg: #0c1117; --navy: #a9c6f5; --olive: #e2bb5c; --olive-bg: #2a2412;
+  --ok: #73cf9b; --ok-bg: #12291d; --err: #ff8f84; --err-bg: #331412; --focus: #8fb4ff; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+.back { display: inline-block; font-size: 13px; color: var(--muted); text-decoration: none; margin-bottom: 4px; }
+.back:hover { color: var(--ink); text-decoration: underline; }
+html, body { background: var(--bg); color: var(--ink); }
+body { font: 15px/1.55 var(--f-body); }
+.wrap { max-width: 1440px; margin: 0 auto; padding-inline: 20px; padding-block: 0 40px; }
+h1, h2, h3 { font-family: var(--f-head); font-weight: 600; text-wrap: balance; margin: 0; }
+code, pre, textarea, .mono { font-family: var(--f-mono); }
+button { font: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding-block: 18px 16px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+header.top h1 { font-size: 24px; letter-spacing: .01em; }
+header.top .sub { color: var(--muted); font-size: 13px; }
+.ask { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r); padding: 6px 12px; font-size: 13px; font-weight: 500; text-decoration: none; }
+.ask:hover { border-color: var(--muted); }
+.ask small { color: var(--muted); font-weight: 400; }
+.hints .more { font-size: 13px; color: var(--muted); }
+.hints .more a { color: var(--navy); }
+.progress { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { width: 140px; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--ok); width: 0; transition: width .3s; }
+
+.grid { display: grid; grid-template-columns: 250px minmax(0, 1fr) 290px; gap: 20px; align-items: start; }
+@media (max-width: 1180px) { .grid { grid-template-columns: 230px minmax(0, 1fr); } aside.schema { grid-column: 1 / -1; } }
+@media (max-width: 780px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Popis zadataka */
+nav.tasks { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); max-height: calc(100vh - 24px); overflow: auto; padding-right: 4px; }
+@media (max-width: 780px) { nav.tasks { position: static; max-height: none; } }
+.sec { margin-bottom: 14px; }
+.sec h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 8px; }
+.sec h3 span { font-family: var(--f-body); text-transform: none; letter-spacing: 0; font-weight: 400; }
+.sec ul { list-style: none; margin: 0; padding: 0; }
+@media (max-width: 780px) { .sec ul { display: flex; flex-wrap: wrap; gap: 6px; } }
+.tbtn { width: 100%; display: flex; align-items: baseline; gap: 8px; text-align: left; background: none; border: 0; border-radius: var(--r); padding: 5px 8px; color: var(--ink); }
+.tbtn:hover { background: var(--surface); }
+.tbtn[aria-current="true"] { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-weight: 500; }
+.tbtn .tid { font-family: var(--f-mono); font-size: 12px; color: var(--muted); min-width: 22px; }
+.tbtn .dot { margin-left: auto; width: 16px; text-align: center; color: var(--ok); font-weight: 600; }
+@media (max-width: 780px) { .tbtn { width: auto; border: 1px solid var(--line); padding: 4px 8px; } .tbtn .ttl { display: none; } .tbtn .dot { margin-left: 0; width: auto; } }
+
+/* Radna ploča */
+main.work { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.task { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; }
+.meta { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.task h2 { font-size: 22px; margin: 4px 0 8px; }
+.task .text { color: var(--olive); font-style: italic; font-size: 16px; margin: 0; max-width: 70ch; }
+.task .note { margin: 10px 0 0; font-size: 13px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px; max-width: 75ch; }
+
+.editor { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.editor textarea { display: block; width: 100%; min-height: 150px; resize: vertical; border: 0; padding: 14px 16px; background: var(--code-bg); color: var(--navy); font-size: 14px; line-height: 1.6; font-weight: 600; tab-size: 2; }
+.editor textarea::placeholder { color: var(--muted); font-weight: 400; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--line); }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r); padding: 6px 14px; font-weight: 500; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--navy); color: var(--surface); border-color: var(--navy); }
+.btn.check { background: var(--ok); color: var(--surface); border-color: var(--ok); }
+.btn:disabled { opacity: .5; cursor: default; }
+.kbd { font-size: 12px; color: var(--muted); margin-left: auto; }
+@media (max-width: 520px) { .kbd { display: none; } }
+
+.feedback { border-radius: var(--r); padding: 10px 14px; font-weight: 500; }
+.feedback.ok { background: var(--ok-bg); color: var(--ok); }
+.feedback.err { background: var(--err-bg); color: var(--err); }
+.feedback .lnk { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; font-weight: 400; margin-left: 6px; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.panel > .ph { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 9px 14px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.panel > .ph b { color: var(--ink); font-weight: 600; }
+.out { margin: 0; padding: 12px 14px; overflow-x: auto; font-size: 13px; line-height: 1.45; color: var(--ink); white-space: pre; }
+.out.msg { white-space: pre-wrap; font-family: var(--f-body); color: var(--muted); }
+.out.error { white-space: pre-wrap; color: var(--err); }
+
+.hints { display: flex; flex-direction: column; gap: 8px; }
+.hint { background: var(--olive-bg); border-radius: var(--r); padding: 9px 14px; font-size: 14px; }
+.hint b { font-family: var(--f-head); margin-right: 6px; }
+.solution pre { margin: 0; padding: 12px 14px; background: var(--code-bg); color: var(--navy); font-weight: 600; overflow-x: auto; font-size: 13.5px; }
+.solution .toolbar { border-top: 1px solid var(--line); }
+
+.pager { display: flex; justify-content: space-between; gap: 10px; }
+
+/* Shema */
+aside.schema { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+@media (max-width: 1180px) { aside.schema { position: static; } }
+.schema .panel { padding-bottom: 6px; }
+.tbl { padding: 10px 14px 6px; }
+.tbl + .tbl { border-top: 1px dashed var(--line); }
+.tbl h4 { margin: 0 0 4px; font: 600 14px var(--f-mono); color: var(--navy); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.tbl h4 button { font: 12px var(--f-body); background: none; border: 0; color: var(--muted); text-decoration: underline; padding: 0; }
+.tbl ul { list-style: none; margin: 0; padding: 0; font: 12.5px/1.6 var(--f-mono); }
+.tbl li { display: flex; justify-content: space-between; gap: 8px; }
+.tbl li span:last-child { color: var(--muted); }
+.tbl li.pk span:first-child { text-decoration: underline; }
+.tbl h4 em { font: italic 11px var(--f-body); color: var(--olive); margin-right: auto; margin-left: 6px; }
+.tbl.new { background: var(--olive-bg); }
+#expOut { white-space: pre-wrap; }
+.schema .foot { padding: 8px 14px 4px; font-size: 12.5px; color: var(--muted); }
+.schema .foot .btn { margin-top: 8px; width: 100%; }
+
+.loading { padding: 40px 0; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <a class="back" href="../">← Sve vježbaonice</a>
+      <h1>SQL vježbaonica</h1>
+      <div class="sub">Baze podataka II · Ponavljanje II: SQL DDL · FIPU</div>
+    </div>
+    <a class="ask" href="https://notebook.google.com/notebook/6bf7da5d-018a-4929-9d2d-359e3d9baf5e" target="_blank" rel="noopener">Pitaj asistenta ↗ <small>Gemini Notebook</small></a>
+    <div class="progress" aria-live="polite">
+      <span id="progTxt">0 / 19 riješeno</span>
+      <div class="bar" aria-hidden="true"><i id="progBar"></i></div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <nav class="tasks" id="taskNav" aria-label="Zadaci"></nav>
+
+    <main class="work" id="work">
+      <section class="task" aria-labelledby="tTitle">
+        <div class="meta"><span id="tMeta">A1 · Ponavljanje</span><span id="tSlide">slajd 6</span></div>
+        <h2 id="tTitle">Alias u ORDER BY</h2>
+        <p class="text" id="tText"></p>
+        <p class="note" id="tNote" hidden></p>
+      </section>
+
+      <div class="editor">
+        <label for="sql" style="position:absolute;left:-9999px">SQL upit</label>
+        <textarea id="sql" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="-- ovdje napiši svoje naredbe, npr.&#10;CREATE TABLE …"></textarea>
+        <div class="toolbar">
+          <button class="btn primary" id="runBtn" disabled>Izvrši</button>
+          <button class="btn check" id="checkBtn" disabled>Provjeri rješenje</button>
+          <button class="btn" id="hintBtn">Naputak</button>
+          <button class="btn" id="solBtn">Rješenje</button>
+          <span class="kbd">Ctrl + Enter izvršava upit</span>
+        </div>
+      </div>
+
+      <div class="feedback" id="feedback" hidden></div>
+      <div class="panel" id="expPanel" hidden>
+        <div class="ph"><b id="expTitle">Očekivani rezultat</b><span id="expInfo"></span></div>
+        <pre class="out" id="expOut"></pre>
+      </div>
+
+      <div class="hints" id="hints"></div>
+
+      <div class="panel solution" id="solPanel" hidden>
+        <div class="ph"><b>Referentno rješenje</b><span>prihvaća se svaki upit koji daje isti rezultat</span></div>
+        <pre id="solOut"></pre>
+        <div class="toolbar"><button class="btn" id="solCopy">Prepiši u editor</button></div>
+      </div>
+
+      <div class="panel">
+        <div class="ph"><b id="resTitle">Rezultat</b><span id="resInfo"></span></div>
+        <pre class="out msg" id="resOut">Učitavam bazu podataka…</pre>
+      </div>
+
+      <div class="pager">
+        <button class="btn" id="prevBtn">← Prethodni</button>
+        <button class="btn" id="nextBtn">Sljedeći →</button>
+      </div>
+    </main>
+
+    <aside class="schema" aria-label="Shema baze">
+      <div class="panel">
+        <div class="ph"><b>Shema baze</b><span>baza unipu</span></div>
+        <div id="schemaList"></div>
+        <div class="foot">
+          Upiti u editoru mijenjaju tvoju kopiju baze. Provjera rješenja uvijek radi na izvornim podacima.
+          <button class="btn" id="resetBtn" disabled>Vrati bazu na početno stanje</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-asm.js"></script>
+<script>
+const INIT_SQL = `
+CREATE TABLE nastavnik (
+  id INT NOT NULL PRIMARY KEY,
+  OIB CHAR(11) NOT NULL UNIQUE,
+  prezime VARCHAR(30) NOT NULL,
+  ime VARCHAR(30) NOT NULL,
+  zvanje VARCHAR(30) NOT NULL,
+  fakultet VARCHAR(30),
+  primanja NUMERIC(8,2) NOT NULL,
+  grad VARCHAR(30)
+);
+INSERT INTO nastavnik VALUES
+ (1,'90000000001','Horvat','Ivan','redoviti profesor','Strojarstvo',15264.00,'Zagreb'),
+ (2,'90000000002','Vidaković','Ana','docent','Fizika',11805.00,'Rijeka'),
+ (3,'90000000003','Bogdan','Karlo','docent','Informatika',10200.00,'Karlovac'),
+ (4,'90000000004','Topić','Luka','redoviti profesor','Fizika',15223.00,'Zagreb'),
+ (5,'90000000005','Galić','Petra','asistent','Medicina',8600.00,'Osijek'),
+ (6,'90000000006','Bašić','Bernard','viši asistent','Strojarstvo',9800.00,'Karlovac'),
+ (7,'90000000007','Jurišić','Tomislav','docent','Strojarstvo',10065.00,'Rijeka'),
+ (8,'90000000008','Tadić','Marina','docent','Strojarstvo',10000.00,'Split'),
+ (9,'90000000009','Špoljarić','Dario','izvanredni profesor','Fizika',13369.00,'Pula'),
+ (10,'90000000010','Petrić','Gabriel','viši asistent','Književnost',8952.00,'Zagreb'),
+ (11,'90000000011','Jelić','Dora','docent','Medicina',9100.00,'Split'),
+ (12,'90000000012','Bašić','Michele','redoviti profesor','Kemija',10500.00,'Sisak'),
+ (13,'90000000013','Dujmović','Martino','redoviti profesor','Književnost',11200.00,'Zagreb'),
+ (14,'90000000014','Barić','Ivana','docent','Fizika',11805.00,'Pula'),
+ (15,'90000000015','Kovačević','Mislav','asistent','Medicina',9053.00,'Rijeka'),
+ (16,'90000000016','Šimunović','Nikolina','asistent','Književnost',8952.00,'Pula'),
+ (17,'90000000017','Novak','Patrick','izvanredni profesor','Medicina',10500.00,'Pula'),
+ (18,'90000000018','Marić','Ana','docent','Književnost',9500.00,'Zadar'),
+ (19,'90000000019','Knežević','Josip','asistent','Književnost',8100.00,'Osijek'),
+ (20,'90000000020','Perić','Lucija','izvanredni profesor','Informatika',11500.00,'Pula'),
+ (21,'90000000021','Vuković','Marko','docent','Informatika',9866.00,'Zagreb'),
+ (22,'90000000022','Babić','Sanja','redoviti profesor','Informatika',12300.00,'Rijeka'),
+ (23,'90000000023','Grgić','Filip','asistent','Informatika',9000.00,'Pula'),
+ (24,'90000000024','Pavlović','Maja','docent','Kemija',12400.00,'Zagreb'),
+ (25,'90000000025','Lovrić','Hrvoje','izvanredni profesor','Kemija',11887.00,'Varaždin'),
+ (26,'90000000026','Matić','Iva','docent','Književnost',9800.00,'Split'),
+ (27,'90000000027','Božić','Nikola','izvanredni profesor','Književnost',10200.00,'Zagreb'),
+ (28,'90000000028','Radić','Katarina','docent','Književnost',9619.00,'Rijeka'),
+ (29,'90000000029','Kralj','Tena','viši asistent','Književnost',9400.00,'Zadar'),
+ (30,'90000000030','Šarić','Mislav','docent','Medicina',9100.00,'Zagreb');
+
+CREATE TABLE kolegij (
+  kolegij_naziv VARCHAR(10) NOT NULL PRIMARY KEY,
+  puni_naziv VARCHAR(60) NOT NULL,
+  ects INT NOT NULL CHECK (ects > 0),
+  semestar INT CHECK (semestar BETWEEN 1 AND 10)
+);
+INSERT INTO kolegij VALUES
+ ('BP1','Baze podataka I',6,3), ('BP2','Baze podataka II',6,4), ('PROG','Programiranje',7,1),
+ ('OOP','Objektno orijentirano programiranje',6,2), ('MR','Metodologija rada',4,1), ('STAT','Statistika',5,2),
+ ('PIS','Projektiranje informacijskih sustava',6,5), ('SPI','Sigurnost podataka i informacija',5,5),
+ ('FIZ','Fizika 1',6,1), ('KEM','Opća kemija',5,1), ('ANAT','Anatomija',8,1), ('TERM','Termodinamika',6,3);
+
+CREATE TABLE predaje (
+  nastavnik_id INT NOT NULL,
+  kolegij_naziv VARCHAR(10) NOT NULL,
+  PRIMARY KEY (nastavnik_id, kolegij_naziv),
+  FOREIGN KEY (nastavnik_id) REFERENCES nastavnik (id),
+  FOREIGN KEY (kolegij_naziv) REFERENCES kolegij (kolegij_naziv)
+);
+INSERT INTO predaje VALUES
+ (1,'SPI'),(2,'FIZ'),(3,'PROG'),(3,'OOP'),(4,'FIZ'),(7,'STAT'),(9,'STAT'),
+ (10,'MR'),(12,'PIS'),(12,'SPI'),(13,'MR'),(14,'FIZ'),(16,'STAT'),(17,'STAT'),
+ (18,'MR'),(20,'BP1'),(20,'BP2'),(21,'PROG'),(22,'PIS'),(22,'BP2'),(23,'OOP'),
+ (24,'KEM'),(25,'KEM');
+
+CREATE TABLE student (
+  jmbag CHAR(10) NOT NULL PRIMARY KEY,
+  prezime VARCHAR(30) NOT NULL,
+  ime VARCHAR(30) NOT NULL,
+  godina INT CHECK (godina BETWEEN 1 AND 5)
+);
+INSERT INTO student VALUES
+ ('0303011001','Horvat','Lana',1), ('0303011002','Novak','Toni',2), ('0303011003','Bašić','Iva',2),
+ ('0303011004','Ivić','Marko',3), ('0303011005','Lukić','Petra',1), ('0303011006','Zorić','Ante',3),
+ ('0303011007','Marić','Lea',2), ('0303011008','Perković','Nina',1), ('0303011009','Kovačević','Ivan',3),
+ ('0303011010','Rajić','Mia',2), ('0303011011','Horvat','Dino',3), ('0303011012','Šimić','Jan',1);
+
+CREATE TABLE ucionica (
+  oznaka VARCHAR(10) NOT NULL PRIMARY KEY,
+  zgrada VARCHAR(40) NOT NULL,
+  kapacitet INT NOT NULL CHECK (kapacitet > 0)
+);
+INSERT INTO ucionica VALUES ('U1','FIPU, Zagrebačka 30',60), ('U2','FIPU, Zagrebačka 30',30), ('LAB','FIPU, Zagrebačka 30',24);
+`;
+
+const SECTIONS = [
+  { id: 'A', title: 'Ponavljanje', slides: '5–8' },
+  { id: 'B', title: 'Katalozi i sheme', slides: '12–14' },
+  { id: 'C', title: 'Primarni ključ i NOT NULL', slides: '16–20' },
+  { id: 'D', title: 'UNIQUE i ključevi kandidati', slides: '21–24' },
+  { id: 'E', title: 'CHECK ograničenja', slides: '25–30' },
+  { id: 'F', title: 'Strani ključ', slides: '32–40' },
+  { id: 'G', title: 'Kršenje stranog ključa', slides: '41–45' },
+];
+
+const PK_NULL_NOTE = 'SQLite zbog stare greške dopušta NULL u primarnom ključu koji nije tipa INTEGER. Prema SQL standardu (i u MySQL-u) PRIMARY KEY podrazumijeva NOT NULL, ali ovdje NOT NULL uz primarni ključ moraš napisati sam. To je primjer pravila „ovisi o implementaciji“ (slajd 21).';
+const RERUN_NOTE = 'Ako tablicu stvaraš više puta, ispred CREATE TABLE dodaj DROP TABLE IF EXISTS naziv; ili vrati bazu na početno stanje.';
+
+const TASKS = [
+  // A — ponavljanje
+  { id: 'A1', s: 'A', slide: 6, title: 'Alias u ORDER BY', ordered: true,
+    text: 'Ispiši fakultete i prosječna primanja (alias prosjek) za fakultete s prosjekom većim od 11000, sortirano po prosjeku silazno. U ORDER BY koristi alias prosjek.',
+    sol: 'SELECT fakultet, AVG(primanja) AS prosjek\n  FROM nastavnik\n  GROUP BY fakultet\n  HAVING AVG(primanja) > 11000\n  ORDER BY prosjek DESC;',
+    hints: ['ORDER BY se logički izvršava nakon SELECT, pa alias tamo postoji.', 'HAVING se izvršava prije SELECT. Po standardu ondje ponovi AVG(primanja).'] },
+  { id: 'A2', s: 'A', slide: 7, title: 'Podupit ili join',
+    text: 'Ispiši prezime i ime nastavnika koji predaju barem jedan kolegij od 6 ili više ECTS bodova. Svaki nastavnik samo jednom.',
+    sol: 'SELECT prezime, ime FROM nastavnik\n  WHERE id IN (SELECT p.nastavnik_id\n                 FROM predaje AS p JOIN kolegij AS k USING (kolegij_naziv)\n                 WHERE k.ects >= 6);',
+    hints: ['Spoji predaje i kolegij pa filtriraj po ects.', 'S IN podupitom svaki nastavnik dolazi samo jednom. Kod običnog joina treba DISTINCT.'] },
+  { id: 'A3', s: 'A', slide: 8, title: 'Pogled s nazivima stupaca',
+    text: 'Napravi pogled fakultet_pregled sa stupcima fakultet, broj_nastavnika i prosjek. Nazive stupaca navedi u naredbi CREATE VIEW.',
+    check: 'SELECT fakultet, broj_nastavnika, prosjek FROM fakultet_pregled ORDER BY fakultet;', ordered: true,
+    sol: 'CREATE VIEW fakultet_pregled (fakultet, broj_nastavnika, prosjek) AS\n  SELECT fakultet, COUNT(*), AVG(primanja)\n    FROM nastavnik GROUP BY fakultet;',
+    hints: ['Sintaksa: CREATE VIEW naziv (st1, st2, …) AS SELECT …', 'SELECT unutar pogleda ne mora imati aliase ako su nazivi navedeni u zagradi.'] },
+
+  // B — katalozi i sheme
+  { id: 'B1', s: 'B', slide: 12, title: 'Sistemski katalog',
+    text: 'Baza o sebi vodi katalog. Ispiši nazive svih tablica u bazi (bez pogleda i indeksa) iz sistemske tablice sqlite_master.',
+    note: 'U MySQL-u isti podatak daje SELECT table_name FROM information_schema.tables WHERE table_schema = \'unipu\'.',
+    sol: "SELECT name FROM sqlite_master WHERE type = 'table';",
+    hints: ['Tablica sqlite_master ima stupce type i name.', "Filtriraj type = 'table'."] },
+  { id: 'B2', s: 'B', slide: 13, title: 'Druga shema i puno ime',
+    text: "U SQLite-u shemi odgovara priključena baza. Priključi novu shemu fipu (ATTACH DATABASE ':memory:' AS fipu;), u njoj napravi tablicu zavod(sifra CHAR(4), naziv VARCHAR(60)) i dodaj zavod ('ZIT', 'Zavod za informacijske tehnologije'). Na kraju ispiši sadržaj tablice punim imenom fipu.zavod.",
+    note: 'U MySQL-u bi to bilo CREATE SCHEMA fipu; (isto što i CREATE DATABASE), a zatim USE fipu; ili puno ime fipu.zavod.',
+    sol: "ATTACH DATABASE ':memory:' AS fipu;\nCREATE TABLE fipu.zavod (sifra CHAR(4), naziv VARCHAR(60));\nINSERT INTO fipu.zavod VALUES ('ZIT', 'Zavod za informacijske tehnologije');\nSELECT * FROM fipu.zavod;",
+    hints: ['Tablicu u drugoj shemi stvaraš imenom shema.tablica: CREATE TABLE fipu.zavod (…).', 'U sandboxu ATTACH smiješ izvršiti samo jednom. Ako javi da shema već postoji, vrati bazu na početno stanje.'] },
+
+  // C — PK i NOT NULL
+  { id: 'C1', s: 'C', slide: 20, title: 'Tablica dvorana',
+    text: 'Napravi tablicu dvorana sa stupcima oznaka VARCHAR(10) (primarni ključ), zgrada VARCHAR(40) i kapacitet INT. Zgrada i kapacitet moraju uvijek biti upisani.',
+    note: PK_NULL_NOTE,
+    sol: 'CREATE TABLE dvorana (\n  oznaka    VARCHAR(10) NOT NULL PRIMARY KEY,\n  zgrada    VARCHAR(40) NOT NULL,\n  kapacitet INT NOT NULL\n);',
+    tests: [
+      { sql: "INSERT INTO dvorana (oznaka, zgrada, kapacitet) VALUES ('D1', 'FIPU', 40);", ok: true, why: 'ispravan redak' },
+      { sql: "INSERT INTO dvorana (oznaka, zgrada, kapacitet) VALUES ('D1', 'FET', 25);", ok: false, why: 'oznaka D1 već postoji, a oznaka je primarni ključ' },
+      { sql: "INSERT INTO dvorana (oznaka, zgrada, kapacitet) VALUES ('D2', NULL, 30);", ok: false, why: 'zgrada ne smije biti NULL' },
+      { sql: "INSERT INTO dvorana (oznaka, zgrada, kapacitet) VALUES ('D3', 'FIPU', NULL);", ok: false, why: 'kapacitet ne smije biti NULL' },
+      { sql: "INSERT INTO dvorana (oznaka, zgrada, kapacitet) VALUES (NULL, 'FIPU', 20);", ok: false, why: 'primarni ključ ne smije biti NULL' },
+    ],
+    hints: ['Jednostavni primarni ključ možeš napisati uz stupac: oznaka VARCHAR(10) PRIMARY KEY.', 'NOT NULL pišeš iza tipa stupca. Pročitaj napomenu o primarnom ključu u SQLite-u.'] },
+  { id: 'C2', s: 'C', slide: 18, title: 'Složeni primarni ključ',
+    text: 'Napravi tablicu termin_ispita sa stupcima kolegij_naziv VARCHAR(10), datum DATE i dvorana VARCHAR(10). Isti kolegij ne smije imati dva ispita istog dana, ali smije imati više ispita u različite dane.',
+    note: PK_NULL_NOTE,
+    sol: 'CREATE TABLE termin_ispita (\n  kolegij_naziv VARCHAR(10) NOT NULL,\n  datum         DATE NOT NULL,\n  dvorana       VARCHAR(10),\n  PRIMARY KEY (kolegij_naziv, datum)\n);',
+    tests: [
+      { sql: "INSERT INTO termin_ispita (kolegij_naziv, datum, dvorana) VALUES ('BP2', '2027-01-20', 'U1');", ok: true, why: 'ispravan redak' },
+      { sql: "INSERT INTO termin_ispita (kolegij_naziv, datum, dvorana) VALUES ('BP2', '2027-02-10', 'U1');", ok: true, why: 'isti kolegij, drugi datum' },
+      { sql: "INSERT INTO termin_ispita (kolegij_naziv, datum, dvorana) VALUES ('BP1', '2027-01-20', 'U1');", ok: true, why: 'drugi kolegij, isti datum' },
+      { sql: "INSERT INTO termin_ispita (kolegij_naziv, datum, dvorana) VALUES ('BP2', '2027-01-20', 'U2');", ok: false, why: 'BP2 već ima ispit 20. 1. 2027.' },
+      { sql: "INSERT INTO termin_ispita (kolegij_naziv, datum, dvorana) VALUES ('BP2', NULL, 'U2');", ok: false, why: 'datum je dio primarnog ključa i ne smije biti NULL' },
+    ],
+    hints: ['Primarni ključ od više stupaca navodi se nakon svih stupaca.', 'PRIMARY KEY (kolegij_naziv, datum)'] },
+
+  // D — UNIQUE
+  { id: 'D1', s: 'D', slide: 23, title: 'Partner i NULL u UNIQUE',
+    text: 'Napravi tablicu partner kao na slajdu 23: naziv VARCHAR(40) koji je obavezan, adresa VARCHAR(60) te UNIQUE ograničenje nad parom (naziv, adresa). Zatim u sandboxu dvaput dodaj (\'Ina d.d.\', NULL) i pogledaj što se dogodi.',
+    sol: 'CREATE TABLE partner (\n  naziv  VARCHAR(40) NOT NULL,\n  adresa VARCHAR(60),\n  UNIQUE (naziv, adresa)\n);',
+    tests: [
+      { sql: "INSERT INTO partner (naziv, adresa) VALUES ('Ina d.d.', 'Dubrovačka 15');", ok: true, why: 'ispravan redak' },
+      { sql: "INSERT INTO partner (naziv, adresa) VALUES ('Ina d.d.', 'Dubrovačka 15');", ok: false, why: 'isti par (naziv, adresa) već postoji' },
+      { sql: "INSERT INTO partner (naziv, adresa) VALUES ('Ina d.d.', 'Avenija Većeslava Holjevca 10');", ok: true, why: 'isti naziv, druga adresa' },
+      { sql: "INSERT INTO partner (naziv, adresa) VALUES ('Ina d.d.', NULL);", ok: true, why: 'NULL adresa je dopuštena' },
+      { sql: "INSERT INTO partner (naziv, adresa) VALUES ('Ina d.d.', NULL);", ok: true, why: 'UNIQUE smatra NULL vrijednosti različitima, pa prolazi i drugi put' },
+      { sql: "INSERT INTO partner (naziv, adresa) VALUES (NULL, 'Riva 1');", ok: false, why: 'naziv je obavezan' },
+    ],
+    hints: ['UNIQUE nad više stupaca navodi se nakon svih stupaca: UNIQUE (naziv, adresa).', 'Zašto drugi INSERT s NULL adresom prolazi? Pogledaj slajd 24.'] },
+  { id: 'D2', s: 'D', slide: 22, title: 'Ključ kandidat',
+    text: 'Napravi tablicu zavod sa stupcima id INT (primarni ključ), sifra CHAR(4) i naziv VARCHAR(60). Svaki zavod mora imati šifru i naziv. Dva zavoda ne smiju imati istu šifru, ali smiju imati isti naziv.',
+    note: PK_NULL_NOTE,
+    sol: 'CREATE TABLE zavod (\n  id    INT NOT NULL PRIMARY KEY,\n  sifra CHAR(4) NOT NULL UNIQUE,\n  naziv VARCHAR(60) NOT NULL\n);',
+    tests: [
+      { sql: "INSERT INTO zavod (id, sifra, naziv) VALUES (1, 'ZIT', 'Zavod za informatiku');", ok: true, why: 'ispravan redak' },
+      { sql: "INSERT INTO zavod (id, sifra, naziv) VALUES (2, 'ZIT', 'Zavod za matematiku');", ok: false, why: 'šifra ZIT već postoji' },
+      { sql: "INSERT INTO zavod (id, sifra, naziv) VALUES (3, 'ZMA', 'Zavod za informatiku');", ok: true, why: 'isti naziv je dopušten' },
+      { sql: "INSERT INTO zavod (id, sifra, naziv) VALUES (4, NULL, 'Zavod za fiziku');", ok: false, why: 'šifra je obavezna' },
+      { sql: "INSERT INTO zavod (id, sifra, naziv) VALUES (1, 'ZFI', 'Zavod za fiziku');", ok: false, why: 'id 1 već postoji' },
+    ],
+    hints: ['Ključ kandidat definiraš s UNIQUE.', 'UNIQUE ne isključuje NULL, pa uz njega treba i NOT NULL.'] },
+
+  // E — CHECK
+  { id: 'E1', s: 'E', slide: 27, title: 'CHECK za satnicu i zvanje',
+    text: "Napravi tablicu honorarac sa stupcima id INT (primarni ključ), prezime VARCHAR(30), zvanje VARCHAR(30) i satnica NUMERIC(6,2), svi obavezni. Satnica mora biti barem 20, a zvanje jedno od: 'asistent', 'viši asistent', 'docent', 'izvanredni profesor', 'redoviti profesor'.",
+    sol: "CREATE TABLE honorarac (\n  id      INT NOT NULL PRIMARY KEY,\n  prezime VARCHAR(30) NOT NULL,\n  zvanje  VARCHAR(30) NOT NULL,\n  satnica NUMERIC(6,2) NOT NULL,\n  CHECK (satnica >= 20),\n  CHECK (zvanje IN ('asistent', 'viši asistent', 'docent',\n                    'izvanredni profesor', 'redoviti profesor'))\n);",
+    tests: [
+      { sql: "INSERT INTO honorarac (id, prezime, zvanje, satnica) VALUES (1, 'Lukić', 'docent', 35.50);", ok: true, why: 'ispravan redak' },
+      { sql: "INSERT INTO honorarac (id, prezime, zvanje, satnica) VALUES (2, 'Rajić', 'asistent', 20);", ok: true, why: 'satnica točno 20 je dopuštena' },
+      { sql: "INSERT INTO honorarac (id, prezime, zvanje, satnica) VALUES (3, 'Ivić', 'asistent', 19.99);", ok: false, why: 'satnica manja od 20' },
+      { sql: "INSERT INTO honorarac (id, prezime, zvanje, satnica) VALUES (4, 'Zorić', 'profesor', 40);", ok: false, why: "'profesor' nije dopušteno zvanje" },
+      { sql: "INSERT INTO honorarac (id, prezime, zvanje, satnica) VALUES (5, 'Šimić', 'redoviti profesor', NULL);", ok: false, why: 'satnica je obavezna' },
+    ],
+    hints: ['CHECK (uvjet) pišeš nakon stupaca ili uz stupac.', 'Za popis dopuštenih vrijednosti koristi IN (…). Pazi: „barem 20“ znači >=.'] },
+  { id: 'E2', s: 'E', slide: 30, title: 'Kad CHECK nije pravi alat',
+    text: 'Napravi tablicu mentorstvo(nastavnik_id INT, jmbag CHAR(10)) s primarnim ključem nad oba stupca. Nastavnik mora postojati u tablici nastavnik, a student u tablici student. Prvo probaj CHECK s podupitom kao na slajdu 28 i pročitaj grešku, a zatim to riješi stranim ključevima.',
+    sol: 'CREATE TABLE mentorstvo (\n  nastavnik_id INT NOT NULL,\n  jmbag        CHAR(10) NOT NULL,\n  PRIMARY KEY (nastavnik_id, jmbag),\n  FOREIGN KEY (nastavnik_id) REFERENCES nastavnik (id),\n  FOREIGN KEY (jmbag) REFERENCES student (jmbag)\n);',
+    tests: [
+      { sql: "INSERT INTO mentorstvo (nastavnik_id, jmbag) VALUES (3, '0303011001');", ok: true, why: 'nastavnik 3 i student 0303011001 postoje' },
+      { sql: "INSERT INTO mentorstvo (nastavnik_id, jmbag) VALUES (99, '0303011001');", ok: false, why: 'nastavnik 99 ne postoji' },
+      { sql: "INSERT INTO mentorstvo (nastavnik_id, jmbag) VALUES (3, '9999999999');", ok: false, why: 'student 9999999999 ne postoji' },
+      { sql: "INSERT INTO mentorstvo (nastavnik_id, jmbag) VALUES (3, '0303011001');", ok: false, why: 'isti par već postoji' },
+    ],
+    hints: ['SQLite (kao i MySQL i PostgreSQL) ne dopušta podupit u CHECK ograničenju.', 'FOREIGN KEY (nastavnik_id) REFERENCES nastavnik (id), i isto za studenta.'] },
+
+  // F — strani ključ
+  { id: 'F1', s: 'F', slide: 36, title: 'Zdravstveno osiguranje',
+    text: 'Napravi tablicu zdravstveno_osiguranje kao na slajdu 36: OIB CHAR(11) je primarni ključ i ujedno strani ključ prema nastavnik(OIB), a sifra CHAR(9) je obavezna i jedinstvena.',
+    note: 'OIB-ovi u bazi su izmišljeni (90000000001 do 90000000030).',
+    sol: 'CREATE TABLE zdravstveno_osiguranje (\n  OIB   CHAR(11) NOT NULL PRIMARY KEY REFERENCES nastavnik (OIB),\n  sifra CHAR(9) NOT NULL UNIQUE\n);',
+    tests: [
+      { sql: "INSERT INTO zdravstveno_osiguranje (OIB, sifra) VALUES ('90000000003', '123456789');", ok: true, why: 'nastavnik s tim OIB-om postoji' },
+      { sql: "INSERT INTO zdravstveno_osiguranje (OIB, sifra) VALUES ('11111111111', '223456789');", ok: false, why: 'nijedan nastavnik nema OIB 11111111111' },
+      { sql: "INSERT INTO zdravstveno_osiguranje (OIB, sifra) VALUES ('90000000004', '123456789');", ok: false, why: 'šifra osiguranja već postoji' },
+      { sql: "INSERT INTO zdravstveno_osiguranje (OIB, sifra) VALUES ('90000000003', '323456789');", ok: false, why: 'OIB je primarni ključ, pa nastavnik ne može imati dva osiguranja' },
+    ],
+    hints: ['Strani ključ može referencirati i ključ kandidat (nastavnik.OIB je UNIQUE), ne samo primarni ključ.', 'Više ograničenja na jednom stupcu: OIB CHAR(11) NOT NULL PRIMARY KEY REFERENCES nastavnik (OIB).'] },
+  { id: 'F2', s: 'F', slide: 40, title: 'Ispit s dva strana ključa',
+    text: 'Napravi tablicu ispit sa stupcima kolegij_naziv VARCHAR(10), datum DATE i ucionica VARCHAR(10). Primarni ključ je (kolegij_naziv, datum). Kolegij mora postojati u tablici kolegij, a učionica u tablici ucionica. Strane ključeve navedi nakon svih stupaca.',
+    sol: 'CREATE TABLE ispit (\n  kolegij_naziv VARCHAR(10) NOT NULL,\n  datum         DATE NOT NULL,\n  ucionica      VARCHAR(10) NOT NULL,\n  PRIMARY KEY (kolegij_naziv, datum),\n  FOREIGN KEY (kolegij_naziv) REFERENCES kolegij (kolegij_naziv),\n  FOREIGN KEY (ucionica) REFERENCES ucionica (oznaka)\n);',
+    tests: [
+      { sql: "INSERT INTO ispit (kolegij_naziv, datum, ucionica) VALUES ('BP2', '2027-01-20', 'U1');", ok: true, why: 'kolegij BP2 i učionica U1 postoje' },
+      { sql: "INSERT INTO ispit (kolegij_naziv, datum, ucionica) VALUES ('XYZ', '2027-01-20', 'U1');", ok: false, why: 'kolegij XYZ ne postoji' },
+      { sql: "INSERT INTO ispit (kolegij_naziv, datum, ucionica) VALUES ('BP2', '2027-02-03', 'U9');", ok: false, why: 'učionica U9 ne postoji' },
+      { sql: "INSERT INTO ispit (kolegij_naziv, datum, ucionica) VALUES ('BP2', '2027-01-20', 'LAB');", ok: false, why: 'BP2 već ima ispit tog dana' },
+    ],
+    hints: ['FOREIGN KEY (stupac) REFERENCES tablica (stupac)', 'Pogledaj u shemi kako se zove primarni ključ tablice ucionica.'] },
+  { id: 'F3', s: 'F', slide: 38, title: 'Samo-referencirajući ključ',
+    text: 'Napravi tablicu org_jedinica sa stupcima id INT (primarni ključ), naziv VARCHAR(60) (obavezan) i nadredena_id INT koji pokazuje na nadređenu jedinicu u istoj tablici. Jedinica na vrhu (sveučilište) nema nadređenu.',
+    note: PK_NULL_NOTE,
+    sol: 'CREATE TABLE org_jedinica (\n  id           INT NOT NULL PRIMARY KEY,\n  naziv        VARCHAR(60) NOT NULL,\n  nadredena_id INT REFERENCES org_jedinica (id)\n);',
+    tests: [
+      { sql: "INSERT INTO org_jedinica (id, naziv, nadredena_id) VALUES (1, 'Sveučilište Jurja Dobrile u Puli', NULL);", ok: true, why: 'vrh hijerarhije nema nadređenu jedinicu' },
+      { sql: "INSERT INTO org_jedinica (id, naziv, nadredena_id) VALUES (2, 'Fakultet informatike u Puli', 1);", ok: true, why: 'jedinica 1 postoji' },
+      { sql: "INSERT INTO org_jedinica (id, naziv, nadredena_id) VALUES (3, 'Zavod za informatiku', 2);", ok: true, why: 'jedinica 2 postoji' },
+      { sql: "INSERT INTO org_jedinica (id, naziv, nadredena_id) VALUES (4, 'Nepoznati zavod', 99);", ok: false, why: 'jedinica 99 ne postoji' },
+      { sql: 'DELETE FROM org_jedinica WHERE id = 2;', ok: false, why: 'jedinica 3 još pokazuje na jedinicu 2' },
+    ],
+    hints: ['Strani ključ smije pokazivati na istu tablicu.', 'nadredena_id INT REFERENCES org_jedinica (id), bez NOT NULL.'] },
+
+  // G — kršenje stranog ključa
+  { id: 'G1', s: 'G', slide: 43, title: 'Brisanje nastavnika (opcija 1)',
+    text: 'Obriši nastavnika s id-em 10 (Petrić). Baza to ne dopušta dok ga referencira tablica predaje. Napiši naredbe kojima ćeš ga ipak obrisati, a da ostali podaci ostanu netaknuti.',
+    check: "SELECT (SELECT COUNT(*) FROM nastavnik), (SELECT COUNT(*) FROM nastavnik WHERE id = 10), (SELECT COUNT(*) FROM predaje), (SELECT COUNT(*) FROM predaje WHERE nastavnik_id = 10);",
+    sol: 'DELETE FROM predaje WHERE nastavnik_id = 10;\nDELETE FROM nastavnik WHERE id = 10;',
+    hints: ['Prvo u sandboxu probaj samo DELETE FROM nastavnik WHERE id = 10; i pročitaj grešku.', 'Redoslijed: najprije redovi koji referenciraju nastavnika, zatim nastavnik.'] },
+  { id: 'G2', s: 'G', slide: 41, title: 'Redoslijed unosa',
+    text: "Dodaj novi kolegij BP3 (Baze podataka III, 6 ECTS, 5. semestar) i zapiši da ga predaje nastavnik 3. Na kraju ispiši redak iz predaje za BP3.",
+    sol: "INSERT INTO kolegij VALUES ('BP3', 'Baze podataka III', 6, 5);\nINSERT INTO predaje VALUES (3, 'BP3');\nSELECT * FROM predaje WHERE kolegij_naziv = 'BP3';",
+    hints: ['Ako prvo dodaš redak u predaje, strani ključ ga odbija. Zašto?', 'Najprije redak u referenciranoj tablici (kolegij), zatim u predaje.'] },
+  { id: 'G3', s: 'G', slide: 45, title: 'ON DELETE CASCADE',
+    text: 'Napravi tablicu konzultacije(nastavnik_id INT, termin VARCHAR(20)) s primarnim ključem nad oba stupca. Kad se nastavnik obriše, moraju se automatski obrisati i njegovi termini konzultacija.',
+    sol: 'CREATE TABLE konzultacije (\n  nastavnik_id INT NOT NULL,\n  termin       VARCHAR(20) NOT NULL,\n  PRIMARY KEY (nastavnik_id, termin),\n  FOREIGN KEY (nastavnik_id) REFERENCES nastavnik (id)\n    ON DELETE CASCADE\n);',
+    tests: [
+      { sql: "INSERT INTO konzultacije (nastavnik_id, termin) VALUES (5, 'pon 10:00');", ok: true, why: 'nastavnik 5 postoji' },
+      { sql: "INSERT INTO konzultacije (nastavnik_id, termin) VALUES (5, 'sri 12:00');", ok: true, why: 'drugi termin istog nastavnika' },
+      { sql: "INSERT INTO konzultacije (nastavnik_id, termin) VALUES (6, 'uto 09:00');", ok: true, why: 'nastavnik 6 postoji' },
+      { sql: "INSERT INTO konzultacije (nastavnik_id, termin) VALUES (99, 'pet 11:00');", ok: false, why: 'nastavnik 99 ne postoji' },
+      { sql: 'DELETE FROM nastavnik WHERE id = 5;', ok: true, why: 'nastavnik 5 ne predaje nijedan kolegij, pa ga smijemo obrisati' },
+      { sql: 'SELECT nastavnik_id, termin FROM konzultacije ORDER BY nastavnik_id, termin;', expect: [[6, 'uto 09:00']], why: 'nakon brisanja nastavnika 5 moraju nestati i njegovi termini' },
+    ],
+    hints: ['Ponašanje pri brisanju zadaješ uz strani ključ.', 'FOREIGN KEY (nastavnik_id) REFERENCES nastavnik (id) ON DELETE CASCADE'] },
+  { id: 'G4', s: 'G', slide: 44, title: 'ON DELETE SET NULL',
+    text: 'Napravi tablicu zavrsni_rad sa stupcima id INT (primarni ključ), naslov VARCHAR(200) (obavezan) i mentor_id INT koji pokazuje na nastavnika. Ako se mentor obriše, rad ostaje u bazi, ali bez mentora.',
+    note: PK_NULL_NOTE,
+    sol: 'CREATE TABLE zavrsni_rad (\n  id        INT NOT NULL PRIMARY KEY,\n  naslov    VARCHAR(200) NOT NULL,\n  mentor_id INT REFERENCES nastavnik (id) ON DELETE SET NULL\n);',
+    tests: [
+      { sql: "INSERT INTO zavrsni_rad (id, naslov, mentor_id) VALUES (1, 'Detekcija objekata u analitici prometa', 5);", ok: true, why: 'nastavnik 5 postoji' },
+      { sql: "INSERT INTO zavrsni_rad (id, naslov, mentor_id) VALUES (2, 'Optimizacija SQL upita', 6);", ok: true, why: 'nastavnik 6 postoji' },
+      { sql: "INSERT INTO zavrsni_rad (id, naslov, mentor_id) VALUES (3, 'Rad bez mentora', 99);", ok: false, why: 'nastavnik 99 ne postoji' },
+      { sql: 'DELETE FROM nastavnik WHERE id = 5;', ok: true, why: 'brisanje mentora mora biti dopušteno' },
+      { sql: 'SELECT id, mentor_id FROM zavrsni_rad ORDER BY id;', expect: [[1, null], [2, 6]], why: 'rad 1 ostaje, ali mentor_id postaje NULL' },
+    ],
+    hints: ['Strani ključ ovdje ne smije imati NOT NULL.', 'REFERENCES nastavnik (id) ON DELETE SET NULL'] },
+  { id: 'G5', s: 'G', slide: 44, title: 'ON DELETE SET DEFAULT',
+    text: 'Napravi tablicu dezurstvo(dan VARCHAR(10) primarni ključ, nastavnik_id INT obavezan). Ako se dežurni nastavnik obriše, dežurstvo preuzima nastavnik 1 (zadana vrijednost).',
+    note: 'SQLite podržava SET DEFAULT. InnoDB u MySQL-u to ne podržava (slajd 44). ' + PK_NULL_NOTE,
+    sol: 'CREATE TABLE dezurstvo (\n  dan          VARCHAR(10) NOT NULL PRIMARY KEY,\n  nastavnik_id INT NOT NULL DEFAULT 1\n    REFERENCES nastavnik (id) ON DELETE SET DEFAULT\n);',
+    tests: [
+      { sql: "INSERT INTO dezurstvo (dan, nastavnik_id) VALUES ('ponedjeljak', 6);", ok: true, why: 'nastavnik 6 postoji' },
+      { sql: "INSERT INTO dezurstvo (dan, nastavnik_id) VALUES ('utorak', 8);", ok: true, why: 'nastavnik 8 postoji' },
+      { sql: "INSERT INTO dezurstvo (dan) VALUES ('srijeda');", ok: true, why: 'bez navedenog nastavnika upisuje se zadana vrijednost' },
+      { sql: 'DELETE FROM nastavnik WHERE id = 6;', ok: true, why: 'brisanje nastavnika 6 mora biti dopušteno' },
+      { sql: 'SELECT dan, nastavnik_id FROM dezurstvo ORDER BY dan;', expect: [['ponedjeljak', 1], ['srijeda', 1], ['utorak', 8]], why: 'dežurstvo nastavnika 6 preuzima nastavnik 1' },
+    ],
+    hints: ['Zadanu vrijednost stupca daješ s DEFAULT 1.', 'Uz strani ključ dodaj ON DELETE SET DEFAULT.'] },
+];
+
+
+
+</script>
+<script>
+// Shared logic: running SQL and comparing results (used by the page and by the test script).
+function freshDb(SQL, task) {
+  const db = new SQL.Database();
+  db.exec('PRAGMA foreign_keys = ON;');
+  db.exec(INIT_SQL);
+  if (task && task.setup) db.exec(task.setup);
+  return db;
+}
+
+// Runs every statement; returns the last result set, or null if no statement returned rows.
+function runLast(db, sql, task) {
+  const res = db.exec(sql);
+  if (task && task.check) {
+    const c = db.exec(task.check);
+    return c.length ? c[c.length - 1] : { columns: [], values: [] };
+  }
+  return res.length ? res[res.length - 1] : null;
+}
+
+function normCell(v) {
+  if (v === null || v === undefined) return '\u0000NULL';
+  if (typeof v === 'number') return (Math.round(v * 100) / 100).toFixed(2);
+  return String(v);
+}
+
+function compareResults(exp, got, ordered) {
+  if (!got) return { ok: false, msg: 'Tvoj upit nije vratio nijedan rezultat. Treba završiti SELECT naredbom.' };
+  const ec = exp.columns.length, gc = got.columns.length;
+  if (ec !== gc) return { ok: false, msg: `Očekivani rezultat ima ${ec} ${ec === 1 ? 'stupac' : 'stupca'}, a tvoj ${gc}. Provjeri popis atributa u SELECT dijelu.` };
+  const er = exp.values.map(r => r.map(normCell)), gr = got.values.map(r => r.map(normCell));
+  if (er.length !== gr.length) return { ok: false, msg: `Očekivano ${er.length} ${plural(er.length)}, a tvoj rezultat ima ${gr.length}.` };
+  const key = r => JSON.stringify(r);
+  let a = er.map(key), b = gr.map(key);
+  if (!ordered) { a = a.slice().sort(); b = b.slice().sort(); }
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {
+      if (ordered) {
+        const sa = a.slice().sort(), sb = b.slice().sort();
+        if (sa.every((x, j) => x === sb[j])) return { ok: false, msg: 'Redovi su ispravni, ali redoslijed nije. Provjeri ORDER BY.' };
+      }
+      return { ok: false, msg: 'Broj redova se slaže, ali vrijednosti se razlikuju od očekivanih.' };
+    }
+  }
+  return { ok: true, msg: 'Točno!' };
+}
+
+function plural(n) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return 'redak';
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'retka';
+  return 'redaka';
+}
+
+function shortSql(s) { s = s.replace(/\s+/g, ' ').trim(); return s.length > 110 ? s.slice(0, 107) + '…' : s; }
+
+// Provjera DDL zadataka: nakon studentovih naredbi izvode se probne naredbe
+// i provjerava se koje baza prihvaća, a koje odbija.
+function runTests(db, tests) {
+  for (let i = 0; i < tests.length; i++) {
+    const t = tests[i], n = `Provjera ${i + 1} od ${tests.length}`;
+    if (t.expect) {
+      let r;
+      try { r = db.exec(t.sql); } catch (e) { return { ok: false, msg: `${n}: naredba ${shortSql(t.sql)} javlja grešku: ${e.message}`, test: t }; }
+      const got = r.length ? r[r.length - 1] : { columns: [], values: [] };
+      const exp = { columns: got.columns.length ? got.columns : t.expect[0].map((_, j) => 'c' + j), values: t.expect };
+      const c = compareResults(exp, got, true);
+      if (!c.ok) return { ok: false, msg: `${n}: ${t.why}. Upit ${shortSql(t.sql)} ne daje očekivani rezultat.`, test: t };
+      continue;
+    }
+    let passed = true, err = '';
+    try { db.exec(t.sql); } catch (e) { passed = false; err = e.message; }
+    if (t.ok && !passed) return { ok: false, msg: `${n}: naredba ${shortSql(t.sql)} trebala je proći (${t.why}), ali baza javlja: ${err}`, test: t };
+    if (!t.ok && passed) return { ok: false, msg: `${n}: naredba ${shortSql(t.sql)} trebala je biti odbijena (${t.why}), ali ju je baza prihvatila.`, test: t };
+  }
+  return { ok: true, msg: 'Točno!' };
+}
+
+function evaluate(SQL, task, studentSql) {
+  if (task.tests) {
+    const db = freshDb(SQL, task);
+    try { db.exec(studentSql); }
+    catch (e) { db.close(); return { ok: false, msg: 'Tvoje naredbe javljaju grešku: ' + e.message }; }
+    const r = runTests(db, task.tests);
+    db.close();
+    return r;
+  }
+  const dbE = freshDb(SQL, task);
+  const exp = runLast(dbE, task.sol, task);
+  dbE.close();
+  const dbG = freshDb(SQL, task);
+  let got;
+  try { got = runLast(dbG, studentSql, task); }
+  catch (e) { dbG.close(); return { ok: false, msg: 'Greška: ' + e.message, expected: exp }; }
+  dbG.close();
+  const r = compareResults(exp, got, !!task.ordered);
+  r.expected = exp;
+  return r;
+}
+
+
+
+</script>
+<script>
+(function () {
+  const NB_URL = 'https://notebook.google.com/notebook/6bf7da5d-018a-4929-9d2d-359e3d9baf5e';
+  const $ = id => document.getElementById(id);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('sqlvj2:' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('sqlvj2:' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  let SQL = null, db = null;
+  let solved = new Set(store.get('solved', []));
+  let cur = 0, hintsShown = 0;
+  const idx = Object.fromEntries(TASKS.map((t, i) => [t.id, i]));
+  const startId = store.get('current', 'A1');
+  if (idx[startId] !== undefined) cur = idx[startId];
+
+  function liveSchema() {
+    if (!db) return [];
+    const t = db.exec("SELECT name, type FROM sqlite_master WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' ORDER BY CASE type WHEN 'table' THEN 0 ELSE 1 END, rowid");
+    if (!t.length) return [];
+    return t[0].values.map(([name, type]) => {
+      const c = db.exec(`PRAGMA table_info("${name.replace(/"/g, '""')}")`);
+      const fk = type === 'table' ? db.exec(`PRAGMA foreign_key_list("${name.replace(/"/g, '""')}")`) : [];
+      const fks = {};
+      if (fk.length) fk[0].values.forEach(r => { fks[r[3]] = r[2] + (r[4] ? '.' + r[4] : ''); });
+      const cols = c.length ? c[0].values.map(r => ({ n: r[1], t: r[2] || '', nn: !!r[3], pk: r[5] > 0, fk: fks[r[1]] })) : [];
+      return { t: name, view: type === 'view', cols, isNew: !BASE_TABLES.includes(name) };
+    });
+  }
+  const BASE_TABLES = ['nastavnik', 'kolegij', 'predaje', 'student', 'ucionica'];
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+  // Rezultat kao u MySQL klijentu (kao na slajdovima)
+  function fmt(v) {
+    if (v === null || v === undefined) return 'NULL';
+    if (typeof v === 'number') return Number.isInteger(v) ? String(v) : String(Number(v.toFixed(6)));
+    return String(v);
+  }
+  function ascii(res) {
+    const cols = res.columns, rows = res.values.map(r => r.map(fmt));
+    const isNum = cols.map((_, j) => res.values.length > 0 && res.values.every(r => typeof r[j] === 'number' || r[j] === null));
+    const w = cols.map((c, j) => Math.max(c.length, ...rows.map(r => r[j].length)));
+    const sep = '+' + w.map(n => '-'.repeat(n + 2)).join('+') + '+';
+    const line = (cells, num) => '| ' + cells.map((c, j) => num && isNum[j] ? c.padStart(w[j]) : c.padEnd(w[j])).join(' | ') + ' |';
+    const out = [sep, line(cols, false), sep];
+    rows.forEach(r => out.push(line(r, true)));
+    out.push(sep);
+    return out.join('\n');
+  }
+  function showResult(res, title) {
+    $('resTitle').textContent = title || 'Rezultat';
+    const o = $('resOut');
+    if (res.error) { o.className = 'out error'; o.textContent = 'Greška: ' + res.error; $('resInfo').textContent = ''; return; }
+    if (res.message) { o.className = 'out msg'; o.textContent = res.message; $('resInfo').textContent = ''; return; }
+    o.className = 'out';
+    o.textContent = res.values.length ? ascii(res) : ascii(res) + '\nEmpty set';
+    $('resInfo').textContent = res.values.length + ' ' + plural(res.values.length);
+  }
+
+  function renderNav() {
+    const nav = $('taskNav');
+    nav.innerHTML = SECTIONS.map(s => {
+      const items = TASKS.filter(t => t.s === s.id).map(t => {
+        const i = idx[t.id];
+        return `<li><button class="tbtn" data-i="${i}" aria-current="${i === cur}"><span class="tid">${t.id}</span><span class="ttl">${esc(t.title)}</span><span class="dot" aria-label="${solved.has(t.id) ? 'riješeno' : ''}">${solved.has(t.id) ? '✓' : ''}</span></button></li>`;
+      }).join('');
+      return `<div class="sec"><h3>${esc(s.title)} <span>sl. ${s.slides}</span></h3><ul>${items}</ul></div>`;
+    }).join('');
+    nav.querySelectorAll('.tbtn').forEach(b => b.addEventListener('click', () => go(+b.dataset.i)));
+    const n = TASKS.filter(t => solved.has(t.id)).length;
+    $('progTxt').textContent = `${n} / ${TASKS.length} riješeno`;
+    $('progBar').style.width = (100 * n / TASKS.length) + '%';
+  }
+
+  function renderSchema() {
+    const S = liveSchema();
+    if (!S.length) { $('schemaList').innerHTML = '<div class="tbl"><ul><li><span>Baza se učitava…</span></li></ul></div>'; return; }
+    $('schemaList').innerHTML = S.map(s => `<div class="tbl${s.isNew ? ' new' : ''}"><h4>${esc(s.t)}${s.view ? ' <em>pogled</em>' : ''}${s.isNew ? ' <em>novo</em>' : ''}<button data-t="${esc(s.t)}">prikaži</button></h4><ul>${s.cols.map(c => `<li class="${c.pk ? 'pk' : ''}"><span>${esc(c.n)}</span><span>${esc(c.t)}${c.nn ? ' NN' : ''}${c.fk ? ' → ' + esc(c.fk) : ''}</span></li>`).join('')}</ul></div>`).join('');
+    $('schemaList').querySelectorAll('button[data-t]').forEach(b => b.addEventListener('click', () => {
+      if (!db) return;
+      try { const r = db.exec(`SELECT * FROM "${b.dataset.t.replace(/"/g, '""')}";`); showResult(r[0] || { columns: [], values: [] }, 'Sadržaj tablice ' + b.dataset.t); }
+      catch (e) { showResult({ error: e.message }); }
+    }));
+  }
+
+
+  function go(i) {
+    saveDraft();
+    cur = Math.max(0, Math.min(TASKS.length - 1, i));
+    store.set('current', TASKS[cur].id);
+    hintsShown = 0;
+    const t = TASKS[cur], s = SECTIONS.find(x => x.id === t.s);
+    $('tMeta').textContent = `${t.id} · ${s.title}`;
+    $('tSlide').textContent = 'slajd ' + t.slide;
+    $('tTitle').textContent = t.title;
+    $('tText').textContent = t.text;
+    $('tNote').hidden = !t.note; $('tNote').textContent = t.note || '';
+    $('sql').value = store.get('draft:' + t.id, '');
+    $('feedback').hidden = true; $('expPanel').hidden = true; $('solPanel').hidden = true;
+    $('hints').innerHTML = '';
+    $('hintBtn').disabled = false; $('hintBtn').textContent = `Naputak (0/${t.hints.length})`;
+    $('prevBtn').disabled = cur === 0; $('nextBtn').disabled = cur === TASKS.length - 1;
+    renderNav();
+  }
+  function saveDraft() { const t = TASKS[cur]; if (t) store.set('draft:' + t.id, $('sql').value); }
+
+  function run() {
+    if (!db) return;
+    const sql = $('sql').value.trim();
+    if (!sql) { showResult({ message: 'Editor je prazan. Napiši upit pa klikni Izvrši.' }); return; }
+    saveDraft();
+    try {
+      const t = TASKS[cur];
+      if (t.setup) db.exec(t.setup);
+      const res = db.exec(sql);
+      if (res.length) showResult(res[res.length - 1]);
+      else showResult({ message: `Naredbe su izvršene. Promijenjeno redaka u zadnjoj naredbi: ${db.getRowsModified()}.` });
+    } catch (e) {
+      let m = e.message;
+      if (/already exists/.test(m)) m += '\n\nTablica ili pogled već postoji u tvojoj kopiji baze. Dodaj DROP TABLE IF EXISTS naziv; (ili DROP VIEW IF EXISTS naziv;) ispred naredbe, ili vrati bazu na početno stanje.';
+      if (/FOREIGN KEY constraint failed/.test(m)) m += '\n\nNaredba krši ograničenje stranog ključa (slajd 41).';
+      showResult({ error: m });
+    }
+    renderSchema();
+  }
+
+  function check() {
+    if (!SQL) return;
+    const t = TASKS[cur], sql = $('sql').value.trim();
+    const fb = $('feedback');
+    $('expPanel').hidden = true;
+    if (!sql) { fb.hidden = false; fb.className = 'feedback err'; fb.textContent = 'Editor je prazan.'; return; }
+    saveDraft();
+    const r = evaluate(SQL, t, sql);
+    fb.hidden = false;
+    if (r.ok) {
+      fb.className = 'feedback ok';
+      fb.textContent = t.tests ? `Točno! Prošlo je svih ${t.tests.length} provjera.` : t.check ? 'Točno! Stanje baze nakon tvojih naredbi odgovara očekivanom.' : 'Točno! Rezultat odgovara očekivanom.';
+      if (!solved.has(t.id)) { solved.add(t.id); store.set('solved', [...solved]); renderNav(); }
+    } else {
+      fb.className = 'feedback err';
+      fb.textContent = r.msg + ' ';
+      if (t.tests) {
+        const b = document.createElement('button'); b.className = 'lnk'; b.textContent = 'Prikaži sve provjere';
+        b.addEventListener('click', () => {
+          $('expTitle').textContent = 'Provjere koje se izvode nakon tvojih naredbi';
+          $('expOut').textContent = t.tests.map((x, i) => `${i + 1}. ${x.expect ? 'rezultat' : x.ok ? 'prolazi ' : 'odbija se'}  ${x.sql}\n   ${x.why}`).join('\n');
+          $('expInfo').textContent = t.tests.length + ' provjera';
+          $('expPanel').hidden = false; b.remove();
+        });
+        fb.appendChild(b);
+      }
+      if (r.expected) {
+        const b = document.createElement('button'); b.className = 'lnk'; b.textContent = 'Prikaži očekivani rezultat';
+        b.addEventListener('click', () => {
+          $('expTitle').textContent = 'Očekivani rezultat';
+          $('expOut').textContent = ascii(r.expected);
+          $('expInfo').textContent = (t.check ? 'stanje nakon izmjene · ' : '') + r.expected.values.length + ' ' + plural(r.expected.values.length);
+          $('expPanel').hidden = false; b.remove();
+        });
+        fb.appendChild(b);
+      }
+    }
+  }
+
+  function hint() {
+    const t = TASKS[cur];
+    if (hintsShown >= t.hints.length) return;
+    const d = document.createElement('div'); d.className = 'hint';
+    d.innerHTML = `<b>Naputak ${hintsShown + 1}.</b>${esc(t.hints[hintsShown])}`;
+    $('hints').appendChild(d);
+    hintsShown++;
+    $('hintBtn').textContent = `Naputak (${hintsShown}/${t.hints.length})`;
+    if (hintsShown >= t.hints.length) {
+      $('hintBtn').disabled = true;
+      const m = document.createElement('div'); m.className = 'more';
+      m.innerHTML = `Još nije jasno? <a href="${NB_URL}" target="_blank" rel="noopener">Pitaj asistenta</a> i navedi oznaku zadatka (${t.id}).`;
+      $('hints').appendChild(m);
+    }
+  }
+
+  function solution() {
+    const p = $('solPanel');
+    p.hidden = !p.hidden;
+    $('solOut').textContent = TASKS[cur].sol;
+  }
+
+  function resetDb() {
+    if (db) db.close();
+    db = freshDb(SQL);
+    showResult({ message: 'Baza je vraćena na početno stanje.' });
+    renderSchema();
+  }
+
+  // Događaji
+  $('runBtn').addEventListener('click', run);
+  $('checkBtn').addEventListener('click', check);
+  $('hintBtn').addEventListener('click', hint);
+  $('solBtn').addEventListener('click', solution);
+  $('solCopy').addEventListener('click', () => { $('sql').value = TASKS[cur].sol; saveDraft(); $('sql').focus(); });
+  $('resetBtn').addEventListener('click', resetDb);
+  $('prevBtn').addEventListener('click', () => go(cur - 1));
+  $('nextBtn').addEventListener('click', () => go(cur + 1));
+  $('sql').addEventListener('input', () => saveDraft());
+  $('sql').addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); }
+    else if (e.key === 'Tab' && !e.shiftKey) {
+      e.preventDefault();
+      const ta = e.target, s = ta.selectionStart, en = ta.selectionEnd;
+      ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(en);
+      ta.selectionStart = ta.selectionEnd = s + 2;
+    }
+  });
+
+  renderSchema();
+  go(cur);
+
+  if (typeof initSqlJs !== 'function') {
+    showResult({ error: 'Biblioteka sql.js se nije učitala. Provjeri internetsku vezu i osvježi stranicu.' });
+    return;
+  }
+  initSqlJs().then(S => {
+    SQL = S; db = freshDb(SQL);
+    ['runBtn', 'checkBtn', 'resetBtn'].forEach(id => $(id).disabled = false);
+    const r = db.exec('SELECT * FROM nastavnik LIMIT 5;');
+    showResult(r[0], 'Pregled: prvih 5 redaka tablice nastavnik');
+    renderSchema();
+  }).catch(e => showResult({ error: 'Baza se nije mogla pokrenuti: ' + e.message }));
+})();
+</script>
+</body>
+</html>
