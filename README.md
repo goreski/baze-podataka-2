@@ -2,7 +2,7 @@
 
 Interaktivne SQL vježbe uz predavanja iz kolegija **Baze podataka II** (Fakultet informatike u Puli).
 
-Svaka vježbaonica je jedna samostalna HTML stranica. Baza podataka (SQLite, biblioteka [sql.js](https://github.com/sql-js/sql.js)) radi u pregledniku studenta, pa nije potreban nikakav poslužitelj.
+Svaka vježbaonica je jedna samostalna HTML stranica. Baza podataka (SQLite, biblioteka [sql.js](https://github.com/sql-js/sql.js)) radi u pregledniku studenta, pa nije potreban nikakav poslužitelj. Vježbaonica 04 uz to sadrži mali interpretator MySQL pohranjenih rutina (funkcije, procedure, kursori, rukovatelji, SIGNAL), pa se rutine pišu sintaksom sa slajdova.
 
 ## Vježbaonice
 
@@ -11,6 +11,7 @@ Svaka vježbaonica je jedna samostalna HTML stranica. Baza podataka (SQLite, bib
 | 01 | [Ponavljanje I: SQL jezik](01-ponavljanje-sql/) · [asistent](https://notebook.google.com/notebook/b4074a6c-5329-49c8-8565-5c3777267d4c) | 29 |
 | 02 | [Ponavljanje II: SQL DDL](02-ponavljanje-ddl/) · [asistent](https://notebook.google.com/notebook/6bf7da5d-018a-4929-9d2d-359e3d9baf5e) | 19 |
 | 03 | [SQL DDL II](03-sql-ddl-ii/) · [asistent](https://notebook.google.com/notebook/96041da4-927a-4210-b8b6-46f2dd6e5748) | 19 |
+| 04 | [SQL pohranjene procedure](04-pohranjene-procedure/) | 27 |
 
 ## Struktura
 
@@ -21,6 +22,8 @@ index.html                 početna stranica s popisom vježbaonica
 02-ponavljanje-ddl/
   index.html
 03-sql-ddl-ii/
+  index.html
+04-pohranjene-procedure/
   index.html
 .nojekyll                  GitHub Pages poslužuje datoteke bez obrade
 ```
