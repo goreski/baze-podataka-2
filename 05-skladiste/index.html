@@ -59,6 +59,12 @@ body { font: 16px/1.5 var(--f-body); }
 header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 6px 24px; }
 h1 { font: 600 clamp(26px, 3.4vw, 36px)/1.05 var(--f-display); margin: 0; letter-spacing: .005em; text-wrap: balance; }
 .sub { color: var(--muted); font-size: 14px; }
+.hright { display: grid; justify-items: end; gap: 8px; }
+@media (max-width: 700px) { .hright { justify-items: start; } }
+.ask { display: inline-flex; align-items: baseline; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 7px; padding: 6px 12px; font: 600 14px var(--f-body); text-decoration: none; }
+.ask:hover { border-color: var(--muted); }
+.ask:focus-visible { outline: 2px solid var(--cur-edge); outline-offset: 2px; }
+.ask small { color: var(--muted); font-weight: 400; font-size: 12px; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); }
 .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
 
@@ -114,7 +120,9 @@ main.grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1f
 .code .kw { color: var(--call); font-weight: 600; }
 .code .str { color: var(--chg-ink); }
 .code .cm { color: var(--muted); }
-.empty { padding: 18px 14px; color: var(--muted); font-size: 15px; }
+.empty { padding: 14px; color: var(--muted); font: 15px/1.55 var(--f-body); white-space: normal; }
+.empty code { font: 13px var(--f-mono); color: var(--ink); overflow-wrap: anywhere; }
+.empty a { color: var(--accent); }
 
 /* varijable */
 .vars { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; padding: 10px 14px 12px; }
@@ -162,9 +170,12 @@ details.stv[open] summary::after { content: " ▾"; }
       <h1>Skladište</h1>
       <div class="sub">Baze podataka II · Predavanje V. · zadatak sa slajdova 48–67: tri procedure izvedene redak po redak</div>
     </div>
+    <div class="hright">
+    <a class="ask" href="https://notebook.google.com/notebook/e4dcc377-d8b2-4585-a8c6-59bce7174ae6" target="_blank" rel="noopener">Pitaj asistenta ↗ <small>Gemini Notebook</small></a>
     <div class="legend" aria-hidden="true">
       <span><i style="background:var(--cur);border:1px solid var(--cur-edge)"></i>redak koji se izvodi</span>
       <span><i style="background:var(--chg)"></i>promijenjeno u ovom koraku</span>
+    </div>
     </div>
   </header>
 

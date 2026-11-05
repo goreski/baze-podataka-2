@@ -1491,7 +1491,7 @@ const SECTIONS = [
   { id: 'C', title: 'Selekcija i petlje', slides: '26–27' },
   { id: 'D', title: 'Kursori', slides: '29–34, 41–44' },
   { id: 'E', title: 'Iznimke i rukovatelji', slides: '36–40' },
-  { id: 'F', title: 'Zadatak: trgovina', slides: '48–67' },
+  { id: 'F', title: 'Zadatak: skladište', slides: '48–67' },
 ];
 
 const TASKS = [
@@ -1920,7 +1920,7 @@ END;`),
     ],
     hints: ['Rukovatelj može hvatati MySQL kod greške: DECLARE EXIT HANDLER FOR 1062 …', 'Kod 1062 je Duplicate entry, a 1452 je povreda stranog ključa.'] },
 
-  // F — zadatak trgovina
+  // F — zadatak skladište
   { id: 'F1', s: 'F', slide: 54, star: true, title: 'izdaj_narudzbenicu',
     text: "Napiši proceduru izdaj_narudzbenicu(IN sifra_proizvoda VARCHAR(6), IN kolicina INT, OUT status_narudzbe VARCHAR(100)) sa slajdova 54–55. Za nepostojeći proizvod status je 'Proizvod nije unesen u evidenciju!', za stanje 5 ili više 'Narudzba otkazana, stanje na skladistu dostatno!', a inače se upisuje narudžbenica i status je 'Narudzbenica stvorena'.",
     sol: 'DELIMITER //\n' + R_IZDAJ.replace(/END;$/, 'END //') + '\nDELIMITER ;',
