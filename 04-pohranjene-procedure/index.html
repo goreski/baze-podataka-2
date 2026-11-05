@@ -169,7 +169,7 @@ aside.schema { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px)
         <h2 id="tTitle">Prva funkcija: broj_kolegija</h2>
         <p class="text" id="tText"></p>
         <p class="note" id="tNote" hidden></p>
-        <p class="vizlink" id="tViz" hidden><a id="tVizA" href="trgovina/">Cijeli primjer korak po korak →</a> <span>kôd, varijable, kursor i tablice, redak po redak (slajdovi 53–66)</span></p>
+        <p class="vizlink" id="tViz" hidden><a id="tVizA" href="../05-skladiste/">Skladište: cijeli primjer korak po korak →</a> <span>kôd, varijable, kursor i tablice, redak po redak (slajdovi 53–66)</span></p>
       </section>
 
       <div class="editor">
@@ -2211,7 +2211,7 @@ function evaluate(SQL, task, studentSql) {
     $('tTitle').textContent = t.title;
     $('tText').textContent = t.text;
     $('tNote').hidden = !t.note; $('tNote').textContent = t.note || '';
-    $('tViz').hidden = t.s !== 'F'; $('tVizA').href = 'trgovina/#' + ({ F1: 'izdaj', F2: 'zaprimanje' }[t.id] || 'obradi');
+    $('tViz').hidden = t.s !== 'F'; $('tVizA').href = '../05-skladiste/#' + ({ F1: 'izdaj', F2: 'zaprimanje' }[t.id] || 'obradi');
     $('sql').value = store.get('draft:' + t.id, '');
     $('feedback').hidden = true; $('expPanel').hidden = true; $('solPanel').hidden = true;
     $('hints').innerHTML = '';

@@ -12,6 +12,7 @@ Svaka vježbaonica je jedna samostalna HTML stranica. Baza podataka (SQLite, bib
 | 02 | [Ponavljanje II: SQL DDL](02-ponavljanje-ddl/) · [asistent](https://notebook.google.com/notebook/6bf7da5d-018a-4929-9d2d-359e3d9baf5e) | 19 |
 | 03 | [SQL DDL II](03-sql-ddl-ii/) · [asistent](https://notebook.google.com/notebook/96041da4-927a-4210-b8b6-46f2dd6e5748) | 19 |
 | 04 | [SQL pohranjene procedure](04-pohranjene-procedure/) · [asistent](https://notebook.google.com/notebook/e4dcc377-d8b2-4585-a8c6-59bce7174ae6) | 27 |
+| 05 | [Skladište](05-skladiste/) (vizualizacija zadatka) · [asistent](https://notebook.google.com/notebook/e4dcc377-d8b2-4585-a8c6-59bce7174ae6) | – |
 
 ## Struktura
 
@@ -25,7 +26,8 @@ index.html                 početna stranica s popisom vježbaonica
   index.html
 04-pohranjene-procedure/
   index.html
-  trgovina/index.html     vizualizacija zadatka sa slajdova 53–66
+05-skladiste/
+  index.html             vizualizacija zadatka sa slajdova 48–67
 .nojekyll                  GitHub Pages poslužuje datoteke bez obrade
 ```
 
