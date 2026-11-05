@@ -45,6 +45,9 @@ header.top h1 { font-size: 24px; letter-spacing: .01em; }
 header.top .sub { color: var(--muted); font-size: 13px; }
 .ask { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r); padding: 6px 12px; font-size: 13px; font-weight: 500; text-decoration: none; }
 .ask:hover { border-color: var(--muted); }
+.vizlink { margin: 10px 0 0; font-size: 14px; display: flex; flex-wrap: wrap; gap: 2px 8px; }
+.vizlink a { font-weight: 600; color: var(--navy); }
+.vizlink span { color: var(--muted); }
 .ask small { color: var(--muted); font-weight: 400; }
 .hints .more { font-size: 13px; color: var(--muted); }
 .hints .more a { color: var(--navy); }
@@ -166,6 +169,7 @@ aside.schema { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px)
         <h2 id="tTitle">Prva funkcija: broj_kolegija</h2>
         <p class="text" id="tText"></p>
         <p class="note" id="tNote" hidden></p>
+        <p class="vizlink" id="tViz" hidden><a id="tVizA" href="trgovina/">Cijeli primjer korak po korak →</a> <span>kôd, varijable, kursor i tablice, redak po redak (slajdovi 53–66)</span></p>
       </section>
 
       <div class="editor">
@@ -2207,6 +2211,7 @@ function evaluate(SQL, task, studentSql) {
     $('tTitle').textContent = t.title;
     $('tText').textContent = t.text;
     $('tNote').hidden = !t.note; $('tNote').textContent = t.note || '';
+    $('tViz').hidden = t.s !== 'F'; $('tVizA').href = 'trgovina/#' + ({ F1: 'izdaj', F2: 'zaprimanje' }[t.id] || 'obradi');
     $('sql').value = store.get('draft:' + t.id, '');
     $('feedback').hidden = true; $('expPanel').hidden = true; $('solPanel').hidden = true;
     $('hints').innerHTML = '';

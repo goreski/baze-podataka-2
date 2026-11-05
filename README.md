@@ -25,6 +25,7 @@ index.html                 početna stranica s popisom vježbaonica
   index.html
 04-pohranjene-procedure/
   index.html
+  trgovina/index.html     vizualizacija zadatka sa slajdova 53–66
 .nojekyll                  GitHub Pages poslužuje datoteke bez obrade
 ```
 
