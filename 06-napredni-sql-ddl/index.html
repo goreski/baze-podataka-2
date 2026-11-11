@@ -1,0 +1,2486 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Napredni SQL DDL BP2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: zaglavlje s napretkom; ispod tri stupca — popis zadataka | radna ploča (zadatak, editor, rezultat) | shema baze. Uži ekrani slažu stupce jedan ispod drugog. */
+:root {
+  --bg: #f4f6f8; --surface: #ffffff; --ink: #18212d; --muted: #586474; --line: #dbe1e8;
+  --code-bg: #eef2f6; --navy: #1f3b63; --olive: #765a00; --olive-bg: #f7f0dc;
+  --ok: #23704a; --ok-bg: #e3f3ea; --err: #a8261d; --err-bg: #fbe7e5; --focus: #3b6fd8;
+  --f-body: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --f-head: "IBM Plex Sans Condensed", "Arial Narrow", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", "Courier New", monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #10151c; --surface: #171f29; --ink: #e3e8ee; --muted: #9aa6b5; --line: #2a3443;
+  --code-bg: #0c1117; --navy: #a9c6f5; --olive: #e2bb5c; --olive-bg: #2a2412;
+  --ok: #73cf9b; --ok-bg: #12291d; --err: #ff8f84; --err-bg: #331412; --focus: #8fb4ff; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #10151c; --surface: #171f29; --ink: #e3e8ee; --muted: #9aa6b5; --line: #2a3443;
+  --code-bg: #0c1117; --navy: #a9c6f5; --olive: #e2bb5c; --olive-bg: #2a2412;
+  --ok: #73cf9b; --ok-bg: #12291d; --err: #ff8f84; --err-bg: #331412; --focus: #8fb4ff; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+.back { display: inline-block; font-size: 13px; color: var(--muted); text-decoration: none; margin-bottom: 4px; }
+.back:hover { color: var(--ink); text-decoration: underline; }
+html, body { background: var(--bg); color: var(--ink); }
+body { font: 15px/1.55 var(--f-body); }
+.wrap { max-width: 1440px; margin: 0 auto; padding-inline: 20px; padding-block: 0 40px; }
+h1, h2, h3 { font-family: var(--f-head); font-weight: 600; text-wrap: balance; margin: 0; }
+code, pre, textarea, .mono { font-family: var(--f-mono); }
+button { font: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding-block: 18px 16px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+header.top h1 { font-size: 24px; letter-spacing: .01em; }
+header.top .sub { color: var(--muted); font-size: 13px; }
+.ask { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r); padding: 6px 12px; font-size: 13px; font-weight: 500; text-decoration: none; }
+.ask:hover { border-color: var(--muted); }
+.vizlink { margin: 10px 0 0; font-size: 14px; display: flex; flex-wrap: wrap; gap: 2px 8px; }
+.vizlink a { font-weight: 600; color: var(--navy); }
+.vizlink span { color: var(--muted); }
+.ask small { color: var(--muted); font-weight: 400; }
+.hints .more { font-size: 13px; color: var(--muted); }
+.hints .more a { color: var(--navy); }
+.progress { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { width: 140px; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--ok); width: 0; transition: width .3s; }
+
+.grid { display: grid; grid-template-columns: 250px minmax(0, 1fr) 290px; gap: 20px; align-items: start; }
+@media (max-width: 1180px) { .grid { grid-template-columns: 230px minmax(0, 1fr); } aside.schema { grid-column: 1 / -1; } }
+@media (max-width: 780px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Popis zadataka */
+nav.tasks { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); max-height: calc(100vh - 24px); overflow: auto; padding-right: 4px; }
+@media (max-width: 780px) { nav.tasks { position: static; max-height: none; } }
+.sec { margin-bottom: 14px; }
+.sec h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 8px; }
+.sec h3 span { font-family: var(--f-body); text-transform: none; letter-spacing: 0; font-weight: 400; }
+.sec ul { list-style: none; margin: 0; padding: 0; }
+@media (max-width: 780px) { .sec ul { display: flex; flex-wrap: wrap; gap: 6px; } }
+.tbtn { width: 100%; display: flex; align-items: baseline; gap: 8px; text-align: left; background: none; border: 0; border-radius: var(--r); padding: 5px 8px; color: var(--ink); }
+.tbtn:hover { background: var(--surface); }
+.tbtn[aria-current="true"] { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-weight: 500; }
+.tbtn .tid { font-family: var(--f-mono); font-size: 12px; color: var(--muted); min-width: 22px; }
+.tbtn .dot { margin-left: auto; width: 16px; text-align: center; color: var(--ok); font-weight: 600; }
+@media (max-width: 780px) { .tbtn { width: auto; border: 1px solid var(--line); padding: 4px 8px; } .tbtn .ttl { display: none; } .tbtn .dot { margin-left: 0; width: auto; } }
+
+/* Radna ploča */
+main.work { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.task { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; }
+.meta { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.task h2 { font-size: 22px; margin: 4px 0 8px; }
+.task .text { color: var(--olive); font-style: italic; font-size: 16px; margin: 0; max-width: 70ch; }
+.task .note { margin: 10px 0 0; font-size: 13px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px; max-width: 75ch; }
+
+.editor { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.editor textarea { display: block; width: 100%; min-height: 150px; resize: vertical; border: 0; padding: 14px 16px; background: var(--code-bg); color: var(--navy); font-size: 14px; line-height: 1.6; font-weight: 600; tab-size: 2; }
+.editor textarea::placeholder { color: var(--muted); font-weight: 400; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--line); }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r); padding: 6px 14px; font-weight: 500; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--navy); color: var(--surface); border-color: var(--navy); }
+.btn.check { background: var(--ok); color: var(--surface); border-color: var(--ok); }
+.btn:disabled { opacity: .5; cursor: default; }
+.kbd { font-size: 12px; color: var(--muted); margin-left: auto; }
+@media (max-width: 520px) { .kbd { display: none; } }
+
+.feedback { border-radius: var(--r); padding: 10px 14px; font-weight: 500; }
+.feedback.ok { background: var(--ok-bg); color: var(--ok); }
+.feedback.err { background: var(--err-bg); color: var(--err); }
+.feedback .lnk { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; font-weight: 400; margin-left: 6px; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.panel > .ph { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 9px 14px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.panel > .ph b { color: var(--ink); font-weight: 600; }
+.out { margin: 0; padding: 12px 14px; overflow-x: auto; font-size: 13px; line-height: 1.45; color: var(--ink); white-space: pre; }
+.out.msg { white-space: pre-wrap; font-family: var(--f-body); color: var(--muted); }
+.out.error { white-space: pre-wrap; color: var(--err); }
+
+.hints { display: flex; flex-direction: column; gap: 8px; }
+.hint { background: var(--olive-bg); border-radius: var(--r); padding: 9px 14px; font-size: 14px; }
+.hint b { font-family: var(--f-head); margin-right: 6px; }
+.solution pre { margin: 0; padding: 12px 14px; background: var(--code-bg); color: var(--navy); font-weight: 600; overflow-x: auto; font-size: 13.5px; }
+.solution .toolbar { border-top: 1px solid var(--line); }
+
+.pager { display: flex; justify-content: space-between; gap: 10px; }
+
+/* Shema */
+aside.schema { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+@media (max-width: 1180px) { aside.schema { position: static; } }
+.schema .panel { padding-bottom: 6px; }
+.tbl { padding: 10px 14px 6px; }
+.tbl + .tbl { border-top: 1px dashed var(--line); }
+.tbl h4 { margin: 0 0 4px; font: 600 14px var(--f-mono); color: var(--navy); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.tbl h4 button { font: 12px var(--f-body); background: none; border: 0; color: var(--muted); text-decoration: underline; padding: 0; }
+.tbl ul { list-style: none; margin: 0; padding: 0; font: 12.5px/1.6 var(--f-mono); }
+.tbl li { display: flex; justify-content: space-between; gap: 8px; }
+.tbl li span:last-child { color: var(--muted); }
+.tbl li.pk span:first-child { text-decoration: underline; }
+.tbl h4 em { font: italic 11px var(--f-body); color: var(--olive); margin-right: auto; margin-left: 6px; }
+.tbl.new { background: var(--olive-bg); }
+#expOut { white-space: pre-wrap; }
+.rut { padding: 10px 14px 8px; border-top: 1px solid var(--line); }
+.rut h5 { margin: 0 0 6px; font: 600 12px var(--f-body); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.rut ul { list-style: none; margin: 0; padding: 0; }
+.rut li { font: 12.5px/1.5 var(--f-mono); padding: 3px 0; display: flex; gap: 8px; align-items: baseline; }
+.rut li b { color: var(--navy); font-weight: 600; }
+.rut li .k { font: 10.5px var(--f-body); text-transform: uppercase; letter-spacing: .04em; color: var(--olive); min-width: 30px; }
+.rut li .sg { color: var(--muted); flex: 1; min-width: 0; overflow-wrap: break-word; }
+.rut li button { font: 12px var(--f-body); background: none; border: 0; color: var(--muted); text-decoration: underline; padding: 0; cursor: pointer; }
+.rut .empty { font-size: 12.5px; color: var(--muted); }
+.rut h5.h2 { margin-top: 12px; }
+.schema .foot { padding: 8px 14px 4px; font-size: 12.5px; color: var(--muted); }
+.schema .foot .btn { margin-top: 8px; width: 100%; }
+
+.loading { padding: 40px 0; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <a class="back" href="../">← Sve vježbaonice</a>
+      <h1>SQL vježbaonica</h1>
+      <div class="sub">Baze podataka II · Predavanje VI.: Napredni SQL DDL (trigeri, materijalizirani pogledi, autorizacija) · FIPU</div>
+    </div>
+    <a class="ask" id="askLink" href="NB_URL_06" target="_blank" rel="noopener">Pitaj asistenta ↗ <small>Gemini Notebook</small></a>
+    <div class="progress" aria-live="polite">
+      <span id="progTxt">0 / 25 riješeno</span>
+      <div class="bar" aria-hidden="true"><i id="progBar"></i></div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <nav class="tasks" id="taskNav" aria-label="Zadaci"></nav>
+
+    <main class="work" id="work">
+      <section class="task" aria-labelledby="tTitle">
+        <div class="meta"><span id="tMeta">A1 · Trigeri</span><span id="tSlide">slajd 9</span></div>
+        <h2 id="tTitle">Triger koji vodi dnevnik promjena</h2>
+        <p class="text" id="tText"></p>
+        <p class="note" id="tNote" hidden></p>
+      </section>
+
+      <div class="editor">
+        <label for="sql" style="position:absolute;left:-9999px">SQL naredbe</label>
+        <textarea id="sql" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="-- ovdje napiši svoje naredbe (MySQL sintaksa), npr.&#10;CREATE TRIGGER ime BEFORE UPDATE ON racun&#10;FOR EACH ROW&#10;BEGIN&#10;  …&#10;END;&#10;UPDATE racun SET saldo = saldo - 100 WHERE broj_racuna = 'A-101';"></textarea>
+        <div class="toolbar">
+          <button class="btn primary" id="runBtn" disabled>Izvrši</button>
+          <button class="btn check" id="checkBtn" disabled>Provjeri rješenje</button>
+          <button class="btn" id="hintBtn">Naputak</button>
+          <button class="btn" id="solBtn">Rješenje</button>
+          <span class="kbd">Ctrl + Enter izvršava naredbe</span>
+        </div>
+      </div>
+
+      <div class="feedback" id="feedback" hidden></div>
+      <div class="panel" id="expPanel" hidden>
+        <div class="ph"><b id="expTitle">Očekivani rezultat</b><span id="expInfo"></span></div>
+        <pre class="out" id="expOut"></pre>
+      </div>
+
+      <div class="hints" id="hints"></div>
+
+      <div class="panel solution" id="solPanel" hidden>
+        <div class="ph"><b>Referentno rješenje</b><span>prihvaća se svako rješenje koje prolazi iste provjere</span></div>
+        <pre id="solOut"></pre>
+        <div class="toolbar"><button class="btn" id="solCopy">Prepiši u editor</button></div>
+      </div>
+
+      <div class="panel">
+        <div class="ph"><b id="resTitle">Rezultat</b><span id="resInfo"></span></div>
+        <pre class="out msg" id="resOut">Učitavam bazu podataka…</pre>
+      </div>
+
+      <div class="pager">
+        <button class="btn" id="prevBtn">← Prethodni</button>
+        <button class="btn" id="nextBtn">Sljedeći →</button>
+      </div>
+    </main>
+
+    <aside class="schema" aria-label="Shema baze">
+      <div class="panel">
+        <div class="ph"><b>Shema baze</b><span>baza unipu</span></div>
+        <div id="schemaList"></div>
+        <div class="rut" id="rutList"></div>
+        <div class="foot">
+          Naredbe u editoru mijenjaju tvoju kopiju baze. Stvoreni trigeri, procedure i korisnici ostaju u njoj i djeluju na sljedeće naredbe. Provjera rješenja uvijek radi na izvornim podacima.
+          <button class="btn" id="resetBtn" disabled>Vrati bazu na početno stanje</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-asm.js"></script>
+<script>
+// MSP – mali interpreter MySQL pohranjenih rutina (funkcije, procedure, kursori,
+// rukovatelji, SIGNAL) nad SQLite bazom iz sql.js. Proceduralni dio izvodi se u JS-u,
+// a svaki SQL izraz i upit izvodi SQLite. Cilj: sintaksa sa slajdova radi u pregledniku.
+var MSP = (function () {
+  'use strict';
+
+  // ---------- greške / stanja (conditions) ----------
+  class Cond extends Error {
+    constructor(errno, sqlstate, text) {
+      super(`ERROR ${errno} (${sqlstate}): ${text}`);
+      this.errno = errno; this.sqlstate = sqlstate; this.text = text;
+    }
+    get cls() { const c = this.sqlstate.slice(0, 2); return c === '01' ? 'warning' : c === '02' ? 'notfound' : 'exception'; }
+    toString() { return this.message; }
+  }
+  const E = (errno, state, text) => new Cond(errno, state, text);
+  const SYNTAX = near => E(1064, '42000', `You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '${String(near).slice(0, 60)}'`);
+  class Leave { constructor(l) { this.label = l; } }
+  class Iterate { constructor(l) { this.label = l; } }
+  class Ret { constructor(v) { this.value = v; } }
+  class ExitTo { constructor(f) { this.frame = f; } }
+
+  // ---------- tokenizer ----------
+  const WORD0 = /[A-Za-z_\u00C0-\uFFFF$]/, WORD = /[A-Za-z0-9_\u00C0-\uFFFF$]/;
+  const OPS = ['<=>', '<=', '>=', '<>', '!=', ':=', '||', '&&', '<<', '>>'];
+  function tokenize(s) {
+    const T = []; let i = 0; const n = s.length;
+    while (i < n) {
+      const c = s[i], st = i;
+      if (/\s/.test(c)) { while (i < n && /\s/.test(s[i])) i++; T.push({ t: 'ws', v: s.slice(st, i), p: st }); continue; }
+      if ((c === '-' && s[i + 1] === '-') || c === '#') { while (i < n && s[i] !== '\n') i++; T.push({ t: 'ws', v: s.slice(st, i), p: st }); continue; }
+      if (c === '/' && s[i + 1] === '*') { const e = s.indexOf('*/', i + 2); i = e < 0 ? n : e + 2; T.push({ t: 'ws', v: s.slice(st, i), p: st }); continue; }
+      if (c === "'" || c === '"') {
+        i++; let val = '';
+        while (i < n) {
+          if (s[i] === '\\' && i + 1 < n) { const m = { n: '\n', t: '\t', r: '\r', '0': '\0' }[s[i + 1]]; val += m !== undefined ? m : s[i + 1]; i += 2; continue; }
+          if (s[i] === c) { if (s[i + 1] === c) { val += c; i += 2; continue; } i++; break; }
+          val += s[i++];
+        }
+        T.push({ t: 'str', v: s.slice(st, i), val, p: st }); continue;
+      }
+      if (c === '`') { const e = s.indexOf('`', i + 1); i = e < 0 ? n : e + 1; const nm = s.slice(st + 1, i - 1); T.push({ t: 'w', v: s.slice(st, i), name: nm, u: nm.toUpperCase(), q: true, p: st }); continue; }
+      if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(s[i + 1] || ''))) {
+        const m = /^(\d*\.?\d+(?:[eE][+-]?\d+)?|\d+\.)/.exec(s.slice(i)); i += m[0].length;
+        T.push({ t: 'num', v: m[0], p: st }); continue;
+      }
+      if (c === '@') {
+        let j = i + 1; if (s[j] === '@') j++;
+        if (s[j] === "'" || s[j] === '"' || s[j] === '`') { const q = s[j]; const e = s.indexOf(q, j + 1); const nm = s.slice(j + 1, e < 0 ? n : e); i = e < 0 ? n : e + 1; T.push({ t: 'var', v: s.slice(st, i), name: nm, sys: j > i + 1, p: st }); continue; }
+        while (j < n && /[A-Za-z0-9_$.\u00C0-\uFFFF]/.test(s[j])) j++;
+        const sys = s[i + 1] === '@'; T.push({ t: 'var', v: s.slice(st, j), name: s.slice(i + (sys ? 2 : 1), j), sys, p: st }); i = j; continue;
+      }
+      if (WORD0.test(c)) { while (i < n && WORD.test(s[i])) i++; const v = s.slice(st, i); T.push({ t: 'w', v, name: v, u: v.toUpperCase(), p: st }); continue; }
+      const op = OPS.find(o => s.startsWith(o, i)) || c; i += op.length;
+      T.push({ t: 'op', v: op, p: st });
+    }
+    return T;
+  }
+  const sig = T => T.filter(t => t.t !== 'ws');
+  const isW = (t, U) => t && t.t === 'w' && !t.q && (U === undefined || (Array.isArray(U) ? U.includes(t.u) : t.u === U));
+  const isOp = (t, v) => t && t.t === 'op' && t.v === v;
+
+  // spajanje tokena natrag u tekst (za nazive stupaca i poruke)
+  function join(toks) {
+    let out = '';
+    toks.forEach((t, i) => {
+      const p = toks[i - 1];
+      let sp = i > 0;
+      if (p && (isOp(p, '(') || isOp(p, '.') || isOp(p, '@'))) sp = false;
+      if (isOp(t, ')') || isOp(t, ',') || isOp(t, '.') || isOp(t, ';')) sp = false;
+      if (isOp(t, '(') && p && (p.t === 'w' && !isW(p, ['IN', 'AND', 'OR', 'NOT', 'VALUES', 'AS', 'FROM', 'JOIN', 'ON', 'WHERE', 'EXISTS', 'SELECT', 'THEN', 'ELSE', 'WHEN', 'RETURN', 'BY', 'INTO', 'TABLE', 'SET', 'IF', 'WHILE', 'UNTIL', 'USING']) || p.t === 'var')) sp = false;
+      out += (sp ? ' ' : '') + t.v;
+    });
+    return out;
+  }
+
+  // ---------- dijeljenje skripte na naredbe (DELIMITER i BEGIN … END) ----------
+  function splitScript(src) {
+    const stmts = []; let delim = ';';
+    const lines = src.split('\n'); let buf = '';
+    const flush = (final) => {
+      if (delim === ';') {
+        const parts = splitSemicolon(buf, final); buf = parts.rest; parts.stmts.forEach(s => stmts.push(s));
+      } else {
+        let k;
+        while ((k = indexOutside(buf, delim)) >= 0) { stmts.push(buf.slice(0, k)); buf = buf.slice(k + delim.length); }
+        if (final && buf.trim()) { stmts.push(buf); buf = ''; }
+      }
+    };
+    for (const line of lines) {
+      const m = /^\s*DELIMITER\s+(\S+)\s*$/i.exec(line);
+      if (m) { flush(true); if (buf.trim()) { stmts.push(buf); } buf = ''; delim = m[1]; continue; }
+      buf += line + '\n';
+    }
+    flush(true);
+    return stmts.map(s => s.trim()).filter(s => sig(tokenize(s)).length);
+  }
+  function indexOutside(s, d) {
+    let flat = '';
+    for (const t of tokenize(s)) flat += (t.t === 'str' || (t.t === 'ws' && !/^\s+$/.test(t.v))) ? '\u0001'.repeat(t.v.length) : t.v;
+    return flat.indexOf(d);
+  }
+  function splitSemicolon(s, final) {
+    const T = tokenize(s), out = []; let start = 0, depth = 0, routine = false, first = true, firstWords = [];
+    const S = T.filter(t => t.t !== 'ws');
+    for (let i = 0; i < T.length; i++) {
+      const t = T[i];
+      if (t.t === 'ws' || t.t === 'str') continue;
+      if (first && t.t === 'w') { firstWords.push(t.u); if (firstWords.length >= 1) { } }
+      if (t.t === 'w' && firstWords.length <= 6 && firstWords[0] === 'CREATE' && ['FUNCTION', 'PROCEDURE', 'TRIGGER', 'EVENT'].includes(t.u)) routine = true;
+      if (routine && t.t === 'w' && !t.q) {
+        const pv = prevSig(T, i);
+        const atStart = pv && (isOp(pv, ';') || isOp(pv, ':') || isW(pv, ['BEGIN', 'THEN', 'ELSE', 'DO', 'ROW', 'REPEAT', 'LOOP']));
+        if (t.u === 'BEGIN') depth++;
+        else if (t.u === 'CASE' && !(pv && isW(pv, 'END'))) depth++;
+        else if (['IF', 'WHILE', 'LOOP', 'REPEAT'].includes(t.u) && atStart) depth++;
+        else if (t.u === 'END') depth = Math.max(0, depth - 1);
+      }
+      if (isOp(t, ';') && depth === 0) {
+        out.push(s.slice(start, t.p)); start = t.p + 1; routine = false; firstWords = []; continue;
+      }
+    }
+    const rest = s.slice(start);
+    if (final && rest.trim()) { out.push(rest); return { stmts: out, rest: '' }; }
+    return { stmts: out, rest };
+  }
+  function nextSig(T, i) { for (let j = i + 1; j < T.length; j++) if (T[j].t !== 'ws') return T[j]; return null; }
+  function prevSig(T, i) { for (let j = i - 1; j >= 0; j--) if (T[j].t !== 'ws') return T[j]; return null; }
+
+  // ---------- parser proceduralnog dijela ----------
+  class P {
+    constructor(toks, src) { this.t = toks; this.i = 0; this.src = src; }
+    peek(k = 0) { return this.t[this.i + k]; }
+    eof() { return this.i >= this.t.length; }
+    next() { return this.t[this.i++]; }
+    isW(U, k = 0) { return isW(this.peek(k), U); }
+    acc(U) { if (this.isW(U)) { return this.next(); } return null; }
+    accOp(v) { if (isOp(this.peek(), v)) return this.next(); return null; }
+    exp(U) { const t = this.next(); if (!isW(t, U)) throw SYNTAX(t ? this.rest(t) : ''); return t; }
+    expOp(v) { const t = this.next(); if (!isOp(t, v)) throw SYNTAX(t ? this.rest(t) : ''); return t; }
+    rest(t) { return t ? this.src.slice(t.p).replace(/\s+/g, ' ') : ''; }
+    name() { const t = this.next(); if (!t || t.t !== 'w') throw SYNTAX(this.rest(t)); return t.name; }
+    // izraz do zaustavne riječi na dubini 0 (zagrade i CASE … END)
+    expr(stops) {
+      const out = []; let d = 0, cd = 0;
+      while (!this.eof()) {
+        const t = this.peek();
+        if (d === 0 && cd === 0 && (isOp(t, ';') || (isW(t) && stops.includes(t.u)) || (stops.includes(',') && isOp(t, ',')))) break;
+        if (isOp(t, '(')) d++; else if (isOp(t, ')')) { if (d === 0) break; d--; }
+        else if (isW(t, 'CASE')) cd++; else if (isW(t, 'END') && cd > 0) cd--;
+        out.push(this.next());
+      }
+      if (!out.length) throw SYNTAX(this.rest(this.peek()));
+      return out;
+    }
+  }
+
+  const TYPE_WORDS = ['UNSIGNED', 'SIGNED', 'ZEROFILL', 'PRECISION', 'VARYING'];
+  function parseType(p) {
+    const w = p.next(); if (!w || w.t !== 'w') throw SYNTAX(p.rest(w));
+    let name = w.u, args = [];
+    if (name === 'DOUBLE' && p.isW('PRECISION')) p.next();
+    if (name === 'CHARACTER' && p.isW('VARYING')) { p.next(); name = 'VARCHAR'; }
+    if (p.accOp('(')) { while (!p.accOp(')')) { const a = p.next(); if (a.t === 'num') args.push(+a.v); else if (a.t === 'str') args.push(a.val); } }
+    while (p.isW(TYPE_WORDS)) p.next();
+    if (p.isW('CHARACTER') && p.isW('SET', 1)) { p.next(); p.next(); p.next(); }
+    if (p.isW('CHARSET')) { p.next(); p.next(); }
+    if (p.isW('COLLATE')) { p.next(); p.next(); }
+    const txt = w.v.toUpperCase() + (args.length ? '(' + args.join(',') + ')' : '');
+    return { name, args, txt };
+  }
+  const INT_T = ['INT', 'INTEGER', 'BIGINT', 'SMALLINT', 'TINYINT', 'MEDIUMINT', 'BOOL', 'BOOLEAN', 'BIT', 'SERIAL', 'YEAR'];
+  const DEC_T = ['DECIMAL', 'NUMERIC', 'DEC', 'FIXED'];
+  const FLT_T = ['FLOAT', 'DOUBLE', 'REAL'];
+  function coerce(v, type) {
+    if (v === null || v === undefined || !type) return v === undefined ? null : v;
+    const n = type.name;
+    const toNum = x => {
+      if (typeof x === 'number') return x;
+      if (typeof x === 'string') { const m = /^\s*[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?/i.exec(x); if (!m) { if (x.trim() === '') return 0; throw E(1366, 'HY000', `Incorrect ${INT_T.includes(n) ? 'integer' : 'decimal'} value: '${x}'`); } return parseFloat(m[0]); }
+      return Number(x);
+    };
+    if (INT_T.includes(n)) { const x = toNum(v); return x < 0 ? -Math.round(-x) : Math.round(x); }
+    if (DEC_T.includes(n)) { const s = type.args.length > 1 ? type.args[1] : 0; const f = Math.pow(10, s); const x = toNum(v); return Math.round((x + (x >= 0 ? 1e-9 : -1e-9)) * f) / f; }
+    if (FLT_T.includes(n)) return toNum(v);
+    if (['CHAR', 'VARCHAR', 'TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'ENUM', 'SET'].includes(n)) {
+      let s = typeof v === 'number' ? fmtNum(v) : String(v);
+      if (type.args.length && typeof type.args[0] === 'number' && s.length > type.args[0]) throw E(1406, '22001', `Data too long for column '${type.var || 'value'}' at row 1`);
+      return s;
+    }
+    return v;
+  }
+  function fmtNum(v) { return Number.isInteger(v) ? String(v) : String(Number(v.toFixed(10))); }
+
+  function parseRoutine(stmtToks, src) {
+    const p = new P(stmtToks, src);
+    p.exp('CREATE');
+    if (p.isW('OR')) throw E(1064, '42000', "MySQL nema CREATE OR REPLACE za funkcije i procedure. Upotrijebi DROP FUNCTION IF EXISTS / DROP PROCEDURE IF EXISTS pa CREATE.");
+    if (p.acc('DEFINER')) { p.expOp('='); p.next(); if (p.peek() && p.peek().t === 'var') p.next(); if (isOp(p.peek(), '(')) { p.next(); p.expOp(')'); } }
+    const kind = p.next().u; // FUNCTION / PROCEDURE
+    let ifNotExists = false;
+    if (p.isW('IF')) { p.next(); p.exp('NOT'); p.exp('EXISTS'); ifNotExists = true; }
+    const name = p.name();
+    if (isOp(p.peek(), '.')) { p.next(); p.name(); }
+    p.expOp('(');
+    const params = [];
+    if (!p.accOp(')')) {
+      do {
+        let mode = 'IN';
+        if (p.isW(['IN', 'OUT', 'INOUT'])) { if (kind === 'FUNCTION') throw SYNTAX(p.rest(p.peek())); mode = p.next().u; }
+        const pn = p.name(); const type = parseType(p);
+        params.push({ name: pn, mode, type });
+      } while (p.accOp(','));
+      p.expOp(')');
+    }
+    let returns = null;
+    if (kind === 'FUNCTION') { p.exp('RETURNS'); returns = parseType(p); }
+    const ch = {};
+    for (;;) {
+      if (p.acc('COMMENT')) { p.next(); continue; }
+      if (p.acc('LANGUAGE')) { p.exp('SQL'); continue; }
+      if (p.isW('NOT') && p.isW('DETERMINISTIC', 1)) { p.next(); p.next(); ch.det = false; continue; }
+      if (p.acc('DETERMINISTIC')) { ch.det = true; continue; }
+      if (p.acc('CONTAINS')) { p.exp('SQL'); ch.data = 'CONTAINS SQL'; continue; }
+      if (p.isW('NO') && p.isW('SQL', 1)) { p.next(); p.next(); ch.data = 'NO SQL'; continue; }
+      if (p.acc('READS')) { p.exp('SQL'); p.exp('DATA'); ch.data = 'READS SQL DATA'; continue; }
+      if (p.acc('MODIFIES')) { p.exp('SQL'); p.exp('DATA'); ch.data = 'MODIFIES SQL DATA'; continue; }
+      if (p.acc('SQL')) { p.exp('SECURITY'); p.next(); continue; }
+      break;
+    }
+    if (p.eof()) throw SYNTAX('');
+    const body = parseStmt(p, { kind });
+    if (!p.eof()) throw SYNTAX(p.rest(p.peek()));
+    const r = { kind, name, params, returns, ch, body, ifNotExists, src };
+    validate(r);
+    return r;
+  }
+
+  const LIST_END = ['END', 'ELSE', 'ELSEIF', 'UNTIL', 'WHEN'];
+  function parseList(p, cx) {
+    const list = [];
+    while (!p.eof() && !(p.isW(LIST_END) && !isOp(p.peek(1), ':'))) {
+      list.push(parseStmt(p, cx));
+      if (!p.accOp(';')) throw SYNTAX(p.eof() ? 'END' : p.rest(p.peek()));
+    }
+    return list;
+  }
+
+  function parseStmt(p, cx) {
+    const t = p.peek();
+    if (!t) throw SYNTAX('');
+    let label = null;
+    if (t.t === 'w' && isOp(p.peek(1), ':') && isW(p.peek(2), ['BEGIN', 'LOOP', 'WHILE', 'REPEAT'])) { label = t.name; p.next(); p.next(); }
+    const k = p.peek(), U = k.t === 'w' && !k.q ? k.u : '';
+    const endLabel = () => { if (p.peek() && p.peek().t === 'w' && !isOp(p.peek(), ';') && !p.isW(LIST_END)) { const l = p.name(); if (!label || l.toLowerCase() !== label.toLowerCase()) throw E(1310, '42000', `End-label ${l} without match`); } };
+    switch (U) {
+      case 'BEGIN': {
+        p.next(); if (p.isW('NOT')) { p.next(); p.exp('ATOMIC'); }
+        const stmts = parseList(p, cx); p.exp('END'); endLabel();
+        return { type: 'block', label, stmts, at: k };
+      }
+      case 'DECLARE': return parseDeclare(p, cx);
+      case 'SET': {
+        p.next(); const items = [];
+        do {
+          let tt = p.next(), target;
+          if (isW(tt, ['SESSION', 'GLOBAL', 'LOCAL'])) tt = p.next();
+          if (tt.t === 'var') target = { sess: !tt.sys, sys: tt.sys, name: tt.name };
+          else if (tt.t === 'w' && isOp(p.peek(), '.') && isW(tt, ['NEW', 'OLD'])) { p.next(); const c = p.next(); if (!c || c.t !== 'w') throw SYNTAX(p.rest(c)); target = { row: tt.u, col: c.name }; }
+          else if (tt.t === 'w') target = { name: tt.name };
+          else throw SYNTAX(p.rest(tt));
+          if (!p.accOp('=') && !p.accOp(':=')) throw SYNTAX(p.rest(p.peek()));
+          items.push({ target, expr: p.expr([',']) , at: tt });
+        } while (p.accOp(','));
+        return { type: 'set', items, at: k };
+      }
+      case 'IF': {
+        p.next(); const branches = [];
+        let cond = p.expr(['THEN']); p.exp('THEN'); branches.push({ cond, body: parseList(p, cx) });
+        while (p.acc('ELSEIF')) { cond = p.expr(['THEN']); p.exp('THEN'); branches.push({ cond, body: parseList(p, cx) }); }
+        let els = null; if (p.acc('ELSE')) els = parseList(p, cx);
+        p.exp('END'); p.exp('IF');
+        return { type: 'if', branches, els, at: k };
+      }
+      case 'CASE': {
+        p.next(); let operand = null; const whens = [];
+        if (!p.isW('WHEN')) operand = p.expr(['WHEN']);
+        while (p.acc('WHEN')) { const c = p.expr(['THEN']); p.exp('THEN'); whens.push({ cond: c, body: parseList(p, cx) }); }
+        let els = null; if (p.acc('ELSE')) els = parseList(p, cx);
+        p.exp('END'); p.exp('CASE');
+        return { type: 'case', operand, whens, els, at: k };
+      }
+      case 'WHILE': {
+        p.next(); const cond = p.expr(['DO']); p.exp('DO'); const body = parseList(p, cx); p.exp('END'); p.exp('WHILE'); endLabel();
+        return { type: 'while', label, cond, body, at: k };
+      }
+      case 'REPEAT': {
+        p.next(); const body = parseList(p, cx); p.exp('UNTIL'); const cond = p.expr(['END']); p.exp('END'); p.exp('REPEAT'); endLabel();
+        return { type: 'repeat', label, cond, body, at: k };
+      }
+      case 'LOOP': {
+        p.next(); const body = parseList(p, cx); p.exp('END'); p.exp('LOOP'); endLabel();
+        return { type: 'loop', label, body, at: k };
+      }
+      case 'LEAVE': case 'ITERATE': p.next(); return { type: U.toLowerCase(), label: p.name(), at: k };
+      case 'RETURN': p.next(); return { type: 'return', expr: p.expr([]), at: k };
+      case 'OPEN': case 'CLOSE': p.next(); return { type: U.toLowerCase(), cur: p.name(), at: k };
+      case 'FETCH': {
+        p.next(); if (p.isW('NEXT')) p.next(); if (p.isW('FROM')) p.next();
+        const cur = p.name(); p.exp('INTO'); const into = parseTargets(p);
+        return { type: 'fetch', cur, into, at: k };
+      }
+      case 'SIGNAL': case 'RESIGNAL': {
+        p.next(); let state = null, cname = null;
+        if (p.acc('SQLSTATE')) { p.acc('VALUE'); const s = p.next(); if (s.t !== 'str') throw SYNTAX(p.rest(s)); state = s.val; }
+        else if (p.peek() && p.peek().t === 'w' && !p.isW('SET')) cname = p.name();
+        else if (U === 'SIGNAL') throw SYNTAX(p.rest(p.peek()));
+        const items = [];
+        if (p.acc('SET')) { do { const it = p.name().toUpperCase(); p.expOp('='); items.push({ item: it, expr: p.expr([',']) }); } while (p.accOp(',')); }
+        if (state && (state.length !== 5 || state.startsWith('00'))) throw E(1407, '42000', `Bad SQLSTATE: '${state}'`);
+        return { type: U.toLowerCase(), state, cname, items, at: k };
+      }
+      case 'CALL': {
+        p.next(); const name = p.name(); if (isOp(p.peek(), '.')) { p.next(); p.name(); }
+        const args = [];
+        if (p.accOp('(')) { if (!p.accOp(')')) { do { args.push(p.expr([','])); } while (p.accOp(',')); p.expOp(')'); } }
+        return { type: 'call', name, args, at: k };
+      }
+      default: {
+        if (label) throw SYNTAX(p.rest(k));
+        const toks = []; let d = 0;
+        while (!p.eof() && !(isOp(p.peek(), ';') && d === 0)) { const x = p.next(); if (isOp(x, '(')) d++; if (isOp(x, ')')) d--; toks.push(x); }
+        if (!toks.length) throw SYNTAX(p.rest(p.peek()));
+        return sqlNode(toks, k);
+      }
+    }
+  }
+  function parseTargets(p) {
+    const out = [];
+    do { const t = p.next(); if (t.t === 'var') out.push({ sess: true, name: t.name }); else if (t.t === 'w') out.push({ name: t.name, at: t }); else throw SYNTAX(p.rest(t)); } while (p.accOp(','));
+    return out;
+  }
+  function sqlNode(toks, at) {
+    const first = toks[0].t === 'w' ? toks[0].u : '';
+    const node = { type: 'sql', toks, kw: first, at };
+    if (first === 'SELECT' || (first === 'WITH')) {
+      // SELECT … INTO var1, var2 [FROM …]
+      let d = 0;
+      for (let i = 0; i < toks.length; i++) {
+        const t = toks[i];
+        if (isOp(t, '(')) d++; else if (isOp(t, ')')) d--;
+        else if (d === 0 && isW(t, 'INTO') && !isW(toks[i + 1], ['OUTFILE', 'DUMPFILE'])) {
+          let j = i + 1; const into = [];
+          for (;;) { const x = toks[j]; if (!x) break; if (x.t === 'var') into.push({ sess: true, name: x.name }); else if (x.t === 'w' && !isW(x, ['FROM', 'WHERE', 'GROUP', 'ORDER', 'LIMIT', 'HAVING', 'FOR', 'UNION'])) into.push({ name: x.name, at: x }); else break; j++; if (isOp(toks[j], ',')) j++; else break; }
+          node.into = into; node.toks = toks.slice(0, i).concat(toks.slice(j));
+          break;
+        }
+      }
+    }
+    return node;
+  }
+  function parseDeclare(p, cx) {
+    const k = p.next();
+    // DECLARE ime CONDITION FOR …
+    if (p.peek(1) && isW(p.peek(1), 'CONDITION')) {
+      const name = p.name(); p.next();
+      if (!p.acc('FOR')) throw E(1064, '42000', `MySQL zahtijeva DECLARE ${name} CONDITION FOR SQLSTATE '…' (ili FOR kod_greške). Gola deklaracija CONDITION postoji samo u SQL standardu.`);
+      if (p.acc('SQLSTATE')) { p.acc('VALUE'); const s = p.next(); return { type: 'dcond', name, state: s.val, at: k }; }
+      const n = p.next(); if (n.t !== 'num') throw SYNTAX(p.rest(n));
+      return { type: 'dcond', name, errno: +n.v, at: k };
+    }
+    if (p.peek(1) && isW(p.peek(1), 'CURSOR')) {
+      const name = p.name(); p.next(); p.exp('FOR');
+      const toks = []; let d = 0; while (!p.eof() && !(isOp(p.peek(), ';') && d === 0)) { const x = p.next(); if (isOp(x, '(')) d++; if (isOp(x, ')')) d--; toks.push(x); }
+      const q = sqlNode(toks, k); if (q.into) throw E(1323, '42000', 'Cursor SELECT must not have INTO');
+      if (q.kw !== 'SELECT' && q.kw !== 'WITH') throw SYNTAX(join(toks));
+      return { type: 'dcur', name, q, at: k };
+    }
+    if (p.isW(['CONTINUE', 'EXIT', 'UNDO'])) {
+      const hk = p.next().u; if (hk === 'UNDO') throw E(1235, '42000', "This version of MySQL doesn't yet support 'UNDO handler'");
+      p.exp('HANDLER'); p.exp('FOR');
+      const conds = [];
+      do {
+        if (p.acc('SQLSTATE')) { p.acc('VALUE'); const s = p.next(); conds.push({ state: s.val }); }
+        else if (p.isW('NOT') && p.isW('FOUND', 1)) { p.next(); p.next(); conds.push({ cls: 'notfound' }); }
+        else if (p.acc('SQLWARNING')) conds.push({ cls: 'warning' });
+        else if (p.acc('SQLEXCEPTION')) conds.push({ cls: 'exception' });
+        else if (p.peek() && p.peek().t === 'num') conds.push({ errno: +p.next().v });
+        else conds.push({ name: p.name() });
+      } while (p.accOp(','));
+      const stmt = parseStmt(p, cx);
+      return { type: 'dhandler', kind: hk, conds, stmt, at: k };
+    }
+    const names = [p.name()];
+    while (p.accOp(',')) names.push(p.name());
+    const type = parseType(p);
+    let def = null; if (p.acc('DEFAULT')) def = p.expr([]);
+    return { type: 'dvar', names, vtype: type, def, at: k };
+  }
+
+  // provjere pri CREATE (kao u MySQL-u)
+  function validate(r) {
+    let hasReturn = false;
+    const scopes = [];
+    const paramsScope = { vars: new Set(r.params.map(x => x.name.toLowerCase())), conds: new Set(), curs: new Set(), labels: [] };
+    scopes.push(paramsScope);
+    const lookup = (what, name) => scopes.some(s => s[what].has(name.toLowerCase()));
+    const labels = [];
+    function walk(n, inHandler) {
+      switch (n.type) {
+        case 'block': {
+          const sc = { vars: new Set(), conds: new Set(), curs: new Set() }; scopes.push(sc);
+          if (n.label) labels.push({ l: n.label.toLowerCase(), loop: false });
+          let phase = 0, decls = true; // 0 var/cond, 1 cursor, 2 handler
+          n.decls = []; const rest = [];
+          for (const s of n.stmts) {
+            if (['dvar', 'dcond', 'dcur', 'dhandler'].includes(s.type)) {
+              if (!decls) throw E(1064, '42000', `DECLARE je dopušten samo na početku bloka BEGIN … END (prije ostalih naredbi), near 'DECLARE ${s.names ? s.names[0] : s.name || ''}'`);
+              const ph = s.type === 'dcur' ? 1 : s.type === 'dhandler' ? 2 : 0;
+              if (ph < phase) {
+                if (ph === 0) throw E(1337, '42000', 'Variable or condition declaration after cursor or handler declaration');
+                throw E(1338, '42000', 'Cursor declaration after handler declaration');
+              }
+              phase = ph;
+              if (s.type === 'dvar') s.names.forEach(nm => { if (sc.vars.has(nm.toLowerCase())) throw E(1331, '42000', `Duplicate variable: ${nm}`); sc.vars.add(nm.toLowerCase()); });
+              if (s.type === 'dcond') { if (sc.conds.has(s.name.toLowerCase())) throw E(1332, '42000', `Duplicate condition: ${s.name}`); sc.conds.add(s.name.toLowerCase()); }
+              if (s.type === 'dcur') { if (sc.curs.has(s.name.toLowerCase())) throw E(1333, '42000', `Duplicate cursor: ${s.name}`); sc.curs.add(s.name.toLowerCase()); }
+              if (s.type === 'dhandler') { s.conds.forEach(c => { if (c.name && !lookup('conds', c.name)) throw E(1319, '42000', `Undefined CONDITION: ${c.name}`); }); walk(s.stmt, true); }
+              n.decls.push(s);
+            } else { decls = false; rest.push(s); walk(s, inHandler); }
+          }
+          n.body = rest;
+          scopes.pop(); if (n.label) labels.pop();
+          break;
+        }
+        case 'dvar': case 'dcond': case 'dcur': case 'dhandler':
+          throw E(1064, '42000', "DECLARE smije stajati samo unutar bloka BEGIN … END");
+        case 'set': n.items.forEach(it => {
+          const tg = it.target;
+          if (tg.row) {
+            if (r.kind !== 'TRIGGER') throw E(1054, '42S22', `Unknown column '${tg.col}' in 'field list' (NEW i OLD postoje samo u trigeru)`);
+            if (tg.row === 'OLD') throw E(1362, 'HY000', 'Updating of OLD row is not allowed in trigger');
+            if (r.event === 'DELETE') throw E(1363, 'HY000', 'There is no NEW row in on DELETE trigger');
+            if (r.timing === 'AFTER') throw E(1362, 'HY000', 'Updating of NEW row is not allowed in after trigger');
+            return;
+          }
+          if (!tg.sess && !tg.sys && !lookup('vars', tg.name)) throw E(1193, 'HY000', `Unknown system variable '${tg.name}'`);
+        }); break;
+        case 'fetch':
+          if (!lookup('curs', n.cur)) throw E(1324, '42000', `Undefined CURSOR: ${n.cur}`);
+          n.into.forEach(x => { if (!x.sess && !lookup('vars', x.name)) throw E(1327, '42000', `Undeclared variable: ${x.name}`); });
+          break;
+        case 'open': case 'close': if (!lookup('curs', n.cur)) throw E(1324, '42000', `Undefined CURSOR: ${n.cur}`); break;
+        case 'sql':
+          if (n.into) n.into.forEach(x => { if (!x.sess && !lookup('vars', x.name)) throw E(1327, '42000', `Undeclared variable: ${x.name}`); });
+          if (r.kind === 'FUNCTION' || r.kind === 'TRIGGER') {
+            if ((n.kw === 'SELECT' || n.kw === 'WITH' || n.kw === 'SHOW') && !n.into) throw E(1415, '0A000', `Not allowed to return a result set from a ${r.kind === 'TRIGGER' ? 'trigger' : 'function'}`);
+            if (['COMMIT', 'ROLLBACK', 'START', 'BEGIN'].includes(n.kw)) throw E(1422, 'HY000', 'Explicit or implicit commit is not allowed in stored function or trigger.');
+          }
+          break;
+        case 'return': if (r.kind !== 'FUNCTION') throw E(1313, '42000', 'RETURN is only allowed in a FUNCTION'); hasReturn = true; break;
+        case 'if': n.branches.forEach(b => b.body.forEach(s => walk(s, inHandler))); if (n.els) n.els.forEach(s => walk(s, inHandler)); break;
+        case 'case': n.whens.forEach(b => b.body.forEach(s => walk(s, inHandler))); if (n.els) n.els.forEach(s => walk(s, inHandler)); break;
+        case 'while': case 'repeat': case 'loop':
+          if (n.label) labels.push({ l: n.label.toLowerCase(), loop: true });
+          n.body.forEach(s => walk(s, inHandler)); if (n.label) labels.pop(); break;
+        case 'leave': case 'iterate': {
+          const L = labels.slice().reverse().find(x => x.l === n.label.toLowerCase());
+          if (!L || (n.type === 'iterate' && !L.loop)) throw E(1308, '42000', `${n.type.toUpperCase()} with no matching label: ${n.label}`);
+          break;
+        }
+        case 'signal': case 'resignal': if (n.cname && !lookup('conds', n.cname)) throw E(1319, '42000', `Undefined CONDITION: ${n.cname}`); break;
+      }
+    }
+    if (r.body.type !== 'block') { const wrap = { type: 'block', label: null, stmts: [r.body], implicit: true }; r.body = wrap; }
+    walk(r.body, false);
+    if (r.kind === 'FUNCTION' && !hasReturn) throw E(1320, '42000', `No RETURN found in FUNCTION ${r.name}`);
+  }
+
+  // ---------- prijevod SQL-a (MySQL → SQLite) i zamjena varijabli ----------
+  const FROM_END = ['WHERE', 'GROUP', 'ORDER', 'HAVING', 'LIMIT', 'ON', 'USING', 'UNION', 'SET', 'VALUES', 'SELECT', 'WINDOW', 'EXCEPT', 'INTERSECT', 'FOR', 'INTO', 'RETURNING'];
+  const ALIAS_STOP = FROM_END.concat(['JOIN', 'INNER', 'LEFT', 'RIGHT', 'CROSS', 'NATURAL', 'FULL', 'OUTER', 'STRAIGHT_JOIN', 'AS', 'LOCK', 'DEFAULT', 'USE', 'FORCE', 'IGNORE', 'PARTITION', 'END', 'THEN', 'ELSE', 'WHEN', 'AND', 'OR']);
+  const DDL = ['CREATE', 'ALTER', 'DROP', 'TRUNCATE', 'RENAME'];
+  const FN_MAP = { NOW: 'msp_now', CURRENT_TIMESTAMP: 'msp_now', LOCALTIME: 'msp_now', LOCALTIMESTAMP: 'msp_now', SYSDATE: 'msp_now', CURDATE: 'msp_curdate', CURRENT_DATE: 'msp_curdate', CURTIME: 'msp_curtime', CURRENT_TIME: 'msp_curtime', CONCAT: 'msp_concat', IF: 'iif', CONCAT_WS: 'msp_concat_ws', TRUNCATE: 'msp_truncate', LOCATE: 'msp_locate', LEFT: 'msp_left', RIGHT: 'msp_right', DATE_FORMAT: 'msp_date_format', YEAR: 'msp_year', MONTH: 'msp_month', DAY: 'msp_day', DAYOFMONTH: 'msp_day', DATEDIFF: 'msp_datediff', POW: 'msp_pow', POWER: 'msp_pow', MOD: 'msp_mod', FLOOR: 'msp_floor', CEIL: 'msp_ceil', CEILING: 'msp_ceil', SQRT: 'msp_sqrt', LCASE: 'lower', UCASE: 'upper', CHAR_LENGTH: 'length', SUBSTRING: 'substr', CURRENT_USER: 'msp_current_user', USER: 'msp_current_user', SESSION_USER: 'msp_current_user' };
+  const BARE_FN = { CURRENT_USER: "'root@localhost'", CURRENT_TIMESTAMP: 'msp_now()', CURRENT_DATE: 'msp_curdate()', CURRENT_TIME: 'msp_curtime()', LOCALTIME: 'msp_now()', LOCALTIMESTAMP: 'msp_now()' };
+  const qstr = s => "'" + String(s).replace(/'/g, "''") + "'";
+
+  // resolve(name) → {v} ako je lokalna varijabla, inače null; sess(name) → vrijednost @var
+  function translate(toks, resolve, sess, opts) {
+    opts = opts || {};
+    const kw = toks[0] && toks[0].t === 'w' ? toks[0].u : '';
+    const ddl = DDL.includes(kw);
+    const out = [], params = [];
+    if (kw === 'TRUNCATE') { const nm = toks.filter(t => t.t === 'w' && !isW(t, ['TRUNCATE', 'TABLE'])).pop(); return { sql: 'DELETE FROM ' + (nm ? (nm.q ? '"' + nm.name + '"' : nm.v) : ''), params: [] }; }
+    let depth = 0, fromDepth = -1, expectTable = false, afterTable = false, insCols = -1, updSet = false, dupMode = false;
+    const isInsert = kw === 'INSERT' || kw === 'REPLACE';
+    for (let i = 0; i < toks.length; i++) {
+      const t = toks[i], pv = toks[i - 1], nx = toks[i + 1];
+      if (t.t === 'var') {
+        if (t.sys) { out.push({ t: 'w', v: sysVar(t.name) }); continue; }
+        out.push({ t: 'op', v: '?', orig: t }); params.push(sess(t.name)); afterTable = false; continue;
+      }
+      if (t.t === 'str') { out.push({ t: 'str', v: qstr(t.val) }); afterTable = false; continue; }
+      if (t.t === 'op') {
+        if (t.v === '(') { depth++; if (expectTable) expectTable = false; if (isInsert && insCols < 0 && afterTable && !isW(nx, ['SELECT', 'WITH'])) insCols = depth; afterTable = false; out.push(t); continue; }
+        if (t.v === ')') { if (insCols === depth) insCols = -2; depth--; if (depth < fromDepth) fromDepth = -1; out.push(t); afterTable = false; continue; }
+        if (t.v === ',') { if (fromDepth === depth) expectTable = true; afterTable = false; out.push(t); continue; }
+        if (t.v === '/' && !ddl) { out.push({ t: 'op', v: '* 1.0 /' }); continue; }
+        if (t.v === '<=>') { out.push({ t: 'w', v: 'IS' }); continue; }
+        if (t.v === '&&') { out.push({ t: 'w', v: 'AND' }); continue; }
+        if (t.v === '||') { out.push({ t: 'w', v: 'OR' }); continue; }
+        if (t.v === ':=') throw E(1064, '42000', 'Dodjela := unutar upita nije podržana u vježbaonici; upotrijebi SET ili SELECT … INTO.');
+        out.push(t); afterTable = false; continue;
+      }
+      if (t.t !== 'w') { out.push(t); afterTable = false; continue; }
+      const U = t.q ? '' : t.u;
+      if ((U === 'NEW' || U === 'OLD') && isOp(nx, '.') && toks[i + 2] && toks[i + 2].t === 'w') {
+        const col = toks[i + 2].name;
+        if (!opts.rows) throw E(1054, '42S22', `Unknown column '${U}.${col}' in 'field list' (NEW i OLD postoje samo u trigeru)`);
+        const row = opts.rows[U];
+        if (!row) throw E(1363, 'HY000', `There is no ${U} row in on ${opts.rows.event} trigger`);
+        const k = Object.keys(row).find(c => c.toLowerCase() === col.toLowerCase());
+        if (k === undefined) throw E(1054, '42S22', `Unknown column '${col}' in '${U}'`);
+        out.push({ t: 'op', v: '?', orig: t }); params.push(row[k]); i += 2; afterTable = false; continue;
+      }
+      if (U === 'IGNORE' && isInsert && isW(pv, 'INSERT')) { out.push({ t: 'w', v: 'OR IGNORE' }); continue; }
+      if (U === 'ON' && isInsert && depth === 0 && isW(nx, 'DUPLICATE') && isW(toks[i + 2], 'KEY') && isW(toks[i + 3], 'UPDATE')) {
+        if (toks.some(x => isW(x, 'SELECT')) && !toks.slice(0, i).some(x => isW(x, 'WHERE'))) out.push({ t: 'w', v: 'WHERE true' });
+        out.push({ t: 'w', v: 'ON CONFLICT DO UPDATE SET' }); i += 3; dupMode = true; updSet = true; fromDepth = -1; expectTable = false; afterTable = false; continue;
+      }
+      if (U === 'VALUES' && dupMode && isOp(nx, '(') && toks[i + 2] && toks[i + 2].t === 'w' && isOp(toks[i + 3], ')')) { out.push({ t: 'w', v: 'excluded."' + toks[i + 2].name + '"' }); i += 3; continue; }
+      if (t.q) { out.push({ t: 'w', v: '"' + t.name.replace(/"/g, '""') + '"' }); if (expectTable) { expectTable = false; afterTable = true; } else afterTable = false; continue; }
+      if (U === 'DIV') { out.push({ t: 'op', v: '/' }); continue; }
+      if (U === 'MOD' && !isOp(nx, '(')) { out.push({ t: 'op', v: '%' }); continue; }
+      if (U === 'SEPARATOR' && nx && nx.t === 'str') {
+        // MySQL: GROUP_CONCAT(x ORDER BY y SEPARATOR ', ')  →  SQLite: group_concat(x, ', ' ORDER BY y)
+        i++; const sep = { t: 'str', v: qstr(nx.val) };
+        let open = -1, d = 0;
+        for (let j = out.length - 1; j >= 0; j--) { if (isOp(out[j], ')')) d++; else if (isOp(out[j], '(')) { if (d === 0) { open = j; break; } d--; } }
+        let ord = -1; d = 0;
+        for (let j = open + 1; j < out.length; j++) { if (isOp(out[j], '(')) d++; else if (isOp(out[j], ')')) d--; else if (d === 0 && isW(out[j], 'ORDER')) { ord = j; break; } }
+        if (ord > 0) out.splice(ord, 0, { t: 'op', v: ',' }, sep); else out.push({ t: 'op', v: ',' }, sep);
+        continue;
+      }
+      if (U === 'FROM' && isW(nx, 'DUAL')) { i++; continue; }
+      if (U === 'FROM' || U === 'JOIN' || U === 'UPDATE' || (U === 'INTO' && (isInsert || !opts.select)) || (U === 'TABLE' && !ddl)) {
+        if (U === 'FROM' || U === 'JOIN') fromDepth = depth;
+        expectTable = true; afterTable = false; out.push(t); continue;
+      }
+      if (FROM_END.includes(U) && fromDepth === depth) fromDepth = -1;
+      if (U === 'SET' && kw === 'UPDATE') updSet = true;
+      if (U === 'WHERE') updSet = false;
+      if (expectTable) {
+        expectTable = false;
+        if (!ALIAS_STOP.includes(U)) { afterTable = true; if (isOp(nx, '.')) { out.push(t, nx, toks[i + 2]); i += 2; } else out.push(t); continue; }
+      }
+      if (afterTable) {
+        afterTable = false;
+        if (!ALIAS_STOP.includes(U) && !isOp(nx, '.') && !isOp(nx, '(')) { if (kw === 'UPDATE' && !isW(pv, 'AS')) out.push({ t: 'w', v: 'AS' }); out.push(t); continue; } // alias tablice
+      }
+      if (!ddl) {
+        if (isOp(nx, '(') && FN_MAP[U] && !(U === 'IF' && opts.stmtLevel)) {
+          if ((U === 'LEFT' || U === 'RIGHT') && isW(pv, ['NATURAL'])) { out.push(t); continue; }
+          out.push({ t: 'w', v: FN_MAP[U] }); continue;
+        }
+        if (BARE_FN[U] && !isOp(nx, '(')) { out.push({ t: 'w', v: BARE_FN[U] }); continue; }
+      } else if (isOp(nx, '(') && isOp(toks[i + 2], ')') && ['CURRENT_TIMESTAMP', 'NOW', 'CURRENT_DATE', 'CURDATE'].includes(U)) {
+        out.push({ t: 'w', v: U === 'CURRENT_DATE' || U === 'CURDATE' ? '(CURRENT_DATE)' : '(CURRENT_TIMESTAMP)' }); i += 2; continue;
+      }
+      // lokalna varijabla?
+      const qualified = isOp(pv, '.') || isOp(nx, '.');
+      const isCall = isOp(nx, '(');
+      const afterAs = isW(pv, 'AS');
+      const inCols = insCols > 0 && depth >= insCols;
+      const setCol = updSet && depth === 0 && isOp(nx, '=') && (isW(pv, 'SET') || isOp(pv, ','));
+      const dupCol = isOp(nx, '=') && ((isW(pv, 'UPDATE') && isW(toks[i - 2], 'KEY')) || (dupMode && isOp(pv, ',')));
+      if (!ddl && !qualified && !isCall && !afterAs && !inCols && !setCol && !dupCol && resolve) {
+        const r = resolve(t.name);
+        if (r) { out.push({ t: 'op', v: '?', orig: t }); params.push(r.v); continue; }
+      }
+      out.push(t);
+    }
+    let sql = join(out);
+    if (kw === 'CREATE' && isW(toks[1], ['TABLE', 'TEMPORARY'])) {
+      sql = sql.replace(/\b(?:BIG|SMALL|TINY|MEDIUM)?INT(?:EGER)?(?:\s*\(\d+\))?(?:\s+UNSIGNED)?(?:\s+NOT\s+NULL)?\s+AUTO_INCREMENT\s+PRIMARY\s+KEY/gi, 'INTEGER PRIMARY KEY AUTOINCREMENT')
+        .replace(/\bSERIAL\s+PRIMARY\s+KEY/gi, 'INTEGER PRIMARY KEY AUTOINCREMENT')
+        .replace(/\bSERIAL\b/gi, 'INTEGER NOT NULL UNIQUE')
+        .replace(/\s+AUTO_INCREMENT\b(\s*=\s*\d+)?/gi, '')
+        .replace(/\)\s*(ENGINE|DEFAULT\s+CHARSET|CHARSET)\s*=.*$/i, ')');
+    }
+    // nazivi stupaca: kao u MySQL-u (izvorni tekst stavke) ako je stavka promijenjena
+    if (opts.select && !opts.noAlias) sql = aliasSelect(toks, out, opts.src);
+    return { sql, params };
+  }
+  // MySQL kao naziv stupca koristi tekst izraza; nakon zamjene varijabli (?) dodaje se alias
+  function aliasSelect(orig, tr, src) {
+    const otext = o => (src && o.length && o[0].p !== undefined) ? src.slice(o[0].p, o[o.length - 1].p + o[o.length - 1].v.length).replace(/\s+/g, ' ') : join(o);
+    const plain = o => (o.length === 1 && (o[0].t === 'w' || isOp(o[0], '*'))) || (o.length === 3 && o[0].t === 'w' && isOp(o[1], '.') && (o[2].t === 'w' || isOp(o[2], '*')));
+    // podijeli obje liste na stavke SELECT liste (dubina 0, do FROM/INTO/kraja)
+    const items = (T) => {
+      const res = []; let d = 0, cur = [], started = false;
+      for (let i = 0; i < T.length; i++) {
+        const t = T[i];
+        if (!started) { if (isW(t, 'SELECT')) { started = true; while (isW(T[i + 1], ['DISTINCT', 'ALL', 'DISTINCTROW', 'SQL_CALC_FOUND_ROWS'])) i++; } continue; }
+        if (isOp(t, '(')) d++; if (isOp(t, ')')) d--;
+        if (d === 0 && (isW(t, ['FROM', 'INTO', 'WHERE', 'GROUP', 'ORDER', 'HAVING', 'LIMIT', 'UNION', 'WINDOW']) || isOp(t, ';'))) { res.push(cur); return { res, rest: T.slice(i) }; }
+        if (d === 0 && isOp(t, ',')) { res.push(cur); cur = []; continue; }
+        cur.push(t);
+      }
+      res.push(cur); return { res, rest: [] };
+    };
+    const a = items(orig), b = items(tr);
+    if (!b.res.length || a.res.length !== b.res.length || !isW(tr[0], 'SELECT')) return join(tr);
+    const head = []; for (const t of tr) { head.push(t); if (isW(t, 'SELECT')) break; }
+    let k = tr.indexOf(head[head.length - 1]) + 1; while (isW(tr[k], ['DISTINCT', 'ALL', 'DISTINCTROW', 'SQL_CALC_FOUND_ROWS'])) head.push(tr[k++]);
+    const parts = b.res.map((it, j) => {
+      const o = a.res[j], txt = join(it);
+      const hasAlias = it.some(x => isW(x, 'AS')) || (it.length > 1 && it[it.length - 1].t === 'w' && !isOp(it[it.length - 2], '.') && it[it.length - 2].t !== 'op' && !isW(it[it.length - 2], ['AND', 'OR', 'NOT', 'IS', 'LIKE', 'IN', 'BETWEEN', 'THEN', 'ELSE', 'WHEN', 'CASE']) && !isW(it[it.length - 1], ['END', 'NULL', 'TRUE', 'FALSE']));
+      if (hasAlias || (plain(o) && txt === join(o))) return txt;
+      if (o.length === 1 && o[0].t === 'str') return txt + ' AS "' + o[0].val.replace(/"/g, '""') + '"';
+      return txt + ' AS "' + otext(o).replace(/"/g, '""') + '"';
+    });
+    return join(head) + ' ' + parts.join(', ') + (b.rest.length ? ' ' + join(b.rest) : '');
+  }
+  function sysVar(n) {
+    const v = { autocommit: 1, version: "'8.0.36-vjezbaonica'", sql_mode: "'STRICT_TRANS_TABLES'", max_sp_recursion_depth: 0 }[n.toLowerCase().replace(/^(session|global)\./, '')];
+    if (v === undefined) throw E(1193, 'HY000', `Unknown system variable '${n}'`);
+    return String(v);
+  }
+
+  // ---------- SQLite greške → MySQL greške ----------
+  function fromSqlite(e, sess) {
+    if (e instanceof Cond) return e;
+    if (sess && sess.pending) { const c = sess.pending; sess.pending = null; return c; }
+    const m = String(e && e.message !== undefined ? e.message : e);
+    let x;
+    const tbl = s => s.replace(/^main\./, '');
+    if ((x = /^ERROR (\d+) \((\w{5})\): ([\s\S]*)$/.exec(m))) return E(+x[1], x[2], x[3]);
+    if ((x = /UNIQUE constraint failed: (.*)/.exec(m))) return E(1062, '23000', `Duplicate entry for key '${x[1]}'`);
+    if (/FOREIGN KEY constraint failed/.test(m)) return E(1452, '23000', 'Cannot add or update a child row: a foreign key constraint fails');
+    if ((x = /CHECK constraint failed: (.*)/.exec(m))) return E(3819, 'HY000', `Check constraint '${x[1]}' is violated.`);
+    if ((x = /NOT NULL constraint failed: (?:\w+\.)?(.*)/.exec(m))) return E(1048, '23000', `Column '${x[1]}' cannot be null`);
+    if ((x = /no such table: (.*)/.exec(m))) return E(1146, '42S02', `Table 'unipu.${tbl(x[1])}' doesn't exist`);
+    if ((x = /no such column: (.*)/.exec(m))) return E(1054, '42S22', `Unknown column '${x[1]}' in 'field list'`);
+    if ((x = /no such function: (.*)/.exec(m))) return E(1305, '42000', `FUNCTION unipu.${x[1]} does not exist`);
+    if ((x = /table (\S+) already exists/.exec(m))) return E(1050, '42S01', `Table '${x[1]}' already exists`);
+    if ((x = /near "(.*)": syntax error/.exec(m))) return E(1064, '42000', `You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '${x[1]}'`);
+    if (/incomplete input/.test(m)) return E(1064, '42000', 'You have an error in your SQL syntax: naredba nije dovršena');
+    if (/cannot start a transaction within a transaction/.test(m)) return E(1105, 'HY000', 'Transakcija je već otvorena (izvrši COMMIT ili ROLLBACK).');
+    return E(1105, 'HY000', m);
+  }
+
+  // ---------- sesija ----------
+  function now(d) { d = d || new Date(); const p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+  const variadic = f => { Object.defineProperty(f, 'length', { value: -1 }); return f; };
+  function attach(db) {
+    if (db.__msp) return db.__msp;
+    const S = { db, triggers: new Map(), trigTables: [], fixQ: {}, suppressTrig: 0, users: new Map(), grants: new Map(), roleGrants: [], routines: new Map(), vars: new Map(), steps: 0, stack: [], pending: null, cache: new Map(), out: null, changes: 0 };
+    db.__msp = S;
+    db.create_function('msp_now', () => now());
+    db.create_function('msp_curdate', () => now().slice(0, 10));
+    db.create_function('msp_current_user', () => 'root@localhost');
+    db.create_function('msp_trg', variadic((...a) => trgFire(S, a)));
+    db.create_function('msp_curtime', () => now().slice(11));
+    db.create_function('msp_concat', variadic((...a) => a.some(x => x === null) ? null : a.map(x => typeof x === 'number' ? fmtNum(x) : String(x)).join('')));
+    db.create_function('msp_concat_ws', variadic((s, ...a) => s === null ? null : a.filter(x => x !== null).map(x => typeof x === 'number' ? fmtNum(x) : String(x)).join(s)));
+    db.create_function('msp_truncate', (x, d) => x === null ? null : Math.trunc(x * Math.pow(10, d)) / Math.pow(10, d));
+    db.create_function('msp_locate', (sub, s) => (sub === null || s === null) ? null : String(s).toLowerCase().indexOf(String(sub).toLowerCase()) + 1);
+    db.create_function('msp_left', (s, n) => s === null ? null : String(s).slice(0, Math.max(0, n)));
+    db.create_function('msp_right', (s, n) => s === null ? null : (n <= 0 ? '' : String(s).slice(-n)));
+    db.create_function('msp_year', d => d === null ? null : +String(d).slice(0, 4));
+    db.create_function('msp_month', d => d === null ? null : +String(d).slice(5, 7));
+    db.create_function('msp_day', d => d === null ? null : +String(d).slice(8, 10));
+    db.create_function('msp_datediff', (a, b) => (a === null || b === null) ? null : Math.round((Date.parse(String(a).slice(0, 10)) - Date.parse(String(b).slice(0, 10))) / 864e5));
+    db.create_function('msp_pow', (a, b) => (a === null || b === null) ? null : Math.pow(a, b));
+    db.create_function('msp_mod', (a, b) => (a === null || b === null || b == 0) ? null : a % b);
+    db.create_function('msp_floor', a => a === null ? null : Math.floor(a));
+    db.create_function('msp_ceil', a => a === null ? null : Math.ceil(a));
+    db.create_function('msp_sqrt', a => a === null || a < 0 ? null : Math.sqrt(a));
+    db.create_function('msp_date_format', (d, f) => {
+      if (d === null || f === null) return null; const s = String(d);
+      const M = { '%Y': s.slice(0, 4), '%m': s.slice(5, 7), '%d': s.slice(8, 10), '%H': s.slice(11, 13) || '00', '%i': s.slice(14, 16) || '00', '%s': s.slice(17, 19) || '00', '%e': String(+s.slice(8, 10)), '%c': String(+s.slice(5, 7)), '%y': s.slice(2, 4) };
+      return String(f).replace(/%[YmdHisecy%]/g, k => k === '%%' ? '%' : M[k]);
+    });
+    return S;
+  }
+
+  // izvođenje jednog SQL-a (SQLite) – rezultat {columns, values}
+  function runSqlite(S, sql, params) {
+    if (!S.stack.length && !S.suppressTrig) S.fixQ = {};
+    const db = S.db;
+    let st = S.cache.get(sql);
+    if (!st || st.__busy) { st = db.prepare(sql); if (!S.cache.has(sql)) S.cache.set(sql, st); }
+    st.__busy = true;
+    try {
+      st.reset(); if (params && params.length) st.bind(params.map(v => typeof v === 'boolean' ? (v ? 1 : 0) : v));
+      const values = []; let columns = null;
+      while (st.step()) { if (!columns) columns = st.getColumnNames(); values.push(st.get()); }
+      if (!columns) columns = st.getColumnNames();
+      S.changes = db.getRowsModified();
+      return { columns, values };
+    } catch (e) { throw fromSqlite(e, S); }
+    finally { st.__busy = false; try { st.reset(); } catch (e) {} }
+  }
+
+  // ---------- izvršni dio ----------
+  function newFrame(label) { return { label, vars: new Map(), conds: new Map(), curs: new Map(), handlers: [], busy: false }; }
+  function findVar(inv, name) {
+    const k = name.toLowerCase();
+    for (let i = inv.frames.length - 1; i >= 0; i--) { const v = inv.frames[i].vars.get(k); if (v) return v; }
+    return null;
+  }
+  function findIn(inv, what, name) {
+    const k = name.toLowerCase();
+    for (let i = inv.frames.length - 1; i >= 0; i--) { const v = inv.frames[i][what].get(k); if (v) return v; }
+    return null;
+  }
+  const sessGet = S => n => { const k = n.toLowerCase(); return S.vars.has(k) ? S.vars.get(k) : null; };
+  function resolver(inv) { return inv ? (n => { const v = findVar(inv, n); return v ? { v: v.value } : null; }) : null; }
+
+  function runSql(S, inv, toks, opts) {
+    opts = Object.assign({ src: inv ? inv.routine.src : S.curText, rows: inv && inv.trig ? inv.trig.rows : null }, opts);
+    const tr = translate(toks, resolver(inv), sessGet(S), opts);
+    return runSqlite(S, tr.sql, tr.params);
+  }
+  function evalExpr(S, inv, toks) {
+    const tr = translate(toks, resolver(inv), sessGet(S), { rows: inv && inv.trig ? inv.trig.rows : null });
+    const r = runSqlite(S, 'SELECT ' + tr.sql, tr.params);
+    return r.values.length ? r.values[0][0] : null;
+  }
+  function truthy(v) {
+    if (v === null || v === undefined) return false;
+    if (typeof v === 'number') return v !== 0;
+    const m = /^\s*[+-]?(\d+\.?\d*|\.\d+)/.exec(String(v)); return m ? parseFloat(m[0]) !== 0 : false;
+  }
+  function assign(S, inv, target, value) {
+    if (target.row) {
+      const row = inv && inv.trig && inv.trig.rows[target.row];
+      const k = row && Object.keys(row).find(c => c.toLowerCase() === target.col.toLowerCase());
+      if (k === undefined || k === null) throw E(1054, '42S22', `Unknown column '${target.col}' in 'NEW'`);
+      row[k] = value === undefined ? null : value; inv.trig.changed.add(k); return;
+    }
+    if (target.sess) { S.vars.set(target.name.toLowerCase(), value === undefined ? null : value); return; }
+    if (target.sys) throw E(1238, 'HY000', `Variable '${target.name}' is a read only variable`);
+    const v = inv && findVar(inv, target.name);
+    if (!v) throw E(1193, 'HY000', `Unknown system variable '${target.name}'`);
+    v.value = coerce(value, Object.assign({ var: v.name }, v.type));
+  }
+
+  function step(S) { if (++S.steps > 100000) throw E(1105, 'HY000', 'Prekinuto nakon 100 000 koraka – vjerojatno beskonačna petlja (provjeri uvjet izlaska iz petlje).'); }
+
+  // izvođenje jednostavne naredbe uz rukovatelje
+  function simple(S, inv, fn) {
+    try { return fn(); }
+    catch (e) {
+      if (!(e instanceof Cond)) throw e;
+      handle(S, inv, e);
+    }
+  }
+  function handlerMatches(h, c, inv) {
+    let best = 0;
+    for (const x of h.conds) {
+      if (x.state && x.state === c.sqlstate) best = Math.max(best, 3);
+      else if (x.errno && x.errno === c.errno) best = Math.max(best, 3);
+      else if (x.name) { const d = findIn(inv, 'conds', x.name); if (d && ((d.state && d.state === c.sqlstate) || (d.errno && d.errno === c.errno))) best = Math.max(best, 3); }
+      else if (x.cls && x.cls === c.cls) best = Math.max(best, 1);
+    }
+    return best;
+  }
+  function handle(S, inv, c, fatalIfUnhandled) {
+    if (inv) {
+      for (let fi = inv.frames.length - 1; fi >= 0; fi--) {
+        const fr = inv.frames[fi]; if (fr.busy) continue;
+        let best = null, bs = 0;
+        for (const h of fr.handlers) { const s = handlerMatches(h, c, inv); if (s > bs) { bs = s; best = h; } }
+        if (best) {
+          const saved = inv.frames; inv.frames = saved.slice(0, fi + 1); fr.busy = true;
+          const savedCond = inv.cond; inv.cond = c;
+          try { execStmt(S, inv, best.stmt); }
+          finally { inv.frames = saved; fr.busy = false; inv.cond = savedCond; }
+          if (best.kind === 'EXIT') throw new ExitTo(fr);
+          return;
+        }
+      }
+    }
+    if (c.cls === 'warning') { S.warnings.push(c); return; }
+    if (c.cls === 'notfound' && !c.fatal) { S.warnings.push(c); return; }
+    throw c;
+  }
+
+  function execList(S, inv, list) { for (const s of list) execStmt(S, inv, s); }
+  function execStmt(S, inv, n) {
+    step(S);
+    switch (n.type) {
+      case 'block': {
+        const fr = newFrame(n.label); inv.frames.push(fr);
+        try {
+          for (const d of n.decls) execDecl(S, inv, fr, d);
+          execList(S, inv, n.body);
+        } catch (e) {
+          if (e instanceof ExitTo && e.frame === fr) return;
+          if (e instanceof Leave && n.label && e.label.toLowerCase() === n.label.toLowerCase()) return;
+          throw e;
+        } finally { inv.frames.pop(); }
+        return;
+      }
+      case 'set':
+        return simple(S, inv, () => { for (const it of n.items) assign(S, inv, it.target, evalExpr(S, inv, it.expr)); });
+      case 'if': {
+        let body = null, skipped = true;
+        simple(S, inv, () => {
+          for (const b of n.branches) { if (truthy(evalExpr(S, inv, b.cond))) { body = b.body; skipped = false; return; } }
+          body = n.els; skipped = false;
+        });
+        if (!skipped && body) execList(S, inv, body);
+        return;
+      }
+      case 'case': {
+        let body = null, skipped = true;
+        simple(S, inv, () => {
+          const op = n.operand ? evalExpr(S, inv, n.operand) : undefined;
+          for (const w of n.whens) {
+            let hit;
+            if (n.operand) { const tr = translate(w.cond, resolver(inv), sessGet(S), { rows: inv && inv.trig ? inv.trig.rows : null }); const r = runSqlite(S, 'SELECT (?) = (' + tr.sql + ')', [op].concat(tr.params)); hit = truthy(r.values[0][0]); }
+            else hit = truthy(evalExpr(S, inv, w.cond));
+            if (hit) { body = w.body; skipped = false; return; }
+          }
+          if (n.els) { body = n.els; skipped = false; return; }
+          throw E(1339, '20000', 'Case not found for CASE statement');
+        });
+        if (!skipped && body) execList(S, inv, body);
+        return;
+      }
+      case 'while': case 'repeat': case 'loop': {
+        const lbl = n.label && n.label.toLowerCase();
+        for (;;) {
+          step(S);
+          if (n.type === 'while') { let ok = false; simple(S, inv, () => { ok = truthy(evalExpr(S, inv, n.cond)); }); if (!ok) return; }
+          try { execList(S, inv, n.body); }
+          catch (e) {
+            if (e instanceof Leave && lbl && e.label.toLowerCase() === lbl) return;
+            if (e instanceof Iterate && lbl && e.label.toLowerCase() === lbl) continue;
+            throw e;
+          }
+          if (n.type === 'repeat') { let stop = true; simple(S, inv, () => { stop = truthy(evalExpr(S, inv, n.cond)); }); if (stop) return; }
+        }
+      }
+      case 'leave': throw new Leave(n.label);
+      case 'iterate': throw new Iterate(n.label);
+      case 'return': {
+        let v = null; simple(S, inv, () => { v = evalExpr(S, inv, n.expr); });
+        throw new Ret(v);
+      }
+      case 'open': return simple(S, inv, () => {
+        const c = findIn(inv, 'curs', n.cur);
+        if (c.open) throw E(1325, '24000', 'Cursor is already open');
+        // upit kursora izvodi se u dosegu u kojem je kursor deklariran
+        const r = runSql(S, inv, c.q.toks, { select: true, noAlias: true });
+        c.rows = r.values; c.cols = r.columns; c.pos = 0; c.open = true;
+      });
+      case 'close': return simple(S, inv, () => {
+        const c = findIn(inv, 'curs', n.cur);
+        if (!c.open) throw E(1326, '24000', 'Cursor is not open');
+        c.open = false; c.rows = null;
+      });
+      case 'fetch': return simple(S, inv, () => {
+        const c = findIn(inv, 'curs', n.cur);
+        if (!c.open) throw E(1326, '24000', 'Cursor is not open');
+        if (c.cols.length !== n.into.length) throw E(1328, 'HY000', 'Incorrect number of FETCH variables');
+        if (c.pos >= c.rows.length) { const x = E(1329, '02000', 'No data - zero rows fetched, selected, or processed'); x.fatal = true; throw x; }
+        const row = c.rows[c.pos++];
+        n.into.forEach((t, j) => assign(S, inv, t, row[j]));
+      });
+      case 'signal': case 'resignal': return simple(S, inv, () => { throw makeSignal(S, inv, n); });
+      case 'call': return simple(S, inv, () => callProc(S, inv, n));
+      case 'sql': return simple(S, inv, () => execSqlStmt(S, inv, n));
+      default: throw E(1105, 'HY000', 'Nepodržana naredba: ' + n.type);
+    }
+  }
+  function execDecl(S, inv, fr, d) {
+    switch (d.type) {
+      case 'dvar': {
+        let v = null;
+        if (d.def) simple(S, inv, () => { v = evalExpr(S, inv, d.def); });
+        for (const nm of d.names) fr.vars.set(nm.toLowerCase(), { name: nm, type: d.vtype, value: coerce(v, Object.assign({ var: nm }, d.vtype)) });
+        return;
+      }
+      case 'dcond': fr.conds.set(d.name.toLowerCase(), { state: d.state, errno: d.errno }); return;
+      case 'dcur': fr.curs.set(d.name.toLowerCase(), { q: d.q, open: false }); return;
+      case 'dhandler': fr.handlers.push(d); return;
+    }
+  }
+  function makeSignal(S, inv, n) {
+    let state = n.state, errno = null, text = null;
+    if (n.cname) {
+      const c = findIn(inv, 'conds', n.cname);
+      if (!c.state) return E(1645, '0K000', 'SIGNAL/RESIGNAL can only use a CONDITION defined with SQLSTATE');
+      state = c.state;
+    }
+    if (n.type === 'resignal') {
+      if (!inv.cond) return E(1645, '0K000', 'RESIGNAL when handler not active');
+      if (!state) { state = inv.cond.sqlstate; errno = inv.cond.errno; text = inv.cond.text; }
+    }
+    for (const it of n.items) {
+      const v = evalExpr(S, inv, it.expr);
+      if (it.item === 'MESSAGE_TEXT') text = v === null ? null : String(v);
+      else if (it.item === 'MYSQL_ERRNO') errno = +v;
+    }
+    const cls = state.slice(0, 2);
+    if (errno === null) errno = cls === '01' ? 1642 : cls === '02' ? 1643 : 1644;
+    if (text === null) text = cls === '01' ? 'Unhandled user-defined warning condition' : cls === '02' ? 'Unhandled user-defined not found condition' : 'Unhandled user-defined exception condition';
+    return E(errno, state, text);
+  }
+  function execSqlStmt(S, inv, n) {
+    const kw = n.kw;
+    if (inv && (inv.routine.kind === 'FUNCTION' || inv.routine.kind === 'TRIGGER') && ['START', 'COMMIT', 'ROLLBACK'].includes(kw)) throw E(1422, 'HY000', 'Explicit or implicit commit is not allowed in stored function or trigger.');
+    if (kw === 'START' && isW(n.toks[1], 'TRANSACTION')) { runSqlite(S, 'BEGIN', []); return; }
+    if (S.trigTables.length && ['INSERT', 'UPDATE', 'DELETE', 'REPLACE'].includes(kw)) {
+      const T = n.toks; let k = 1;
+      if (kw === 'DELETE') { while (T[k] && !isW(T[k], 'FROM')) k++; k++; }
+      else if (kw !== 'UPDATE') { while (T[k] && !isW(T[k], 'INTO')) k++; k++; }
+      else { while (T[k] && isW(T[k], ['LOW_PRIORITY', 'IGNORE'])) k++; }
+      const tn = T[k] && T[k].t === 'w' ? (isOp(T[k + 1], '.') && T[k + 2] ? T[k + 2].name : T[k].name) : '';
+      if (S.trigTables.some(x => x.toLowerCase() === tn.toLowerCase())) throw E(1442, 'HY000', `Can't update table '${tn}' in stored function/trigger because it is already used by statement which invoked this stored function/trigger.`);
+    }
+    const r = runSql(S, inv, n.toks, { select: kw === 'SELECT' || kw === 'WITH' });
+    if (n.into) {
+      if (r.columns.length !== n.into.length) throw E(1222, '21000', 'The used SELECT statements have a different number of columns');
+      if (r.values.length > 1) throw E(1172, '42000', 'Result consisted of more than one row');
+      if (!r.values.length) throw E(1329, '02000', 'No data - zero rows fetched, selected, or processed');
+      n.into.forEach((t, j) => assign(S, inv, t, r.values[0][j]));
+      return;
+    }
+    if (kw === 'SELECT' || kw === 'WITH' || kw === 'VALUES' || kw === 'PRAGMA' || r.columns.length) S.out.push(r);
+    else if (!inv) S.msg = ['INSERT', 'UPDATE', 'DELETE', 'REPLACE'].includes(kw) ? `Query OK, ${S.changes} ${S.changes === 1 ? 'row' : 'rows'} affected` : 'Query OK, 0 rows affected';
+  }
+
+  function argVal(S, inv, toks) { return evalExpr(S, inv, toks); }
+  function callProc(S, inv, n) {
+    const r = S.routines.get('p:' + n.name.toLowerCase());
+    if (!r) throw E(1305, '42000', `PROCEDURE unipu.${n.name} does not exist`);
+    if (r.params.length !== n.args.length) throw E(1318, '42000', `Incorrect number of arguments for PROCEDURE unipu.${r.name}; expected ${r.params.length}, got ${n.args.length}`);
+    const vals = [], outs = [];
+    r.params.forEach((p, j) => {
+      const a = n.args[j];
+      if (p.mode !== 'IN') {
+        let tg = null;
+        if (a.length === 1 && a[0].t === 'var' && !a[0].sys) tg = { sess: true, name: a[0].name };
+        else if (a.length === 1 && a[0].t === 'w' && inv && findVar(inv, a[0].name)) tg = { name: a[0].name };
+        if (!tg) throw E(1414, '42000', `OUT or INOUT argument ${j + 1} for routine unipu.${r.name} is not a variable or NEW pseudo-variable in BEFORE trigger`);
+        outs.push([j, tg]);
+        vals.push(p.mode === 'INOUT' ? argVal(S, inv, a) : null);
+      } else vals.push(argVal(S, inv, a));
+    });
+    const res = invoke(S, r, vals);
+    outs.forEach(([j, tg]) => assign(S, inv, tg, res.params[j]));
+  }
+
+  function invoke(S, r, vals) {
+    const key = r.kind[0].toLowerCase() + ':' + r.name.toLowerCase();
+    if (S.stack.includes(key)) {
+      if (r.kind === 'FUNCTION') throw E(1424, 'HY000', 'Recursive stored functions and triggers are not allowed.');
+      throw E(1456, 'HY000', `Recursive limit 0 (as set by the max_sp_recursion_depth variable) was exceeded for routine ${r.name}`);
+    }
+    if (S.stack.length > 30) throw E(1436, 'HY000', 'Thread stack overrun');
+    S.stack.push(key);
+    const inv = { routine: r, frames: [], cond: null };
+    const pf = newFrame(null);
+    r.params.forEach((p, j) => pf.vars.set(p.name.toLowerCase(), { name: p.name, type: p.type, value: coerce(vals[j], Object.assign({ var: p.name }, p.type)) }));
+    inv.frames.push(pf);
+    let ret, returned = false;
+    try { execStmt(S, inv, r.body); }
+    catch (e) {
+      if (e instanceof Ret) { ret = e.value; returned = true; }
+      else if (e instanceof Leave || e instanceof Iterate) { /* LEAVE vanjskog bloka = izlaz */ }
+      else throw e;
+    } finally { S.stack.pop(); }
+    if (r.kind === 'FUNCTION') {
+      if (!returned) throw E(1321, '2F005', `FUNCTION ${r.name} ended without RETURN`);
+      return { value: coerce(ret, Object.assign({ var: r.name }, r.returns)) };
+    }
+    return { params: r.params.map(p => pf.vars.get(p.name.toLowerCase()).value) };
+  }
+
+  function registerFunction(S, r) {
+    const db = S.db;
+    const fn = variadic((...args) => {
+      try {
+        const cur = S.routines.get('f:' + r.name.toLowerCase());
+        if (!cur) throw E(1305, '42000', `FUNCTION unipu.${r.name} does not exist`);
+        if (args.length !== cur.params.length) throw E(1318, '42000', `Incorrect number of arguments for FUNCTION unipu.${cur.name}; expected ${cur.params.length}, got ${args.length}`);
+        const savedOut = S.out; S.out = [];
+        try { return invoke(S, cur, args).value; } finally { S.out = savedOut; }
+      } catch (e) {
+        const c = e instanceof Cond ? e : E(1105, 'HY000', String(e && e.message || e));
+        S.pending = c; throw c.message;
+      }
+    });
+    db.create_function(r.name.toLowerCase(), fn);
+  }
+
+
+  // ---------- trigeri ----------
+  // Svaki MySQL triger izvodi interpreter. SQLite dobiva po jedan BEFORE i jedan AFTER triger
+  // za (tablica, događaj) koji pozivaju msp_trg(); izmjene SET NEW.x iz BEFORE trigera
+  // upisuju se u red odmah nakon umetanja/izmjene (AFTER korak), prije MySQL AFTER trigera.
+  function tableCols(S, table) { return runSqlite(S, `PRAGMA table_info("${table.replace(/"/g, '""')}")`, []).values.map(r => r[1]); }
+  function createTrigger(S, toks, text, j) {
+    const p = new P(toks.slice(j), text); p.exp('TRIGGER');
+    let ifNot = false; if (p.isW('IF')) { p.next(); p.exp('NOT'); p.exp('EXISTS'); ifNot = true; }
+    const name = p.name(); if (isOp(p.peek(), '.')) { p.next(); p.name(); }
+    if (p.isW('INSTEAD')) throw E(1064, '42000', 'MySQL ne podržava INSTEAD OF trigere; postoje samo BEFORE i AFTER.');
+    const tm = p.next(); if (!isW(tm, ['BEFORE', 'AFTER'])) throw SYNTAX(p.rest(tm));
+    const ev = p.next(); if (!isW(ev, ['INSERT', 'UPDATE', 'DELETE'])) throw SYNTAX(p.rest(ev));
+    if (p.isW('OF')) throw E(1064, '42000', 'MySQL nema UPDATE OF stupac; uvjet na stupac napiši s IF u tijelu trigera.');
+    p.exp('ON'); let table = p.name(); if (isOp(p.peek(), '.')) { p.next(); table = p.name(); }
+    if (p.isW('REFERENCING')) throw E(1064, '42000', 'MySQL nema REFERENCING: stari i novi red uvijek se zovu OLD i NEW.');
+    p.exp('FOR'); p.exp('EACH');
+    if (p.isW('STATEMENT')) throw E(1064, '42000', 'MySQL podržava samo FOR EACH ROW trigere.');
+    p.exp('ROW');
+    if (p.isW('WHEN')) throw E(1064, '42000', "MySQL nema WHEN uvjet na trigeru; uvjet napiši naredbom IF … THEN … END IF u tijelu trigera, near 'WHEN'");
+    let order = null; if (p.isW(['FOLLOWS', 'PRECEDES'])) { const w = p.next().u; order = { w, other: p.name() }; }
+    const key = name.toLowerCase();
+    if (S.triggers.has(key)) { if (ifNot) return; throw E(1359, 'HY000', 'Trigger already exists'); }
+    const ty = runSqlite(S, "SELECT type, name FROM sqlite_master WHERE lower(name) = lower(?) AND type IN ('table','view')", [table]).values[0];
+    if (!ty) throw E(1146, '42S02', `Table 'unipu.${table}' doesn't exist`);
+    if (ty[0] === 'view') throw E(1347, 'HY000', `'unipu.${table}' is not BASE TABLE`);
+    table = ty[1];
+    const cols = tableCols(S, table);
+    const body = parseStmt(p, { kind: 'TRIGGER' }); if (!p.eof()) throw SYNTAX(p.rest(p.peek()));
+    const r = { kind: 'TRIGGER', name, params: [], body, src: text.trim(), timing: tm.u, event: ev.u, table, created: now(), seq: (S.trigSeq = (S.trigSeq || 0) + 1) };
+    // NEW/OLD i njihovi stupci
+    const tk = sig(tokenize(text));
+    for (let i = 0; i < tk.length - 2; i++) if (isW(tk[i], ['NEW', 'OLD']) && isOp(tk[i + 1], '.') && tk[i + 2].t === 'w') {
+      const w = tk[i].u, c = tk[i + 2].name;
+      if (w === 'OLD' && r.event === 'INSERT') throw E(1363, 'HY000', 'There is no OLD row in on INSERT trigger');
+      if (w === 'NEW' && r.event === 'DELETE') throw E(1363, 'HY000', 'There is no NEW row in on DELETE trigger');
+      if (!cols.some(x => x.toLowerCase() === c.toLowerCase())) throw E(1054, '42S22', `Unknown column '${c}' in '${w}'`);
+    }
+    validate(r);
+    if (order) {
+      const o = S.triggers.get(order.other.toLowerCase());
+      if (!o || o.table !== table || o.timing !== r.timing || o.event !== r.event) throw E(3011, 'HY000', `Referenced trigger '${order.other}' for the given action time and event type does not exist.`);
+      r.seq = order.w === 'FOLLOWS' ? o.seq + 0.5 : o.seq - 0.5;
+    }
+    S.triggers.set(key, r);
+    syncTriggers(S, table, r.event);
+    S.msg = `Query OK, 0 rows affected (triger ${name} je stvoren: ${r.timing} ${r.event} ON ${table})`;
+  }
+  function dropTrigger(S, toks) {
+    let j = 2, ifx = false; if (isW(toks[2], 'IF')) { ifx = true; j = 4; }
+    let name = toks[j] && toks[j].name; if (isOp(toks[j + 1], '.')) name = toks[j + 2].name;
+    const t = S.triggers.get(String(name).toLowerCase());
+    if (!t) { if (ifx) { S.msg = 'Query OK, 0 rows affected, 1 warning (triger nije postojao)'; return; } throw E(1360, 'HY000', 'Trigger does not exist'); }
+    S.triggers.delete(String(name).toLowerCase()); syncTriggers(S, t.table, t.event);
+    S.msg = `Query OK, 0 rows affected (triger ${t.name} je obrisan)`;
+  }
+  function trigList(S, table, timing, event) { return [...S.triggers.values()].filter(t => t.table === table && t.event === event && (!timing || t.timing === timing)).sort((a, b) => a.seq - b.seq); }
+  function syncTriggers(S, table, event) {
+    const q = x => '"' + String(x).replace(/"/g, '""') + '"';
+    const nb = `msp_b_${event}_${table}`, na = `msp_a_${event}_${table}`;
+    runSqlite(S, `DROP TRIGGER IF EXISTS temp.${q(nb)}`, []); runSqlite(S, `DROP TRIGGER IF EXISTS temp.${q(na)}`, []);
+    const before = trigList(S, table, 'BEFORE', event), all = trigList(S, table, null, event);
+    if (!all.length) return;
+    const cols = tableCols(S, table); S.trigCols = S.trigCols || {}; S.trigCols[table + '|' + event] = cols;
+    const ref = event === 'DELETE' ? 'OLD' : 'NEW';
+    const args = [ref + '.rowid'].concat(event === 'UPDATE' ? cols.map(c => 'OLD.' + q(c)) : [], cols.map(c => ref + '.' + q(c)));
+    const mk = (nm, tmg) => runSqlite(S, `CREATE TEMP TRIGGER ${q(nm)} ${tmg} ${event} ON main.${q(table)} FOR EACH ROW BEGIN SELECT msp_trg('${table.replace(/'/g, "''")}', '${tmg}', '${event}', ${args.join(', ')}); END`, []);
+    if (before.length) mk(nb, 'BEFORE');
+    mk(na, 'AFTER');
+  }
+  function trgFire(S, a) {
+    if (S.suppressTrig > 0) return null;
+    try {
+      const [table, timing, event, rowid, ...vals] = a;
+      const cols = S.trigCols[table + '|' + event];
+      const rows = { event };
+      if (event === 'UPDATE') { rows.OLD = {}; rows.NEW = {}; cols.forEach((c, k) => { rows.OLD[c] = vals[k]; rows.NEW[c] = vals[cols.length + k]; }); }
+      else { const o = {}; cols.forEach((c, k) => { o[c] = vals[k]; }); rows[event === 'DELETE' ? 'OLD' : 'NEW'] = o; }
+      const qk = table + '|' + event; S.fixQ[qk] = S.fixQ[qk] || [];
+      if (timing === 'BEFORE') {
+        const changed = new Set();
+        for (const t of trigList(S, table, 'BEFORE', event)) runTrigger(S, t, rows, changed);
+        if (event !== 'DELETE') S.fixQ[qk].push(changed.size ? [...changed].map(c => [c, rows.NEW[c]]) : null);
+        return null;
+      }
+      // AFTER: najprije izmjene iz BEFORE trigera (SET NEW.x), zatim AFTER trigeri
+      if (event !== 'DELETE' && trigList(S, table, 'BEFORE', event).length) {
+        const fix = S.fixQ[qk].shift();
+        if (fix) {
+          S.suppressTrig++;
+          try { runSqlite(S, `UPDATE main."${table.replace(/"/g, '""')}" SET ${fix.map(([c]) => '"' + c.replace(/"/g, '""') + '" = ?').join(', ')} WHERE rowid = ?`, fix.map(x => x[1]).concat([rowid])); }
+          finally { S.suppressTrig--; }
+          fix.forEach(([c, v]) => { rows.NEW[c] = v; });
+        }
+      }
+      for (const t of trigList(S, table, 'AFTER', event)) runTrigger(S, t, rows, new Set());
+      return null;
+    } catch (e) {
+      const c = e instanceof Cond ? e : fromSqlite(e, S);
+      S.pending = c; throw c.message;
+    }
+  }
+  function runTrigger(S, t, rows, changed) {
+    if (S.stack.length > 30) throw E(1436, 'HY000', 'Thread stack overrun');
+    S.stack.push('t:' + t.name.toLowerCase()); S.trigTables.push(t.table);
+    const inv = { routine: t, frames: [newFrame(null)], cond: null, trig: { rows, changed } };
+    const savedOut = S.out; S.out = [];
+    try { execStmt(S, inv, t.body); }
+    catch (e) { if (!(e instanceof Leave || e instanceof Iterate)) throw e; }
+    finally { S.out = savedOut; S.stack.pop(); S.trigTables.pop(); }
+  }
+
+  // ---------- korisnici, uloge i privilegije (GRANT / REVOKE) ----------
+  const PRIV_ORDER = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'RELOAD', 'SHUTDOWN', 'PROCESS', 'FILE', 'REFERENCES', 'INDEX', 'ALTER', 'SHOW DATABASES', 'SUPER', 'CREATE TEMPORARY TABLES', 'LOCK TABLES', 'EXECUTE', 'REPLICATION SLAVE', 'REPLICATION CLIENT', 'CREATE VIEW', 'SHOW VIEW', 'CREATE ROUTINE', 'ALTER ROUTINE', 'CREATE USER', 'EVENT', 'TRIGGER', 'CREATE ROLE', 'DROP ROLE'];
+  const TABLE_ALL = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'REFERENCES', 'INDEX', 'ALTER', 'CREATE VIEW', 'SHOW VIEW', 'TRIGGER'];
+  const ROUTINE_ALL = ['EXECUTE', 'ALTER ROUTINE'];
+  const GLOBAL_ALL = PRIV_ORDER.filter(x => x !== 'GRANT OPTION');
+  const COL_PRIVS = ['SELECT', 'INSERT', 'UPDATE', 'REFERENCES'];
+  function userSpec(p) {
+    const t = p.next(); if (!t) throw SYNTAX('');
+    let user, host = '%';
+    if (t.t === 'str') user = t.val; else if (t.t === 'w') user = t.name; else throw SYNTAX(p.rest(t));
+    if (t.t === 'w' && isW(t, 'CURRENT_USER')) { if (isOp(p.peek(), '(')) { p.next(); p.expOp(')'); } return { user: 'root', host: 'localhost', key: 'root@localhost' }; }
+    const nx = p.peek(); if (nx && nx.t === 'var' && !nx.sys) { p.next(); host = nx.name; }
+    return { user, host, key: user.toLowerCase() + '@' + host.toLowerCase() };
+  }
+  const uq = u => `\`${u.user}\`@\`${u.host}\``;
+  const usq = u => `'${u.user}'@'${u.host}'`;
+  function createUser(S, toks, j, role) {
+    const p = new P(toks.slice(j + 1), ''); let ifNot = false;
+    if (p.isW('IF')) { p.next(); p.exp('NOT'); p.exp('EXISTS'); ifNot = true; }
+    const made = [];
+    do {
+      const u = userSpec(p);
+      if (p.acc('IDENTIFIED')) { if (p.acc('WITH')) p.next(); p.exp('BY'); p.next(); }
+      if (S.users.has(u.key) || u.key === 'root@localhost') { if (ifNot) continue; throw E(1396, 'HY000', `Operation CREATE ${role ? 'ROLE' : 'USER'} failed for ${usq(u)}`); }
+      S.users.set(u.key, { user: u.user, host: u.host, role }); made.push(u.user);
+    } while (p.accOp(','));
+    while (!p.eof()) p.next();
+    S.msg = `Query OK, 0 rows affected (${role ? 'uloga' : 'korisnik'} ${made.join(', ') || '–'})`;
+  }
+  function dropUser(S, toks, role) {
+    const p = new P(toks.slice(2), ''); let ifx = false;
+    if (p.isW('IF')) { p.next(); p.exp('EXISTS'); ifx = true; }
+    do {
+      const u = userSpec(p);
+      if (!S.users.has(u.key)) { if (ifx) continue; throw E(1396, 'HY000', `Operation DROP ${role ? 'ROLE' : 'USER'} failed for ${usq(u)}`); }
+      S.users.delete(u.key);
+      for (const k of [...S.grants.keys()]) if (k.startsWith(u.key + '|')) S.grants.delete(k);
+      S.roleGrants = S.roleGrants.filter(g => g.role !== u.key && g.to !== u.key);
+    } while (p.accOp(','));
+    S.msg = 'Query OK, 0 rows affected';
+  }
+  function parsePrivs(p) {
+    const list = [];
+    for (;;) {
+      const t = p.peek(); if (!t || isW(t, ['ON', 'TO', 'FROM'])) break;
+      let w = p.next(); if (w.t !== 'w' && w.t !== 'str') throw SYNTAX(p.rest(w));
+      let name = w.t === 'str' ? w.val : w.u, raw = w;
+      const two = { CREATE: ['VIEW', 'ROUTINE', 'USER', 'ROLE', 'TEMPORARY'], SHOW: ['VIEW', 'DATABASES'], ALTER: ['ROUTINE'], GRANT: ['OPTION'], LOCK: ['TABLES'], DROP: ['ROLE'] };
+      if (two[name] && p.isW(two[name])) { name += ' ' + p.next().u; if (name === 'CREATE TEMPORARY') { p.exp('TABLES'); name += ' TABLES'; } }
+      if (name === 'ALL') { p.acc('PRIVILEGES'); name = 'ALL PRIVILEGES'; }
+      let cols = null;
+      if (isOp(p.peek(), '(')) { p.next(); cols = []; do { cols.push(p.name()); } while (p.accOp(',')); p.expOp(')'); }
+      let host = null; if (p.peek() && p.peek().t === 'var') host = p.next().name;
+      list.push({ name, cols, raw, host });
+      if (!p.accOp(',')) break;
+    }
+    return list;
+  }
+  function parseObj(S, p) {
+    let type = 'TABLE';
+    if (p.isW(['TABLE', 'PROCEDURE', 'FUNCTION'])) type = p.next().u;
+    const a = p.next();
+    if (isOp(a, '*')) { if (isOp(p.peek(), '.')) { p.next(); p.expOp('*'); } return { type: 'GLOBAL', key: '*.*', label: '*.*' }; }
+    if (!a || a.t !== 'w') throw SYNTAX(p.rest(a));
+    let name = a.name;
+    if (isOp(p.peek(), '.')) { p.next(); const b = p.next(); if (isOp(b, '*')) return { type: 'DB', key: name.toLowerCase() + '.*', label: '`' + name + '`.*' }; name = b.name; }
+    if (type === 'TABLE') {
+      const r = runSqlite(S, "SELECT name FROM sqlite_master WHERE lower(name) = lower(?) AND type IN ('table','view')", [name]).values[0];
+      if (!r) throw E(1146, '42S02', `Table 'unipu.${name}' doesn't exist`);
+      name = r[0];
+    } else {
+      const r = S.routines.get(type[0].toLowerCase() + ':' + name.toLowerCase());
+      if (!r) throw E(1305, '42000', `${type} unipu.${name} does not exist`);
+      name = r.name;
+    }
+    return { type, name, key: type + ':' + name.toLowerCase(), label: (type === 'TABLE' ? '' : type + ' ') + '`unipu`.`' + name + '`' };
+  }
+  function grantStmt(S, toks, text, revoke) {
+    const p = new P(toks.slice(1), text);
+    const privs = parsePrivs(p);
+    const pubHint = ' (MySQL nema PUBLIC; privilegije se daju imenovanim korisnicima ili ulogama)';
+    if (!p.isW('ON')) {
+      // dodjela / oduzimanje uloge
+      const word = revoke ? 'FROM' : 'TO';
+      if (!p.acc(word)) throw SYNTAX(p.rest(p.peek()));
+      const roles = privs.map(x => { const u = { user: x.raw.t === 'str' ? x.raw.val : x.raw.name, host: x.host || '%' }; u.key = u.user.toLowerCase() + '@' + u.host.toLowerCase(); if (!S.users.has(u.key)) throw E(3523, 'HY000', `Unknown authorization ID ${uq(u)}`); return u; });
+      do {
+        const u = userSpec(p);
+        if (!S.users.has(u.key)) throw E(revoke ? 1396 : 3523, 'HY000', `Unknown authorization ID ${uq(u)}`);
+        for (const r of roles) {
+          const has = S.roleGrants.findIndex(g => g.role === r.key && g.to === u.key);
+          if (revoke) { if (has >= 0) S.roleGrants.splice(has, 1); }
+          else if (has < 0) S.roleGrants.push({ role: r.key, to: u.key });
+        }
+      } while (p.accOp(','));
+      S.msg = 'Query OK, 0 rows affected'; return;
+    }
+    p.exp('ON');
+    const obj = parseObj(S, p);
+    if (revoke && p.isW('TO')) throw E(1064, '42000', `You have an error in your SQL syntax; near '${join(toks.slice(toks.indexOf(p.peek())))}' (REVOKE koristi FROM, a ne TO)`);
+    p.exp(revoke ? 'FROM' : 'TO');
+    const users = [];
+    do {
+      const save = p.i; const u = userSpec(p);
+      if (u.user.toUpperCase() === 'PUBLIC' && !S.users.has(u.key)) throw E(revoke ? 1147 : 1410, '42000', (revoke ? `There is no such grant defined for user 'PUBLIC' on host '%'` : 'You are not allowed to create a user with GRANT') + pubHint);
+      if (!S.users.has(u.key)) throw E(revoke ? 1147 : 1410, '42000', revoke ? `There is no such grant defined for user '${u.user}' on host '${u.host}'` : `You are not allowed to create a user with GRANT (korisnik ${usq(u)} ne postoji; prvo CREATE USER)`);
+      users.push(u);
+    } while (p.accOp(','));
+    let withGrant = false;
+    if (!revoke && p.acc('WITH')) { p.exp('GRANT'); p.exp('OPTION'); withGrant = true; }
+    if (!p.eof()) throw SYNTAX(p.rest(p.peek()));
+    // provjera privilegija za objekt
+    const allowed = obj.type === 'TABLE' ? TABLE_ALL.concat(['GRANT OPTION']) : obj.type === 'PROCEDURE' || obj.type === 'FUNCTION' ? ROUTINE_ALL.concat(['GRANT OPTION']) : PRIV_ORDER.concat(['GRANT OPTION', 'USAGE']);
+    const cols = obj.type === 'TABLE' ? tableCols(S, obj.name) : [];
+    for (const x of privs) {
+      if (x.name === 'ALL PRIVILEGES' || x.name === 'USAGE') continue;
+      if (!allowed.includes(x.name)) throw E(1144, '42000', `Illegal GRANT/REVOKE command; please consult the manual to see which privileges can be used (${x.name} ne vrijedi za ${obj.type === 'TABLE' ? 'tablicu' : obj.type.toLowerCase()})`);
+      if (x.cols) {
+        if (!COL_PRIVS.includes(x.name) || obj.type !== 'TABLE') throw E(1221, 'HY000', `Incorrect usage of COLUMN GRANT and NON-COLUMN PRIVILEGES`);
+        x.cols = x.cols.map(c => { const k = cols.find(z => z.toLowerCase() === c.toLowerCase()); if (!k) throw E(1054, '42S22', `Unknown column '${c}' in '${obj.name}'`); return k; });
+      }
+    }
+    const allList = obj.type === 'TABLE' ? TABLE_ALL : obj.type === 'GLOBAL' || obj.type === 'DB' ? GLOBAL_ALL : ROUTINE_ALL;
+    for (const u of users) {
+      const key = u.key + '|' + obj.key;
+      let g = S.grants.get(key);
+      if (!revoke) {
+        if (!g) { g = { user: u, obj, privs: new Set(), cols: new Map(), grantOpt: false }; S.grants.set(key, g); }
+        for (const x of privs) {
+          if (x.name === 'USAGE') continue;
+          if (x.name === 'ALL PRIVILEGES') { allList.forEach(v => g.privs.add(v)); continue; }
+          if (x.name === 'GRANT OPTION') { g.grantOpt = true; continue; }
+          if (x.cols) { const set = g.cols.get(x.name) || new Set(); x.cols.forEach(c => set.add(c)); g.cols.set(x.name, set); }
+          else g.privs.add(x.name);
+        }
+        if (withGrant) g.grantOpt = true;
+      } else {
+        const noGrant = () => E(1147, '42000', `There is no such grant defined for user '${u.user}' on host '${u.host}' on table '${obj.name || obj.label}'`);
+        if (!g) throw noGrant();
+        for (const x of privs) {
+          if (x.name === 'ALL PRIVILEGES') { g.privs.clear(); g.cols.clear(); continue; }
+          if (x.name === 'GRANT OPTION') { g.grantOpt = false; continue; }
+          if (x.cols) { const set = g.cols.get(x.name); if (!set || x.cols.some(c => !set.has(c))) throw noGrant(); x.cols.forEach(c => set.delete(c)); if (!set.size) g.cols.delete(x.name); }
+          else { if (!g.privs.has(x.name)) throw noGrant(); g.privs.delete(x.name); }
+        }
+        if (!g.privs.size && !g.cols.size && !g.grantOpt) S.grants.delete(key);
+      }
+    }
+    S.msg = 'Query OK, 0 rows affected';
+  }
+  function showGrants(S, toks) {
+    const p = new P(toks.slice(2), '');
+    let u = { user: 'root', host: 'localhost', key: 'root@localhost' };
+    if (p.acc('FOR')) u = userSpec(p);
+    const head = `Grants for ${u.user}@${u.host}`;
+    if (u.key === 'root@localhost') { S.out.push({ columns: [head], values: [['GRANT ALL PRIVILEGES ON *.* TO `root`@`localhost` WITH GRANT OPTION']] }); return; }
+    if (!S.users.has(u.key)) throw E(1141, '42000', `There is no such grant defined for user '${u.user}' on host '${u.host}'`);
+    const rows = [];
+    const fmt = g => {
+      const allList = g.obj.type === 'TABLE' ? TABLE_ALL : g.obj.type === 'GLOBAL' || g.obj.type === 'DB' ? GLOBAL_ALL : ROUTINE_ALL;
+      let parts;
+      if (allList.every(x => g.privs.has(x))) parts = ['ALL PRIVILEGES'];
+      else parts = PRIV_ORDER.filter(x => g.privs.has(x) || g.cols.has(x)).map(x => g.privs.has(x) ? x : `${x} (${[...g.cols.get(x)].sort().map(c => '`' + c + '`').join(', ')})`);
+      if (!parts.length) parts = ['USAGE'];
+      return `GRANT ${parts.join(', ')} ON ${g.obj.label} TO ${uq(g.user)}${g.grantOpt ? ' WITH GRANT OPTION' : ''}`;
+    };
+    const mine = [...S.grants.values()].filter(g => g.user.key === u.key);
+    const glob = mine.find(g => g.obj.type === 'GLOBAL');
+    rows.push([glob ? fmt(glob) : `GRANT USAGE ON *.* TO ${uq(S.users.get(u.key))}`]);
+    mine.filter(g => g.obj.type !== 'GLOBAL').forEach(g => rows.push([fmt(g)]));
+    const roles = S.roleGrants.filter(g => g.to === u.key).map(g => { const r = S.users.get(g.role); return r ? uq(r) : null; }).filter(Boolean);
+    if (roles.length) rows.push([`GRANT ${roles.join(',')} TO ${uq(S.users.get(u.key))}`]);
+    S.out.push({ columns: [head], values: rows });
+  }
+
+  // ---------- naredbe na vrhu (klijent) ----------
+  function execTop(S, text) {
+    const all = tokenize(text), toks = sig(all);
+    if (!toks.length) return;
+    const w0 = toks[0].t === 'w' ? toks[0].u : '', w1 = toks[1] && toks[1].t === 'w' ? toks[1].u : '';
+    S.changes = 0; S.curText = text;
+    if (w0 === 'CREATE') {
+      let j = 1; if (w1 === 'OR') j = 3; if (isW(toks[j], 'DEFINER')) { j += 3; while (toks[j] && (toks[j].t === 'var' || isOp(toks[j], '@'))) j++; }
+      const kind = toks[j] && toks[j].t === 'w' ? toks[j].u : '';
+      if (kind === 'FUNCTION' || kind === 'PROCEDURE') {
+        const r = parseRoutine(toks, text);
+        const key = r.kind[0].toLowerCase() + ':' + r.name.toLowerCase();
+        if (S.routines.has(key)) { if (r.ifNotExists) return; throw E(1304, '42000', `${r.kind} ${r.name} already exists`); }
+        if (r.kind === 'FUNCTION' && Object.keys(FN_MAP).concat(['COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'ROUND', 'ABS', 'LENGTH', 'UPPER', 'LOWER', 'COALESCE', 'IFNULL', 'NULLIF', 'SUBSTR', 'REPLACE', 'TRIM', 'CAST']).includes(r.name.toUpperCase()))
+          throw E(1585, 'HY000', `This function '${r.name}' has the same name as a native function`);
+        r.src = text.trim(); r.created = now();
+        S.routines.set(key, r);
+        if (r.kind === 'FUNCTION') registerFunction(S, r);
+        S.msg = `Query OK, 0 rows affected (${r.kind === 'FUNCTION' ? 'funkcija' : 'procedura'} ${r.name} je stvorena)`;
+        return;
+      }
+      if (kind === 'TRIGGER') return createTrigger(S, toks, text, j);
+      if (kind === 'USER' || kind === 'ROLE') return createUser(S, toks, j, kind === 'ROLE');
+    }
+    if (w0 === 'DROP' && w1 === 'TRIGGER') return dropTrigger(S, toks);
+    if (w0 === 'DROP' && (w1 === 'USER' || w1 === 'ROLE')) return dropUser(S, toks, w1 === 'ROLE');
+    if (w0 === 'GRANT') return grantStmt(S, toks, text, false);
+    if (w0 === 'REVOKE') return grantStmt(S, toks, text, true);
+    if (w0 === 'DROP' && w1 === 'TABLE') {
+      const n = sqlNode(toks, toks[0]); simple(S, null, () => execSqlStmt(S, null, n));
+      const have = new Set(runSqlite(S, "SELECT lower(name) FROM sqlite_master WHERE type = 'table'", []).values.map(r => r[0]));
+      for (const [k, t] of [...S.triggers]) if (!have.has(t.table.toLowerCase())) S.triggers.delete(k);
+      return;
+    }
+    if (w0 === 'DROP' && (w1 === 'FUNCTION' || w1 === 'PROCEDURE')) {
+      let j = 2, ifx = false; if (isW(toks[2], 'IF')) { ifx = true; j = 4; }
+      let name = toks[j] && toks[j].name; if (isOp(toks[j + 1], '.')) name = toks[j + 2].name;
+      const key = w1[0].toLowerCase() + ':' + String(name).toLowerCase();
+      if (!S.routines.has(key)) { if (ifx) { S.msg = 'Query OK, 0 rows affected, 1 warning (rutina nije postojala)'; return; } throw E(1305, '42000', `${w1} unipu.${name} does not exist`); }
+      S.routines.delete(key);
+      S.msg = `Query OK, 0 rows affected (${w1 === 'FUNCTION' ? 'funkcija' : 'procedura'} ${name} je obrisana)`;
+      return;
+    }
+    if (w0 === 'SHOW') return showStmt(S, toks);
+    if (w0 === 'CALL') {
+      const p = new P(toks, text); const n = parseStmt(p, {}); if (!p.eof()) throw SYNTAX(p.rest(p.peek()));
+      simple(S, null, () => callProc(S, null, n));
+      if (!S.msg) S.msg = 'Query OK, 0 rows affected';
+      return;
+    }
+    if (w0 === 'SET' && !(toks[1] && toks[1].t === 'w' && ['TRANSACTION', 'NAMES', 'FOREIGN_KEY_CHECKS', 'CHARACTER'].includes(w1))) {
+      const p = new P(toks, text); const n = parseStmt(p, {});
+      for (const it of n.items) { if (!it.target.sess) throw E(1193, 'HY000', `Unknown system variable '${it.target.name}'`); assign(S, null, it.target, evalExpr(S, null, it.expr)); }
+      return;
+    }
+    if (w0 === 'SET' && w1 === 'FOREIGN_KEY_CHECKS') { const v = toks[3] ? toks[3].v : '1'; runSqlite(S, 'PRAGMA foreign_keys = ' + (v === '0' ? 'OFF' : 'ON'), []); return; }
+    if (w0 === 'DECLARE' || w0 === 'IF' || w0 === 'WHILE' || w0 === 'REPEAT' || w0 === 'LOOP' || w0 === 'FETCH' || w0 === 'OPEN' || w0 === 'RETURN' || w0 === 'LEAVE' || (w0 === 'BEGIN' && toks.length > 1 && !isW(toks[1], ['TRANSACTION', 'WORK'])))
+      throw E(1064, '42000', `${w0} je dopušten samo unutar tijela pohranjene rutine (CREATE FUNCTION/PROCEDURE … BEGIN … END), near '${join(toks.slice(0, 6))}'`);
+    if (w0 === 'SIGNAL') throw makeSignalTop(S, toks, text);
+    const n = sqlNode(toks, toks[0]);
+    simple(S, null, () => execSqlStmt(S, null, n));
+  }
+  function makeSignalTop(S, toks, text) { const p = new P(toks, text); const n = parseStmt(p, {}); return makeSignal(S, { frames: [], cond: null }, n); }
+  function showStmt(S, toks) {
+    const u = toks.map(t => t.u || t.v);
+    if (u[1] === 'CREATE' && (u[2] === 'PROCEDURE' || u[2] === 'FUNCTION')) {
+      const name = toks[3] && toks[3].name; const r = S.routines.get(u[2][0].toLowerCase() + ':' + String(name).toLowerCase());
+      if (!r) throw E(1305, '42000', `${u[2]} ${name} does not exist`);
+      S.out.push({ columns: [u[2] === 'PROCEDURE' ? 'Procedure' : 'Function', 'Create ' + (u[2] === 'PROCEDURE' ? 'Procedure' : 'Function')], values: [[r.name, r.src]] });
+      return;
+    }
+    if ((u[1] === 'PROCEDURE' || u[1] === 'FUNCTION') && u[2] === 'STATUS') {
+      const like = u[3] === 'LIKE' && toks[4] ? toks[4].val : null;
+      const re = like ? new RegExp('^' + like.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*').replace(/_/g, '.') + '$', 'i') : null;
+      const vals = [...S.routines.values()].filter(r => r.kind === u[1] && (!re || re.test(r.name))).map(r => ['unipu', r.name, r.kind, r.created]);
+      S.out.push({ columns: ['Db', 'Name', 'Type', 'Created'], values: vals });
+      return;
+    }
+    if (u[1] === 'TRIGGERS') { S.out.push({ columns: ['Trigger', 'Event', 'Table', 'Timing', 'Created'], values: [...S.triggers.values()].map(t => [t.name, t.event, t.table, t.timing, t.created]) }); return; }
+    if (u[1] === 'CREATE' && u[2] === 'TRIGGER') {
+      const t = S.triggers.get(String(toks[3] && toks[3].name).toLowerCase());
+      if (!t) throw E(1360, 'HY000', 'Trigger does not exist');
+      S.out.push({ columns: ['Trigger', 'SQL Original Statement'], values: [[t.name, t.src]] }); return;
+    }
+    if (u[1] === 'GRANTS') return showGrants(S, toks);
+    if (u[1] === 'TABLES') { S.out.push(runSqlite(S, "SELECT name AS Tables_in_unipu FROM sqlite_master WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' ORDER BY name", [])); return; }
+    if (u[1] === 'WARNINGS') { S.out.push({ columns: ['Level', 'Code', 'Message'], values: S.lastWarnings.map(w => ['Warning', w.errno, w.text]) }); return; }
+    throw E(1064, '42000', 'Vježbaonica podržava SHOW CREATE PROCEDURE/FUNCTION/TRIGGER, SHOW PROCEDURE/FUNCTION STATUS, SHOW TRIGGERS, SHOW GRANTS, SHOW TABLES i SHOW WARNINGS.');
+  }
+
+  // javno sučelje: izvršava skriptu, vraća listu rezultata kao sql.js db.exec
+  function exec(db, script) {
+    const S = attach(db);
+    const results = [];
+    S.out = results; S.msg = null; S.steps = 0; S.stack = []; S.pending = null; S.warnings = []; S.trigTables = []; S.fixQ = {}; S.suppressTrig = 0;
+    let n = 0;
+    try {
+      for (const st of splitScript(script)) { n++; S.msg = null; S.warnings = []; execTop(S, st); S.lastWarnings = S.warnings; }
+    } catch (e) {
+      S.lastWarnings = S.warnings;
+      const c = e instanceof Cond ? e : (e instanceof Leave || e instanceof Iterate || e instanceof Ret || e instanceof ExitTo) ? E(1105, 'HY000', 'Neočekivani kontrolni tok') : fromSqlite(e, S);
+      c.partial = results; c.stmtNo = n;
+      throw c;
+    } finally { S.out = null; }
+    S.lastCount = n;
+    return results;
+  }
+  function info(db) { const S = attach(db); return { msg: S.msg, changes: S.changes, warnings: S.lastWarnings || [] }; }
+  function routines(db) { const S = attach(db); return [...S.routines.values()].map(r => ({ kind: r.kind, name: r.name, params: r.params.map(p => (r.kind === 'PROCEDURE' ? p.mode + ' ' : '') + p.name + ' ' + p.type.txt), returns: r.returns && r.returns.txt, src: r.src }))
+    .concat([...S.triggers.values()].sort((a, b) => a.seq - b.seq).map(t => ({ kind: 'TRIGGER', name: t.name, params: [], sig: `${t.timing} ${t.event} ON ${t.table}`, src: t.src }))); }
+  function users(db) { const S = attach(db); return [...S.users.values()].map(u => ({ user: u.user, host: u.host, role: u.role })); }
+
+  return { exec, attach, info, routines, users, splitScript, tokenize, translate: (sql, vars) => translate(sig(tokenize(sql)), vars ? (n => vars[n] !== undefined ? { v: vars[n] } : null) : null, () => null, { select: /^\s*select/i.test(sql) }), Cond };
+})();
+</script>
+<script>
+const INIT_SQL = `
+CREATE TABLE poslovnica (
+  poslovnica_naziv VARCHAR(30) PRIMARY KEY,
+  grad VARCHAR(30) NOT NULL
+);
+INSERT INTO poslovnica VALUES ('Pula Centar', 'Pula'), ('Rijeka Korzo', 'Rijeka'), ('Zagreb Ilica', 'Zagreb');
+
+CREATE TABLE racun (
+  broj_racuna VARCHAR(10) PRIMARY KEY,
+  poslovnica VARCHAR(30) NOT NULL REFERENCES poslovnica (poslovnica_naziv),
+  saldo NUMERIC(12,2) NOT NULL DEFAULT 0,
+  zadnja_promjena TIMESTAMP NULL
+);
+INSERT INTO racun (broj_racuna, poslovnica, saldo) VALUES
+  ('A-101', 'Pula Centar', 500.00), ('A-102', 'Pula Centar', 1200.00),
+  ('A-201', 'Rijeka Korzo', 50.00), ('A-202', 'Rijeka Korzo', 3000.00),
+  ('A-301', 'Zagreb Ilica', 800.00);
+
+CREATE TABLE depozitor (
+  klijent_naziv VARCHAR(40) NOT NULL,
+  broj_racuna VARCHAR(10) NOT NULL REFERENCES racun (broj_racuna) ON DELETE CASCADE ON UPDATE CASCADE,
+  PRIMARY KEY (klijent_naziv, broj_racuna)
+);
+INSERT INTO depozitor VALUES
+  ('Ana Horvat', 'A-101'), ('Marko Kovač', 'A-102'), ('Ivana Babić', 'A-201'),
+  ('Ana Horvat', 'A-202'), ('Petar Novak', 'A-301'), ('Ivana Babić', 'A-301');
+
+CREATE TABLE kredit (
+  broj_racuna VARCHAR(10) PRIMARY KEY,
+  poslovnica VARCHAR(30) NOT NULL REFERENCES poslovnica (poslovnica_naziv),
+  saldo NUMERIC(12,2) NOT NULL
+);
+INSERT INTO kredit VALUES ('A-201', 'Rijeka Korzo', 100.00);
+
+CREATE TABLE duznik (
+  klijent_naziv VARCHAR(40) NOT NULL,
+  broj_racuna VARCHAR(10) NOT NULL,
+  PRIMARY KEY (klijent_naziv, broj_racuna)
+);
+INSERT INTO duznik VALUES ('Ivana Babić', 'A-201');
+
+CREATE TABLE racun_log (
+  log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  broj_racuna VARCHAR(10) NOT NULL,
+  stari_saldo NUMERIC(12,2),
+  novi_saldo NUMERIC(12,2),
+  vrijeme TIMESTAMP NOT NULL DEFAULT (datetime('now', 'localtime'))
+);
+
+CREATE TABLE djelatnik (
+  djelatnik_id INTEGER PRIMARY KEY,
+  ime VARCHAR(30) NOT NULL,
+  prezime VARCHAR(30) NOT NULL,
+  email VARCHAR(60),
+  osobni_telefon VARCHAR(20),
+  odjel VARCHAR(20),
+  placa NUMERIC(8,2)
+);
+INSERT INTO djelatnik VALUES
+  (1, 'Lana', 'Perić', 'lana.peric@banka.hr', '091 111 2233', 'HR', 1650.00),
+  (2, 'Tomislav', 'Jurić', 'tomislav.juric@banka.hr', '098 222 3344', 'Šalter', 1320.00),
+  (3, 'Maja', 'Grgić', 'maja.grgic@banka.hr', '095 333 4455', 'Krediti', 1480.00),
+  (4, 'Dino', 'Šarić', 'dino.saric@banka.hr', '092 444 5566', 'Šalter', 1290.00);
+
+CREATE TABLE transakcija (
+  transakcija_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  broj_racuna VARCHAR(10) NOT NULL,
+  iznos NUMERIC(12,2) NOT NULL,
+  vrijeme TIMESTAMP NOT NULL DEFAULT (datetime('now', 'localtime'))
+);
+`;
+
+// Zadaci za vježbaonicu 06 (Napredni SQL DDL). Slajdovi prema ispravljenoj prezentaciji.
+const SQ = s => s.replace(/^\n/, '');
+
+const ST_STANJE = SQ(`
+DROP TABLE IF EXISTS poslovnica_stanje;
+CREATE TABLE poslovnica_stanje (
+  poslovnica VARCHAR(30) PRIMARY KEY,
+  broj_racuna INT NOT NULL,
+  ukupni_saldo NUMERIC(14,2) NOT NULL
+);
+INSERT INTO poslovnica_stanje
+  SELECT poslovnica, COUNT(*), SUM(saldo) FROM racun GROUP BY poslovnica;`);
+const Q_STANJE = 'SELECT poslovnica, COUNT(*), SUM(saldo) FROM racun GROUP BY poslovnica ORDER BY poslovnica;';
+const G = (u, line) => [`GRANT USAGE ON *.* TO \`${u}\`@\`%\``].concat(line ? [].concat(line) : []).map(x => [x]);
+
+const SECTIONS = [
+  { id: 'A', title: 'Trigeri', slides: '9–14' },
+  { id: 'B', title: 'Prekoračenje računa', slides: '16–21' },
+  { id: 'C', title: 'Triger umjesto ograničenja', slides: '22–24' },
+  { id: 'D', title: 'Materijalizirani pogledi', slides: '24–29' },
+  { id: 'E', title: 'Autorizacija', slides: '31–46' },
+];
+
+const TASKS = [
+  // A — trigeri
+  { id: 'A1', s: 'A', slide: 9, star: true, title: 'Triger koji vodi dnevnik promjena',
+    text: 'Napiši triger trg_racun_log koji nakon svake izmjene retka u tablici racun upisuje u racun_log broj računa, stari i novi saldo.',
+    note: 'U MySQL-u se stari i novi red uvijek zovu OLD i NEW. Triger bez BEGIN … END može imati jednu naredbu; s više naredbi treba BEGIN … END (i DELIMITER u MySQL klijentu).',
+    sol: SQ(`
+CREATE TRIGGER trg_racun_log AFTER UPDATE ON racun
+FOR EACH ROW
+  INSERT INTO racun_log (broj_racuna, stari_saldo, novi_saldo)
+  VALUES (OLD.broj_racuna, OLD.saldo, NEW.saldo);`),
+    tests: [
+      { sql: "UPDATE racun SET saldo = saldo - 100 WHERE broj_racuna = 'A-101'; SELECT broj_racuna, stari_saldo, novi_saldo FROM racun_log;", expect: [['A-101', 500, 400]], why: 'isplata 100 € s računa A-101' },
+      { sql: "UPDATE racun SET saldo = saldo + 10 WHERE poslovnica = 'Pula Centar'; SELECT broj_racuna, stari_saldo, novi_saldo FROM racun_log ORDER BY log_id;", expect: [['A-101', 500, 400], ['A-101', 400, 410], ['A-102', 1200, 1210]], why: 'triger se izvodi za svaki izmijenjeni red (FOR EACH ROW)' },
+    ],
+    hints: ['Kostur: CREATE TRIGGER ime AFTER UPDATE ON racun FOR EACH ROW naredba;', 'Naredba je INSERT INTO racun_log (broj_racuna, stari_saldo, novi_saldo) VALUES (OLD.broj_racuna, OLD.saldo, NEW.saldo);'] },
+
+  { id: 'A2', s: 'A', slide: 18, star: true, title: 'Uvjet unutar trigera',
+    text: 'MySQL nema uvjet WHEN na trigeru. Napiši triger trg_racun_log koji u racun_log upisuje red samo kad se saldo stvarno promijeni (a ne kad se mijenja npr. samo zadnja_promjena).',
+    sol: SQ(`
+DROP TRIGGER IF EXISTS trg_racun_log;
+CREATE TRIGGER trg_racun_log AFTER UPDATE ON racun
+FOR EACH ROW
+BEGIN
+  IF OLD.saldo <> NEW.saldo THEN
+    INSERT INTO racun_log (broj_racuna, stari_saldo, novi_saldo)
+    VALUES (OLD.broj_racuna, OLD.saldo, NEW.saldo);
+  END IF;
+END;`),
+    tests: [
+      { sql: 'UPDATE racun SET zadnja_promjena = NOW(); SELECT COUNT(*) FROM racun_log;', expect: [[0]], why: 'promjena drugog stupca ne smije se zapisati' },
+      { sql: "UPDATE racun SET saldo = saldo WHERE broj_racuna = 'A-201'; SELECT COUNT(*) FROM racun_log;", expect: [[0]], why: 'saldo je ostao isti' },
+      { sql: "UPDATE racun SET saldo = 75 WHERE broj_racuna = 'A-201'; SELECT broj_racuna, stari_saldo, novi_saldo FROM racun_log;", expect: [['A-201', 50, 75]], why: 'saldo se promijenio s 50 na 75' },
+    ],
+    hints: ['Uvjet ide u tijelo: IF OLD.saldo <> NEW.saldo THEN … END IF;', 'Tijelo s IF-om omotaj u BEGIN … END.'] },
+
+  { id: 'A3', s: 'A', slide: 14, title: 'BEFORE triger mijenja novi red',
+    text: 'Napiši triger trg_racun_novi koji prije umetanja računa broj računa pretvori u velika slova i postavi zadnja_promjena na trenutno vrijeme.',
+    note: 'Samo BEFORE triger smije mijenjati NEW (SET NEW.stupac = …). U AFTER trigeru to javlja ERROR 1362.',
+    sol: SQ(`
+CREATE TRIGGER trg_racun_novi BEFORE INSERT ON racun
+FOR EACH ROW
+BEGIN
+  SET NEW.broj_racuna = UPPER(NEW.broj_racuna);
+  SET NEW.zadnja_promjena = NOW();
+END;`),
+    tests: [
+      { sql: "INSERT INTO racun (broj_racuna, poslovnica, saldo) VALUES ('a-401', 'Pula Centar', 100), ('a-402', 'Rijeka Korzo', 0); SELECT broj_racuna, zadnja_promjena IS NOT NULL FROM racun WHERE broj_racuna LIKE 'A-4%' ORDER BY broj_racuna;", expect: [['A-401', 1], ['A-402', 1]], why: 'oba nova računa imaju velika slova i vrijeme promjene' },
+      { sql: "SELECT COUNT(*) FROM racun WHERE zadnja_promjena IS NOT NULL;", expect: [[2]], why: 'postojeći računi ostaju nepromijenjeni' },
+    ],
+    hints: ['BEFORE INSERT ON racun FOR EACH ROW BEGIN … END;', 'SET NEW.broj_racuna = UPPER(NEW.broj_racuna); i SET NEW.zadnja_promjena = NOW();'] },
+
+  { id: 'A4', s: 'A', slide: 13, star: true, title: 'BEFORE triger prekida naredbu',
+    text: "Napiši triger trg_racun_provjera koji sprječava otvaranje računa s negativnim saldom: SIGNAL SQLSTATE '45000' s porukom 'Novi račun ne može imati negativan saldo!'.",
+    sol: SQ(`
+CREATE TRIGGER trg_racun_provjera BEFORE INSERT ON racun
+FOR EACH ROW
+BEGIN
+  IF NEW.saldo < 0 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Novi račun ne može imati negativan saldo!';
+  END IF;
+END;`),
+    tests: [
+      { sql: "INSERT INTO racun (broj_racuna, poslovnica, saldo) VALUES ('A-501', 'Zagreb Ilica', -20);", ok: false, errContains: 'Novi račun ne može imati negativan saldo!', why: 'negativan saldo mora se odbiti' },
+      { sql: 'SELECT COUNT(*) FROM racun;', expect: [[5]], why: 'odbijeni račun nije upisan' },
+      { sql: "INSERT INTO racun (broj_racuna, poslovnica, saldo) VALUES ('A-502', 'Zagreb Ilica', 0); SELECT COUNT(*) FROM racun;", expect: [[6]], why: 'saldo 0 je dopušten' },
+    ],
+    hints: ["Kao u proceduri: IF NEW.saldo < 0 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '…'; END IF;", 'Greška u BEFORE trigeru poništava cijelu INSERT naredbu.'] },
+
+  { id: 'A5', s: 'A', slide: 14, title: 'Triger pri brisanju',
+    text: "Napiši triger trg_racun_brisanje koji ne dopušta brisanje računa čiji saldo nije 0: poruka 'Račun koji nije na nuli ne može se obrisati!'.",
+    note: 'DELETE triger vidi samo OLD. NEW u njemu javlja ERROR 1363.',
+    sol: SQ(`
+CREATE TRIGGER trg_racun_brisanje BEFORE DELETE ON racun
+FOR EACH ROW
+BEGIN
+  IF OLD.saldo <> 0 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Račun koji nije na nuli ne može se obrisati!';
+  END IF;
+END;`),
+    tests: [
+      { sql: "DELETE FROM racun WHERE broj_racuna = 'A-101';", ok: false, errContains: 'nije na nuli', why: 'A-101 ima 500 €' },
+      { sql: "UPDATE racun SET saldo = 0 WHERE broj_racuna = 'A-101'; DELETE FROM racun WHERE broj_racuna = 'A-101'; SELECT COUNT(*) FROM racun;", expect: [[4]], why: 'račun na nuli smije se obrisati' },
+      { sql: "SELECT COUNT(*) FROM depozitor WHERE broj_racuna = 'A-101';", expect: [[0]], why: 'ON DELETE CASCADE briše i vezu s klijentom' },
+    ],
+    hints: ['BEFORE DELETE ON racun FOR EACH ROW …', 'Uvjet je IF OLD.saldo <> 0 THEN SIGNAL … END IF;'] },
+
+  // B — prekoračenje
+  { id: 'B1', s: 'B', slide: 19, title: 'INSERT IGNORE',
+    text: "Dužnik ('Ivana Babić', 'A-201') već postoji. Jednom naredbom dodaj u duznik retke ('Ivana Babić', 'A-201') i ('Ana Horvat', 'A-202') tako da postojeći red ne izazove grešku.",
+    sol: "INSERT IGNORE INTO duznik (klijent_naziv, broj_racuna)\nVALUES ('Ivana Babić', 'A-201'), ('Ana Horvat', 'A-202');",
+    tests: [
+      { sql: 'SELECT klijent_naziv, broj_racuna FROM duznik ORDER BY klijent_naziv;', expect: [['Ana Horvat', 'A-202'], ['Ivana Babić', 'A-201']], why: 'novi dužnik je dodan, a postojeći nije dupliciran' },
+    ],
+    hints: ['Običan INSERT javlja Duplicate entry (ERROR 1062) za postojeći red.', 'INSERT IGNORE INTO … preskače redove s postojećim ključem.'] },
+
+  { id: 'B2', s: 'B', slide: 19, title: 'ON DUPLICATE KEY UPDATE',
+    text: 'Račun A-201 već ima kredit od 100 €. Jednom naredbom upiši kredit od 250 € za A-201 (Rijeka Korzo) i za A-102 (Pula Centar): ako kredit za račun već postoji, iznos se pribraja.',
+    note: 'VALUES(saldo) znači „vrijednost koju sam pokušao umetnuti”. Od MySQL-a 8.0.20 preporučuje se alias: … AS novi ON DUPLICATE KEY UPDATE saldo = saldo + novi.saldo.',
+    sol: "INSERT INTO kredit (broj_racuna, poslovnica, saldo)\nVALUES ('A-201', 'Rijeka Korzo', 250), ('A-102', 'Pula Centar', 250)\nON DUPLICATE KEY UPDATE saldo = saldo + VALUES(saldo);",
+    tests: [
+      { sql: 'SELECT broj_racuna, poslovnica, saldo FROM kredit ORDER BY broj_racuna;', expect: [['A-102', 'Pula Centar', 250], ['A-201', 'Rijeka Korzo', 350]], why: 'A-102 dobiva novi kredit, a A-201 ima 100 + 250' },
+    ],
+    hints: ['INSERT INTO kredit (…) VALUES (…), (…) ON DUPLICATE KEY UPDATE …;', 'U UPDATE dijelu saldo je postojeća vrijednost: saldo = saldo + 250 ili saldo = saldo + VALUES(saldo).'] },
+
+  { id: 'B3', s: 'B', slide: 19, title: 'REPLACE',
+    text: "Djelatnici 3 promijenjena je e-mail adresa u 'maja.grgic@banka.com'. Upiši je naredbom REPLACE INTO djelatnik s navedenim samo djelatnik_id, ime, prezime i email, pa pogledaj što se dogodilo s ostalim stupcima.",
+    note: 'REPLACE briše stari red i umeće novi. Stupci koje ne navedeš dobivaju zadanu vrijednost (ovdje NULL), za razliku od ON DUPLICATE KEY UPDATE.',
+    sol: "REPLACE INTO djelatnik (djelatnik_id, ime, prezime, email)\nVALUES (3, 'Maja', 'Grgić', 'maja.grgic@banka.com');",
+    tests: [
+      { sql: 'SELECT djelatnik_id, email, odjel, placa FROM djelatnik WHERE djelatnik_id = 3;', expect: [[3, 'maja.grgic@banka.com', null, null]], why: 'novi red ima novi e-mail, a odjel i plaća su izgubljeni' },
+      { sql: 'SELECT COUNT(*) FROM djelatnik;', expect: [[4]], why: 'broj djelatnika se ne mijenja' },
+    ],
+    hints: ['Sintaksa je kao INSERT, samo s riječju REPLACE: REPLACE INTO djelatnik (…) VALUES (…);', 'Primijeti: INSERT REPLACE INTO ne postoji.'] },
+
+  { id: 'B4', s: 'B', slide: 20, star: true, title: 'Triger za prekoračenje',
+    text: 'Prepiši triger trg_prekoracenje sa slajda 20: kad UPDATE spusti saldo ispod 0, kredit se poveća za naknadu od 300 € i iznos prekoračenja (ON DUPLICATE KEY UPDATE), svi vlasnici računa (iz tablice depozitor) postanu dužnici (INSERT IGNORE), a saldo računa postavi se na 0.',
+    sol: SQ(`
+DELIMITER //
+CREATE TRIGGER trg_prekoracenje BEFORE UPDATE ON racun FOR EACH ROW
+BEGIN
+  DECLARE prekoracenje_nkd NUMERIC(12, 2) DEFAULT 300;
+  DECLARE prekoracenje_izn NUMERIC(12, 2);
+  -- Ako se prekoračenje dogodilo potrebno je dodati ili ažurirati kredit
+  IF NEW.saldo < 0 THEN
+    -- NEW.saldo je negativan!
+    SET prekoracenje_izn = prekoracenje_nkd - NEW.saldo;
+    INSERT INTO kredit (broj_racuna, poslovnica, saldo)
+      VALUES (NEW.broj_racuna, NEW.poslovnica, prekoracenje_izn)
+      ON DUPLICATE KEY UPDATE saldo = saldo + prekoracenje_izn;
+    INSERT IGNORE INTO duznik (klijent_naziv, broj_racuna)
+      SELECT klijent_naziv, broj_racuna FROM depozitor
+      WHERE depozitor.broj_racuna = NEW.broj_racuna;
+    SET NEW.saldo = 0;
+  END IF;
+END //
+DELIMITER ;`),
+    tests: [
+      { sql: "UPDATE racun SET saldo = saldo - 600 WHERE broj_racuna = 'A-101'; SELECT saldo FROM racun WHERE broj_racuna = 'A-101';", expect: [[0]], why: 'saldo nakon prekoračenja je 0' },
+      { sql: 'SELECT broj_racuna, saldo FROM kredit ORDER BY broj_racuna;', expect: [['A-101', 400], ['A-201', 100]], why: 'kredit A-101 = naknada 300 + prekoračenje 100' },
+      { sql: 'SELECT klijent_naziv, broj_racuna FROM duznik ORDER BY broj_racuna, klijent_naziv;', expect: [['Ana Horvat', 'A-101'], ['Ivana Babić', 'A-201']], why: 'vlasnica A-101 postala je dužnica' },
+      { sql: "UPDATE racun SET saldo = saldo - 50 WHERE broj_racuna = 'A-101'; SELECT saldo FROM kredit WHERE broj_racuna = 'A-101';", expect: [[750]], why: 'drugo prekoračenje: 400 + 300 + 50, bez greške Duplicate entry' },
+      { sql: "UPDATE racun SET saldo = -100 WHERE broj_racuna = 'A-301'; SELECT klijent_naziv FROM duznik WHERE broj_racuna = 'A-301' ORDER BY klijent_naziv;", expect: [['Ivana Babić'], ['Petar Novak']], why: 'zajednički račun: oba vlasnika postaju dužnici' },
+      { sql: "UPDATE racun SET saldo = saldo + 20 WHERE broj_racuna = 'A-202'; SELECT COUNT(*) FROM kredit;", expect: [[3]], why: 'uplata bez prekoračenja ne dira kredite' },
+    ],
+    hints: ['Mora biti BEFORE UPDATE: samo tada smiješ napisati SET NEW.saldo = 0.', 'Dužnike čitaš iz tablice depozitor: INSERT IGNORE INTO duznik (…) SELECT klijent_naziv, broj_racuna FROM depozitor WHERE depozitor.broj_racuna = NEW.broj_racuna;'] },
+
+  { id: 'B5', s: 'B', slide: 21, star: true, title: 'Zamka: triger mijenja svoju tablicu',
+    text: 'U bazi postoji triger trg_vrijeme koji nakon izmjene računa naredbom UPDATE racun postavlja zadnja_promjena. Zbog njega svaki UPDATE na racun javlja ERROR 1442. Obriši ga i napiši ispravan triger istog imena.',
+    setup: "CREATE TRIGGER trg_vrijeme AFTER UPDATE ON racun FOR EACH ROW\n  UPDATE racun SET zadnja_promjena = NOW() WHERE broj_racuna = NEW.broj_racuna;",
+    sol: 'DROP TRIGGER trg_vrijeme;\nCREATE TRIGGER trg_vrijeme BEFORE UPDATE ON racun FOR EACH ROW\n  SET NEW.zadnja_promjena = NOW();',
+    tests: [
+      { sql: "UPDATE racun SET saldo = saldo + 1 WHERE broj_racuna = 'A-102'; SELECT broj_racuna, saldo FROM racun WHERE zadnja_promjena IS NOT NULL;", expect: [['A-102', 1201]], why: 'UPDATE prolazi i postavlja vrijeme samo izmijenjenom računu' },
+      { sql: "UPDATE racun SET saldo = saldo - 1 WHERE poslovnica = 'Zagreb Ilica'; SELECT broj_racuna FROM racun WHERE zadnja_promjena IS NOT NULL ORDER BY broj_racuna;", expect: [['A-102'], ['A-301']], why: 'svaka sljedeća izmjena također postavlja vrijeme' },
+    ],
+    hints: ['MySQL ne dopušta da triger mijenja tablicu na kojoj je definiran (ERROR 1442).', 'Red koji se upravo mijenja promijeni preko NEW u BEFORE trigeru: SET NEW.zadnja_promjena = NOW();'] },
+
+  // C — triger umjesto ograničenja
+  { id: 'C1', s: 'C', slide: 22, title: 'Referencijalni integritet trigerom',
+    text: "Tablica transakcija nema strani ključ prema računu. Napiši triger trg_transakcija_provjera koji odbija transakciju za nepostojeći račun porukom 'Račun ne postoji!'.",
+    note: 'Ovo je samo vježba: pravi strani ključ (REFERENCES) brži je i pouzdaniji od trigera (slajd 22).',
+    sol: SQ(`
+CREATE TRIGGER trg_transakcija_provjera BEFORE INSERT ON transakcija
+FOR EACH ROW
+BEGIN
+  IF NOT EXISTS (SELECT * FROM racun WHERE broj_racuna = NEW.broj_racuna) THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Račun ne postoji!';
+  END IF;
+END;`),
+    tests: [
+      { sql: "INSERT INTO transakcija (broj_racuna, iznos) VALUES ('A-999', 100);", ok: false, errContains: 'Račun ne postoji!', why: 'račun A-999 ne postoji' },
+      { sql: "INSERT INTO transakcija (broj_racuna, iznos) VALUES ('A-101', 100); SELECT COUNT(*) FROM transakcija;", expect: [[1]], why: 'transakcija za postojeći račun se upisuje' },
+    ],
+    hints: ['Provjera postojanja: IF NOT EXISTS (SELECT * FROM racun WHERE broj_racuna = NEW.broj_racuna) THEN …', 'Triger je BEFORE INSERT ON transakcija.'] },
+
+  { id: 'C2', s: 'C', slide: 24, title: 'Saldo iz transakcija',
+    text: 'Slajd 24 pita može li se saldo računa održavati trigerom. Napiši triger trg_transakcija_saldo koji nakon unosa transakcije pribroji njezin iznos (pozitivan ili negativan) saldu računa.',
+    sol: SQ(`
+CREATE TRIGGER trg_transakcija_saldo AFTER INSERT ON transakcija
+FOR EACH ROW
+  UPDATE racun SET saldo = saldo + NEW.iznos
+  WHERE broj_racuna = NEW.broj_racuna;`),
+    tests: [
+      { sql: "INSERT INTO transakcija (broj_racuna, iznos) VALUES ('A-101', -200), ('A-102', 300), ('A-101', 50); SELECT broj_racuna, saldo FROM racun WHERE poslovnica = 'Pula Centar' ORDER BY broj_racuna;", expect: [['A-101', 350], ['A-102', 1500]], why: 'A-101: 500 − 200 + 50, A-102: 1200 + 300' },
+      { sql: "SELECT saldo FROM racun WHERE broj_racuna = 'A-202';", expect: [[3000]], why: 'ostali računi se ne mijenjaju' },
+    ],
+    hints: ['Triger je na tablici transakcija, a mijenja tablicu racun, pa nema greške 1442.', 'UPDATE racun SET saldo = saldo + NEW.iznos WHERE broj_racuna = NEW.broj_racuna;'] },
+
+  // D — materijalizirani pogledi
+  { id: 'D1', s: 'D', slide: 27, star: true, title: 'Ručni „materijalizirani pogled”',
+    text: 'MySQL nema materijalizirane poglede. Napravi tablicu poslovnica_stanje koja za svaku poslovnicu sadrži broj računa (broj_racuna) i ukupni saldo (ukupni_saldo), napunjenu jednom naredbom CREATE TABLE … AS SELECT.',
+    sol: 'CREATE TABLE poslovnica_stanje AS\n  SELECT poslovnica, COUNT(*) AS broj_racuna, SUM(saldo) AS ukupni_saldo\n  FROM racun\n  GROUP BY poslovnica;',
+    tests: [
+      { sql: 'SELECT poslovnica, broj_racuna, ukupni_saldo FROM poslovnica_stanje ORDER BY poslovnica;', expect: [['Pula Centar', 2, 1700], ['Rijeka Korzo', 2, 3050], ['Zagreb Ilica', 1, 800]], why: 'stanje poslovnica u trenutku stvaranja' },
+      { sql: "UPDATE racun SET saldo = 0 WHERE broj_racuna = 'A-101'; SELECT ukupni_saldo FROM poslovnica_stanje WHERE poslovnica = 'Pula Centar';", expect: [[1700]], why: 'tablica se sama ne osvježava: i dalje 1700' },
+    ],
+    hints: ['CREATE TABLE ime AS SELECT … stvara tablicu i puni je rezultatom upita.', 'Upit: SELECT poslovnica, COUNT(*) AS broj_racuna, SUM(saldo) AS ukupni_saldo FROM racun GROUP BY poslovnica'] },
+
+  { id: 'D2', s: 'D', slide: 28, star: true, title: 'Trenutno održavanje trigerom',
+    text: 'Tablica poslovnica_stanje već postoji i napunjena je. Napiši triger trg_stanje_saldo koji nakon izmjene računa ažurira ukupni_saldo njegove poslovnice (pretpostavi da se poslovnica računa ne mijenja).',
+    setup: ST_STANJE,
+    sol: SQ(`
+CREATE TRIGGER trg_stanje_saldo AFTER UPDATE ON racun
+FOR EACH ROW
+  UPDATE poslovnica_stanje
+  SET ukupni_saldo = ukupni_saldo - OLD.saldo + NEW.saldo
+  WHERE poslovnica = NEW.poslovnica;`),
+    tests: [
+      { sql: "UPDATE racun SET saldo = saldo - 100 WHERE broj_racuna = 'A-202'; SELECT * FROM poslovnica_stanje ORDER BY poslovnica;", expectSql: Q_STANJE, why: 'nakon izmjene jednog računa' },
+      { sql: 'UPDATE racun SET saldo = saldo * 2; SELECT * FROM poslovnica_stanje ORDER BY poslovnica;', expectSql: Q_STANJE, why: 'nakon izmjene svih računa' },
+    ],
+    hints: ['Inkrementalno održavanje (slajd 29): ne računaj sve iznova, nego oduzmi staru i dodaj novu vrijednost.', 'SET ukupni_saldo = ukupni_saldo - OLD.saldo + NEW.saldo WHERE poslovnica = NEW.poslovnica'] },
+
+  { id: 'D3', s: 'D', slide: 29, title: 'Novi i obrisani računi',
+    text: 'Tablica poslovnica_stanje postoji. Napiši dva trigera: trg_stanje_novi (nakon umetanja računa poveća broj_racuna i ukupni_saldo; za poslovnicu koje još nema u tablici doda red) i trg_stanje_brisanje (nakon brisanja računa ih smanji).',
+    setup: ST_STANJE,
+    sol: SQ(`
+CREATE TRIGGER trg_stanje_novi AFTER INSERT ON racun
+FOR EACH ROW
+  INSERT INTO poslovnica_stanje (poslovnica, broj_racuna, ukupni_saldo)
+  VALUES (NEW.poslovnica, 1, NEW.saldo)
+  ON DUPLICATE KEY UPDATE broj_racuna = broj_racuna + 1,
+                          ukupni_saldo = ukupni_saldo + NEW.saldo;
+
+CREATE TRIGGER trg_stanje_brisanje AFTER DELETE ON racun
+FOR EACH ROW
+  UPDATE poslovnica_stanje
+  SET broj_racuna = broj_racuna - 1, ukupni_saldo = ukupni_saldo - OLD.saldo
+  WHERE poslovnica = OLD.poslovnica;`),
+    tests: [
+      { sql: "INSERT INTO racun (broj_racuna, poslovnica, saldo) VALUES ('A-103', 'Pula Centar', 300), ('A-302', 'Zagreb Ilica', 50); SELECT * FROM poslovnica_stanje ORDER BY poslovnica;", expectSql: Q_STANJE, why: 'dva nova računa u postojećim poslovnicama' },
+      { sql: "INSERT INTO poslovnica VALUES ('Osijek Centar', 'Osijek'); INSERT INTO racun (broj_racuna, poslovnica, saldo) VALUES ('A-601', 'Osijek Centar', 40); SELECT * FROM poslovnica_stanje ORDER BY poslovnica;", expectSql: Q_STANJE, why: 'račun u novoj poslovnici dodaje novi red' },
+      { sql: "DELETE FROM racun WHERE broj_racuna = 'A-201'; SELECT * FROM poslovnica_stanje ORDER BY poslovnica;", expectSql: Q_STANJE, why: 'obrisani račun smanjuje broj i saldo' },
+    ],
+    hints: ['Za novi račun najlakše je INSERT … ON DUPLICATE KEY UPDATE (poslovnica je primarni ključ tablice poslovnica_stanje).', 'U DELETE trigeru postoji samo OLD.'] },
+
+  { id: 'D4', s: 'D', slide: 28, title: 'Odgođeno održavanje: osvježavanje',
+    text: 'Napiši proceduru osvjezi_poslovnica_stanje() koja tablicu poslovnica_stanje iznova napuni iz tablice racun (kao REFRESH MATERIALIZED VIEW u PostgreSQL-u). Pokretala bi se periodički, npr. jednom noću.',
+    setup: ST_STANJE,
+    sol: SQ(`
+CREATE PROCEDURE osvjezi_poslovnica_stanje()
+BEGIN
+  DELETE FROM poslovnica_stanje;
+  INSERT INTO poslovnica_stanje (poslovnica, broj_racuna, ukupni_saldo)
+    SELECT poslovnica, COUNT(*), SUM(saldo) FROM racun GROUP BY poslovnica;
+END;`),
+    tests: [
+      { sql: "UPDATE racun SET saldo = saldo * 2; DELETE FROM racun WHERE broj_racuna = 'A-102'; SELECT ukupni_saldo FROM poslovnica_stanje WHERE poslovnica = 'Pula Centar';", expect: [[1700]], why: 'prije osvježavanja tablica je zastarjela' },
+      { sql: 'CALL osvjezi_poslovnica_stanje(); SELECT * FROM poslovnica_stanje ORDER BY poslovnica;', expectSql: Q_STANJE, why: 'nakon poziva procedure stanje je točno' },
+    ],
+    hints: ['Dva koraka: DELETE FROM poslovnica_stanje; (ili TRUNCATE TABLE) pa INSERT INTO poslovnica_stanje SELECT …', 'Procedura nema parametara: CREATE PROCEDURE osvjezi_poslovnica_stanje() BEGIN … END;'] },
+
+  { id: 'D5', s: 'D', slide: 26, title: 'Obični pogled za usporedbu',
+    text: 'Tablica poslovnica_stanje napunjena je jednom i ne održava se. Napravi obični pogled poslovnica_pogled s istim stupcima (poslovnica, broj_racuna, ukupni_saldo) i usporedi ih nakon promjene podataka.',
+    setup: ST_STANJE,
+    sol: 'CREATE VIEW poslovnica_pogled AS\n  SELECT poslovnica, COUNT(*) AS broj_racuna, SUM(saldo) AS ukupni_saldo\n  FROM racun\n  GROUP BY poslovnica;',
+    tests: [
+      { sql: "UPDATE racun SET saldo = saldo + 1000 WHERE broj_racuna = 'A-301'; SELECT * FROM poslovnica_pogled ORDER BY poslovnica;", expectSql: Q_STANJE, why: 'pogled se izračunava pri svakom upitu i uvijek je točan' },
+      { sql: "SELECT ukupni_saldo FROM poslovnica_stanje WHERE poslovnica = 'Zagreb Ilica';", expect: [[800]], why: 'tablica i dalje pokazuje staro stanje (800)' },
+    ],
+    hints: ['CREATE VIEW ime AS SELECT …', 'Pogled ne sprema podatke: baza umeće njegovu definiciju u svaki upit (slajd 26).'] },
+
+  // E — autorizacija
+  { id: 'E1', s: 'E', slide: 33, star: true, title: 'Prvi korisnik i GRANT',
+    text: "Stvori korisnika bankar (s bilo koje adrese, '%') s lozinkom po izboru i dodijeli mu pravo čitanja tablice racun.",
+    note: 'U MySQL-u 8 GRANT više ne stvara korisnika: prvo CREATE USER, inače ERROR 1410. Vježbaonica ne provjerava prava pri izvođenju upita, ali vodi popis kao MySQL i prikazuje ga sa SHOW GRANTS.',
+    sol: "CREATE USER 'bankar'@'%' IDENTIFIED BY 'Lozinka.123';\nGRANT SELECT ON racun TO 'bankar'@'%';",
+    tests: [
+      { sql: 'SHOW GRANTS FOR bankar;', expect: G('bankar', 'GRANT SELECT ON `unipu`.`racun` TO `bankar`@`%`'), why: 'bankar smije samo čitati tablicu racun' },
+    ],
+    hints: ["CREATE USER 'bankar'@'%' IDENTIFIED BY '…';", 'GRANT SELECT ON racun TO bankar;'] },
+
+  { id: 'E2', s: 'E', slide: 34, star: true, title: 'Privilegije za više korisnika',
+    text: 'Korisnici bankar i menadzer postoje. Dodijeli kao na slajdu 34: obojici čitanje i izmjenu tablice racun, a samo menadžeru još i umetanje i brisanje računa.',
+    setup: 'CREATE USER IF NOT EXISTS bankar, menadzer;',
+    sol: 'GRANT SELECT, UPDATE ON racun TO bankar, menadzer;\nGRANT INSERT, DELETE ON racun TO menadzer;',
+    tests: [
+      { sql: 'SHOW GRANTS FOR bankar;', expect: G('bankar', 'GRANT SELECT, UPDATE ON `unipu`.`racun` TO `bankar`@`%`'), why: 'bankar: SELECT i UPDATE' },
+      { sql: 'SHOW GRANTS FOR menadzer;', expect: G('menadzer', 'GRANT SELECT, INSERT, UPDATE, DELETE ON `unipu`.`racun` TO `menadzer`@`%`'), why: 'menadžer: sve četiri osnovne privilegije' },
+    ],
+    hints: ['Jedan GRANT može navesti više privilegija i više korisnika.', 'Drugi GRANT dodaje privilegije onima koje korisnik već ima.'] },
+
+  { id: 'E3', s: 'E', slide: 36, title: 'Privilegije na razini stupca',
+    text: 'Korisnici dnk_korisnik i hr_korisnik postoje. Djelatnici (dnk_korisnik) smiju mijenjati samo osobni_telefon i email u tablici djelatnik, a HR (hr_korisnik) smije umetati i mijenjati sve.',
+    setup: 'CREATE USER IF NOT EXISTS dnk_korisnik, hr_korisnik;',
+    sol: 'GRANT UPDATE (osobni_telefon, email) ON djelatnik TO dnk_korisnik;\nGRANT INSERT, UPDATE ON djelatnik TO hr_korisnik;',
+    tests: [
+      { sql: 'SHOW GRANTS FOR dnk_korisnik;', expect: G('dnk_korisnik', 'GRANT UPDATE (`email`, `osobni_telefon`) ON `unipu`.`djelatnik` TO `dnk_korisnik`@`%`'), why: 'izmjena samo dvaju stupaca' },
+      { sql: 'SHOW GRANTS FOR hr_korisnik;', expect: G('hr_korisnik', 'GRANT INSERT, UPDATE ON `unipu`.`djelatnik` TO `hr_korisnik`@`%`'), why: 'HR: INSERT i UPDATE na cijeloj tablici' },
+    ],
+    hints: ['Stupci se navode u zagradi iza privilegije: GRANT UPDATE (stupac1, stupac2) ON tablica TO korisnik;'] },
+
+  { id: 'E4', s: 'E', slide: 37, star: true, title: 'REVOKE',
+    text: 'Bankar i menadžer imaju privilegije sa slajda 34. Oduzmi bankaru pravo izmjene računa, a menadžeru pravo brisanja računa.',
+    setup: 'CREATE USER IF NOT EXISTS bankar, menadzer;\nGRANT SELECT, UPDATE ON racun TO bankar, menadzer;\nGRANT INSERT, DELETE ON racun TO menadzer;',
+    sol: 'REVOKE UPDATE ON racun FROM bankar;\nREVOKE DELETE ON racun FROM menadzer;',
+    tests: [
+      { sql: 'SHOW GRANTS FOR bankar;', expect: G('bankar', 'GRANT SELECT ON `unipu`.`racun` TO `bankar`@`%`'), why: 'bankaru je ostalo samo čitanje' },
+      { sql: 'SHOW GRANTS FOR menadzer;', expect: G('menadzer', 'GRANT SELECT, INSERT, UPDATE ON `unipu`.`racun` TO `menadzer`@`%`'), why: 'menadžer više ne smije brisati' },
+    ],
+    hints: ['REVOKE privilegija ON tablica FROM korisnik; (FROM, a ne TO)', 'Oduzimanje privilegije koju korisnik nema javlja ERROR 1147.'] },
+
+  { id: 'E5', s: 'E', slide: 39, title: 'Pogled kao zaštita podataka',
+    text: 'Korisnici hr_korisnik i dnk_korisnik postoje. Kao na slajdu 39: HR dobiva sve privilegije na tablici djelatnik, a ostali djelatnici (dnk_korisnik) smiju čitati samo pogled d_podaci s imenom, prezimenom, e-mailom i telefonom (bez plaće i odjela).',
+    note: 'MySQL nema korisnika PUBLIC, pa se naredbe s PUBLIC sa slajda ne mogu izvesti. Prava se daju imenovanim korisnicima ili ulogama.',
+    setup: 'CREATE USER IF NOT EXISTS dnk_korisnik, hr_korisnik;',
+    sol: 'GRANT ALL PRIVILEGES ON djelatnik TO hr_korisnik;\nCREATE VIEW d_podaci AS\n  SELECT ime, prezime, email, osobni_telefon\n  FROM djelatnik;\nGRANT SELECT ON d_podaci TO dnk_korisnik;',
+    tests: [
+      { sql: 'SHOW GRANTS FOR hr_korisnik;', expect: G('hr_korisnik', 'GRANT ALL PRIVILEGES ON `unipu`.`djelatnik` TO `hr_korisnik`@`%`'), why: 'HR ima sve privilegije na tablici' },
+      { sql: 'SHOW GRANTS FOR dnk_korisnik;', expect: G('dnk_korisnik', 'GRANT SELECT ON `unipu`.`d_podaci` TO `dnk_korisnik`@`%`'), why: 'djelatnik čita samo pogled' },
+      { sql: 'SELECT * FROM d_podaci;', expectSql: 'SELECT ime, prezime, email, osobni_telefon FROM djelatnik;', why: 'pogled ima četiri stupca, bez plaće' },
+    ],
+    hints: ['GRANT ALL PRIVILEGES ON djelatnik TO hr_korisnik;', 'Pogled: CREATE VIEW d_podaci AS SELECT ime, prezime, email, osobni_telefon FROM djelatnik; pa GRANT SELECT ON d_podaci TO dnk_korisnik;'] },
+
+  { id: 'E6', s: 'E', slide: 43, title: 'WITH GRANT OPTION',
+    text: 'Korisnik hr_korisnik postoji. Dodijeli mu čitanje tablice djelatnik tako da to pravo smije dalje dodjeljivati drugima.',
+    setup: 'CREATE USER IF NOT EXISTS hr_korisnik;',
+    sol: 'GRANT SELECT ON djelatnik TO hr_korisnik WITH GRANT OPTION;',
+    tests: [
+      { sql: 'SHOW GRANTS FOR hr_korisnik;', expect: G('hr_korisnik', 'GRANT SELECT ON `unipu`.`djelatnik` TO `hr_korisnik`@`%` WITH GRANT OPTION'), why: 'privilegija s pravom daljnjeg dodjeljivanja' },
+    ],
+    hints: ['WITH GRANT OPTION piše se na kraju naredbe GRANT.'] },
+
+  { id: 'E7', s: 'E', slide: 46, title: 'Uloge',
+    text: 'Slajd 46 preporučuje korisnika po ulozi. Stvori ulogu uloga_citanje s pravom čitanja tablica racun i depozitor i dodijeli je korisnicima bankar i menadzer.',
+    setup: 'CREATE USER IF NOT EXISTS bankar, menadzer;',
+    sol: 'CREATE ROLE uloga_citanje;\nGRANT SELECT ON racun TO uloga_citanje;\nGRANT SELECT ON depozitor TO uloga_citanje;\nGRANT uloga_citanje TO bankar, menadzer;',
+    tests: [
+      { sql: 'SHOW GRANTS FOR uloga_citanje;', expect: G('uloga_citanje', ['GRANT SELECT ON `unipu`.`racun` TO `uloga_citanje`@`%`', 'GRANT SELECT ON `unipu`.`depozitor` TO `uloga_citanje`@`%`']), why: 'uloga čita dvije tablice' },
+      { sql: 'SHOW GRANTS FOR bankar;', expect: G('bankar', 'GRANT `uloga_citanje`@`%` TO `bankar`@`%`'), why: 'bankar ima ulogu' },
+      { sql: 'SHOW GRANTS FOR menadzer;', expect: G('menadzer', 'GRANT `uloga_citanje`@`%` TO `menadzer`@`%`'), why: 'menadžer ima ulogu' },
+    ],
+    hints: ['CREATE ROLE uloga_citanje; pa GRANT SELECT ON … TO uloga_citanje;', 'Uloga se dodjeljuje bez ON: GRANT uloga_citanje TO bankar, menadzer;'] },
+
+  { id: 'E8', s: 'E', slide: 41, title: 'Privilegija EXECUTE',
+    text: 'Procedura stanje_racuna(IN br VARCHAR(10), OUT s NUMERIC(12,2)) i korisnik bankar postoje. Dopusti bankaru pozivanje te procedure.',
+    setup: 'CREATE USER IF NOT EXISTS bankar;\nCREATE PROCEDURE stanje_racuna(IN br VARCHAR(10), OUT s NUMERIC(12,2))\n  SELECT saldo INTO s FROM racun WHERE broj_racuna = br;',
+    sol: 'GRANT EXECUTE ON PROCEDURE stanje_racuna TO bankar;',
+    tests: [
+      { sql: 'SHOW GRANTS FOR bankar;', expect: G('bankar', 'GRANT EXECUTE ON PROCEDURE `unipu`.`stanje_racuna` TO `bankar`@`%`'), why: 'bankar smije pozvati proceduru' },
+    ],
+    hints: ['Iza ON piše se vrsta objekta: ON PROCEDURE ime_procedure'] },
+];
+</script>
+<script>
+// Shared logic: running SQL and comparing results (used by the page and by the test script).
+function freshDb(SQL, task) {
+  const db = new SQL.Database();
+  db.exec('PRAGMA foreign_keys = ON;');
+  db.exec(INIT_SQL);
+  MSP.attach(db);
+  if (task && task.setup) MSP.exec(db, task.setup);
+  return db;
+}
+
+// Runs every statement; returns the last result set, or null if no statement returned rows.
+function runLast(db, sql, task) {
+  const res = MSP.exec(db, sql);
+  if (task && task.check) {
+    const c = MSP.exec(db, task.check);
+    return c.length ? c[c.length - 1] : { columns: [], values: [] };
+  }
+  return res.length ? res[res.length - 1] : null;
+}
+
+function normCell(v) {
+  if (v === null || v === undefined) return '\u0000NULL';
+  if (typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v.trim())) v = Number(v);
+  if (typeof v === 'number') return (Math.round(v * 100) / 100).toFixed(2);
+  return String(v);
+}
+
+function compareResults(exp, got, ordered) {
+  if (!got) return { ok: false, msg: 'Tvoje naredbe nisu vratile nijedan rezultat. Na kraju treba biti SELECT (npr. SELECT @varijabla;).' };
+  const ec = exp.columns.length, gc = got.columns.length;
+  if (ec !== gc) return { ok: false, msg: `Očekivani rezultat ima ${ec} ${ec === 1 ? 'stupac' : 'stupca'}, a tvoj ${gc}. Provjeri popis atributa u SELECT dijelu.` };
+  const er = exp.values.map(r => r.map(normCell)), gr = got.values.map(r => r.map(normCell));
+  if (er.length !== gr.length) return { ok: false, msg: `Očekivano ${er.length} ${plural(er.length)}, a tvoj rezultat ima ${gr.length}.` };
+  const key = r => JSON.stringify(r);
+  let a = er.map(key), b = gr.map(key);
+  if (!ordered) { a = a.slice().sort(); b = b.slice().sort(); }
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {
+      if (ordered) {
+        const sa = a.slice().sort(), sb = b.slice().sort();
+        if (sa.every((x, j) => x === sb[j])) return { ok: false, msg: 'Redovi su ispravni, ali redoslijed nije. Provjeri ORDER BY.' };
+      }
+      return { ok: false, msg: 'Broj redova se slaže, ali vrijednosti se razlikuju od očekivanih.' };
+    }
+  }
+  return { ok: true, msg: 'Točno!' };
+}
+
+function plural(n) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return 'redak';
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'retka';
+  return 'redaka';
+}
+
+function shortSql(s) { s = s.replace(/\s+/g, ' ').trim(); return s.length > 110 ? s.slice(0, 107) + '…' : s; }
+
+// Provjera DDL zadataka: nakon studentovih naredbi izvode se probne naredbe
+// i provjerava se koje baza prihvaća, a koje odbija.
+function runTests(db, tests) {
+  for (let i = 0; i < tests.length; i++) {
+    const t = tests[i], n = `Provjera ${i + 1} od ${tests.length}`;
+    if (t.expect || t.expectSql) {
+      let r;
+      try { r = MSP.exec(db, t.sql); } catch (e) { return { ok: false, msg: `${n}: naredba ${shortSql(t.sql)} javlja grešku: ${e.message}`, test: t }; }
+      const got = r.length ? r[r.length - 1] : { columns: [], values: [] };
+      let ev = t.expect;
+      if (t.expectSql) { const x = db.exec(t.expectSql); ev = x.length ? x[x.length - 1].values : []; }
+      const exp = { columns: got.columns.length ? got.columns : (ev[0] || []).map((_, j) => 'c' + j), values: ev };
+      const c = compareResults(exp, got, true);
+      if (!c.ok) return { ok: false, msg: `${n}: ${t.why}. Naredba ${shortSql(t.sql)} ne daje očekivani rezultat (dobiveno: ${got.values.length ? got.values.map(r => r.map(v => v === null ? 'NULL' : v).join(', ')).join(' / ').slice(0, 80) : 'nijedan redak'}).`, test: t };
+      continue;
+    }
+    let passed = true, err = '';
+    try { MSP.exec(db, t.sql); } catch (e) { passed = false; err = e.message; }
+    if (t.then) { try { MSP.exec(db, t.then); } catch (e) {} }
+    if (!t.ok && !passed && t.errContains && !err.includes(t.errContains))
+      return { ok: false, msg: `${n}: naredba ${shortSql(t.sql)} je odbijena, ali poruka greške ne spominje ${t.errContains} (dobiveno: ${err}). Je li ograničenje dobro imenovano?`, test: t };
+    if (t.ok && !passed) return { ok: false, msg: `${n}: naredba ${shortSql(t.sql)} trebala je proći (${t.why}), ali baza javlja: ${err}`, test: t };
+    if (!t.ok && passed) return { ok: false, msg: `${n}: naredba ${shortSql(t.sql)} trebala je biti odbijena (${t.why}), ali ju je baza prihvatila.`, test: t };
+  }
+  return { ok: true, msg: 'Točno!' };
+}
+
+function evaluate(SQL, task, studentSql) {
+  if (task.tests) {
+    const db = freshDb(SQL, task);
+    try { MSP.exec(db, studentSql); }
+    catch (e) { db.close(); return { ok: false, msg: 'Tvoje naredbe javljaju grešku: ' + e.message }; }
+    const r = runTests(db, task.tests);
+    db.close();
+    return r;
+  }
+  const dbE = freshDb(SQL, task);
+  const exp = runLast(dbE, task.sol, task);
+  dbE.close();
+  const dbG = freshDb(SQL, task);
+  let got;
+  try { got = runLast(dbG, studentSql, task); }
+  catch (e) { dbG.close(); return { ok: false, msg: 'Greška: ' + e.message, expected: exp }; }
+  dbG.close();
+  const r = compareResults(exp, got, !!task.ordered);
+  r.expected = exp;
+  return r;
+}
+</script>
+<script>
+(function () {
+  const NB_URL = 'NB_URL_06';
+  const $ = id => document.getElementById(id);
+  if (!/^https:/.test(NB_URL)) $('askLink').hidden = true;
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('sqlvj6:' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('sqlvj6:' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  let SQL = null, db = null;
+  let solved = new Set(store.get('solved', []));
+  let cur = 0, hintsShown = 0;
+  const idx = Object.fromEntries(TASKS.map((t, i) => [t.id, i]));
+  const startId = store.get('current', 'A1');
+  if (idx[startId] !== undefined) cur = idx[startId];
+
+  function liveSchema() {
+    if (!db) return [];
+    const t = db.exec("SELECT name, type, tmp FROM (SELECT name, type, 0 AS tmp, rowid AS r FROM main.sqlite_master WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' UNION ALL SELECT name, type, 1, rowid FROM temp.sqlite_master WHERE type IN ('table','view')) ORDER BY tmp, type, r");
+    if (!t.length) return [];
+    return t[0].values.map(([name, type, tmp]) => {
+      const c = db.exec(`PRAGMA table_info("${name.replace(/"/g, '""')}")`);
+      const fk = type === 'table' ? db.exec(`PRAGMA foreign_key_list("${name.replace(/"/g, '""')}")`) : [];
+      const fks = {};
+      if (fk.length) fk[0].values.forEach(r => { fks[r[3]] = r[2] + (r[4] ? '.' + r[4] : ''); });
+      const cols = c.length ? c[0].values.map(r => ({ n: r[1], t: r[2] || '', nn: !!r[3], pk: r[5] > 0, fk: fks[r[1]] })) : [];
+      return { t: name, view: type === 'view', tmp: !!tmp, cols, isNew: !tmp && !BASE_TABLES.includes(name) };
+    });
+  }
+  const BASE_TABLES = ['poslovnica', 'racun', 'depozitor', 'kredit', 'duznik', 'racun_log', 'djelatnik', 'transakcija'];
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+  // Rezultat kao u MySQL klijentu (kao na slajdovima)
+  function fmt(v) {
+    if (v === null || v === undefined) return 'NULL';
+    if (typeof v === 'number') return Number.isInteger(v) ? String(v) : String(Number(v.toFixed(6)));
+    return String(v);
+  }
+  function ascii(res) {
+    const cols = res.columns, rows = res.values.map(r => r.map(fmt));
+    const isNum = cols.map((_, j) => res.values.length > 0 && res.values.every(r => typeof r[j] === 'number' || r[j] === null));
+    const w = cols.map((c, j) => Math.max(c.length, ...rows.map(r => r[j].length)));
+    const sep = '+' + w.map(n => '-'.repeat(n + 2)).join('+') + '+';
+    const line = (cells, num) => '| ' + cells.map((c, j) => num && isNum[j] ? c.padStart(w[j]) : c.padEnd(w[j])).join(' | ') + ' |';
+    const out = [sep, line(cols, false), sep];
+    rows.forEach(r => out.push(line(r, true)));
+    out.push(sep);
+    return out.join('\n');
+  }
+  function block(res) { return res.values.length ? ascii(res) + `\n${res.values.length} ${res.values.length === 1 ? 'row' : 'rows'} in set` : (res.columns.length ? ascii(res) + '\n' : '') + 'Empty set'; }
+  function showResult(res, title) {
+    $('resTitle').textContent = title || 'Rezultat';
+    const o = $('resOut');
+    if (res.error) {
+      o.className = 'out error';
+      const before = (res.partial || []).map(block).join('\n\n');
+      o.textContent = (before ? before + '\n\n' : '') + res.error; $('resInfo').textContent = ''; return;
+    }
+    if (res.message) { o.className = 'out msg'; o.textContent = res.message; $('resInfo').textContent = ''; return; }
+    const list = Array.isArray(res) ? res : [res];
+    o.className = 'out';
+    o.textContent = list.map(block).join('\n\n') + (res.tail ? '\n\n' + res.tail : '');
+    const last = list[list.length - 1];
+    $('resInfo').textContent = list.length > 1 ? `${list.length} rezultata · zadnji: ${last.values.length} ${plural(last.values.length)}` : last.values.length + ' ' + plural(last.values.length);
+  }
+
+  function renderNav() {
+    const nav = $('taskNav');
+    nav.innerHTML = SECTIONS.map(s => {
+      const items = TASKS.filter(t => t.s === s.id).map(t => {
+        const i = idx[t.id];
+        return `<li><button class="tbtn" data-i="${i}" aria-current="${i === cur}"><span class="tid">${t.id}</span><span class="ttl">${esc(t.title)}</span><span class="dot" aria-label="${solved.has(t.id) ? 'riješeno' : ''}">${solved.has(t.id) ? '✓' : ''}</span></button></li>`;
+      }).join('');
+      return `<div class="sec"><h3>${esc(s.title)} <span>sl. ${s.slides}</span></h3><ul>${items}</ul></div>`;
+    }).join('');
+    nav.querySelectorAll('.tbtn').forEach(b => b.addEventListener('click', () => go(+b.dataset.i)));
+    const n = TASKS.filter(t => solved.has(t.id)).length;
+    $('progTxt').textContent = `${n} / ${TASKS.length} riješeno`;
+    $('progBar').style.width = (100 * n / TASKS.length) + '%';
+  }
+
+  function renderSchema() {
+    const S = liveSchema();
+    if (!S.length) { $('schemaList').innerHTML = '<div class="tbl"><ul><li><span>Baza se učitava…</span></li></ul></div>'; return; }
+    $('schemaList').innerHTML = S.map(s => `<div class="tbl${s.isNew || s.tmp ? ' new' : ''}"><h4>${esc(s.t)}${s.view ? ' <em>pogled</em>' : ''}${s.tmp ? ' <em>privremena</em>' : ''}${s.isNew ? ' <em>novo</em>' : ''}<button data-t="${esc(s.t)}">prikaži</button></h4><ul>${s.cols.map(c => `<li class="${c.pk ? 'pk' : ''}"><span>${esc(c.n)}</span><span>${esc(c.t)}${c.nn ? ' NN' : ''}${c.fk ? ' → ' + esc(c.fk) : ''}</span></li>`).join('')}</ul></div>`).join('');
+    $('schemaList').querySelectorAll('button[data-t]').forEach(b => b.addEventListener('click', () => {
+      if (!db) return;
+      try { const r = db.exec(`SELECT * FROM "${b.dataset.t.replace(/"/g, '""')}";`); showResult(r[0] || { columns: [], values: [] }, 'Sadržaj tablice ' + b.dataset.t); }
+      catch (e) { showResult({ error: e.message }); }
+    }));
+  }
+
+
+  function renderRoutines() {
+    const el = $('rutList');
+    const R = db ? MSP.routines(db) : [];
+    const U = db ? MSP.users(db) : [];
+    const T = R.filter(r => r.kind === 'TRIGGER'), P = R.filter(r => r.kind !== 'TRIGGER');
+    const li = (r, i) => r.kind === 'TRIGGER'
+      ? `<li><span class="k">trig</span><span class="sg"><b>${esc(r.name)}</b> ${esc(r.sig)}</span><button data-r="${i}">kôd</button></li>`
+      : `<li><span class="k">${r.kind === 'FUNCTION' ? 'fun' : 'proc'}</span><span class="sg"><b>${esc(r.name)}</b>(${esc(r.params.join(', '))})${r.returns ? ' → ' + esc(r.returns) : ''}</span><button data-r="${i}">kôd</button></li>`;
+    let h = '<h5>Trigeri</h5>' + (T.length ? '<ul>' + T.map(r => li(r, R.indexOf(r))).join('') + '</ul>' : '<div class="empty">Još nema nijednog. Stvori ga s CREATE TRIGGER.</div>');
+    if (P.length) h += '<h5 class="h2">Procedure i funkcije</h5><ul>' + P.map(r => li(r, R.indexOf(r))).join('') + '</ul>';
+    h += '<h5 class="h2">Korisnici i uloge</h5>' + (U.length ? '<ul>' + U.map(u => `<li><span class="k">${u.role ? 'uloga' : 'kor.'}</span><span class="sg"><b>${esc(u.user)}</b>@${esc(u.host)}</span><button data-u="${esc(u.user)}@${esc(u.host)}">prava</button></li>`).join('') + '</ul>' : '<div class="empty">Još nema nijednog. Stvori ga s CREATE USER ili CREATE ROLE.</div>');
+    el.innerHTML = h;
+    el.querySelectorAll('button[data-r]').forEach(b => b.addEventListener('click', () => {
+      const r = MSP.routines(db)[+b.dataset.r];
+      $('resTitle').textContent = ({ FUNCTION: 'Funkcija ', PROCEDURE: 'Procedura ', TRIGGER: 'Triger ' })[r.kind] + r.name;
+      $('resOut').className = 'out'; $('resOut').textContent = r.src; $('resInfo').textContent = 'SHOW CREATE ' + r.kind;
+    }));
+    el.querySelectorAll('button[data-u]').forEach(b => b.addEventListener('click', () => {
+      const [u, host] = b.dataset.u.split('@');
+      try { showResult(MSP.exec(db, `SHOW GRANTS FOR '${u.replace(/'/g, "''")}'@'${host}';`), 'Prava: ' + b.dataset.u); }
+      catch (e) { showResult({ error: e.message }); }
+    }));
+  }
+
+  function go(i) {
+    saveDraft();
+    cur = Math.max(0, Math.min(TASKS.length - 1, i));
+    store.set('current', TASKS[cur].id);
+    hintsShown = 0;
+    const t = TASKS[cur], s = SECTIONS.find(x => x.id === t.s);
+    $('tMeta').textContent = `${t.id} · ${s.title}`;
+    $('tSlide').textContent = 'slajd ' + t.slide;
+    $('tTitle').textContent = t.title;
+    $('tText').textContent = t.text;
+    $('tNote').hidden = !t.note; $('tNote').textContent = t.note || '';
+    $('sql').value = store.get('draft:' + t.id, '');
+    $('feedback').hidden = true; $('expPanel').hidden = true; $('solPanel').hidden = true;
+    $('hints').innerHTML = '';
+    $('hintBtn').disabled = false; $('hintBtn').textContent = `Naputak (0/${t.hints.length})`;
+    $('prevBtn').disabled = cur === 0; $('nextBtn').disabled = cur === TASKS.length - 1;
+    renderNav();
+  }
+  function saveDraft() { const t = TASKS[cur]; if (t) store.set('draft:' + t.id, $('sql').value); }
+
+  function run() {
+    if (!db) return;
+    const sql = $('sql').value.trim();
+    if (!sql) { showResult({ message: 'Editor je prazan. Napiši upit pa klikni Izvrši.' }); return; }
+    saveDraft();
+    try {
+      const t = TASKS[cur];
+      const pre = t.setup ? ensureSetup(t) : '';
+      const res = MSP.exec(db, sql);
+      const inf = MSP.info(db);
+      const tail = inf.warnings.length ? inf.warnings.map(w => `Warning (Code ${w.errno}): ${w.text}`).join('\n') : '';
+      if (res.length) { res.tail = tail; showResult(res); if (pre) $('resOut').textContent = pre + $('resOut').textContent; }
+      else showResult({ message: pre + (inf.msg || 'Query OK') + (tail ? '\n' + tail : '') });
+    } catch (e) {
+      let m = e.message;
+      const no = e.errno;
+      if (no === 1304) m += '\n\nRutina s tim imenom već postoji u tvojoj kopiji baze. Ispred CREATE dodaj DROP FUNCTION IF EXISTS ime; (ili DROP PROCEDURE IF EXISTS ime;).';
+      if (no === 1359) m += '\n\nTriger s tim imenom (ili za isti događaj i trenutak) već postoji u tvojoj kopiji baze. Ispred CREATE dodaj DROP TRIGGER IF EXISTS ime; (popis trigera je desno, ispod sheme).';
+      if (no === 1360) m += '\n\nTriger ne postoji u tvojoj kopiji baze. Za brisanje bez greške koristi DROP TRIGGER IF EXISTS ime;';
+      if (no === 1442) m += '\n\nMySQL ne dopušta da triger mijenja tablicu na kojoj je definiran. Red koji se upravo mijenja promijeni u BEFORE trigeru naredbom SET NEW.stupac = …; (slajd 14). Ako je triger od ranijeg zadatka, obriši ga s DROP TRIGGER ime;';
+      if (no === 1362) m += '\n\nNEW se smije mijenjati samo u BEFORE trigeru. Promijeni AFTER u BEFORE.';
+      if (no === 1363) m += '\n\nINSERT triger ima samo NEW, DELETE triger samo OLD, a UPDATE triger oba.';
+      if (no === 1062) m += '\n\nRed s tim ključem već postoji. Ako ga treba preskočiti, koristi INSERT IGNORE; ako ga treba izmijeniti, INSERT … ON DUPLICATE KEY UPDATE (slajd 19).';
+      if (no === 1410) m += '\n\nU MySQL-u 8 GRANT ne stvara korisnika. Prvo: CREATE USER ime; (popis korisnika je desno, ispod sheme).';
+      if (no === 1396) m += '\n\nKorisnik ili uloga već postoji (CREATE) ili ne postoji (DROP). Koristi CREATE USER IF NOT EXISTS / DROP USER IF EXISTS.';
+      if (no === 1147 || no === 1141) m += '\n\nKorisnik nema tu privilegiju na tom objektu. Pogledaj što ima: SHOW GRANTS FOR ime;';
+      if (no === 1644) m += '\n\nOvu grešku je javio SIGNAL (u trigeru ili proceduri). Naredba koja ga je pokrenula je poništena.';
+      if (no === 1050 || /already exists/.test(m) && no !== 1304) m += '\n\nTablica već postoji u tvojoj kopiji baze. Dodaj DROP TABLE IF EXISTS naziv; ili vrati bazu na početno stanje.';
+      if (no === 1305) m += '\n\nRutina ne postoji u tvojoj kopiji baze. Prvo izvrši njezin CREATE (popis postojećih je desno, ispod sheme).';
+      if (no === 1337 || no === 1338) m += '\n\nMySQL traži redoslijed deklaracija: varijable i uvjeti (CONDITION) → kursori → rukovatelji (HANDLER).';
+      if (no === 1193) m += '\n\nVarijabla nije deklarirana. Unutar rutine deklariraj je s DECLARE na početku bloka; izvan rutine koristi @varijabla.';
+      if (no === 1327) m += '\n\nU INTO dijelu je varijabla koja nije deklarirana s DECLARE.';
+      if (no === 1329) m += '\n\nFETCH je došao do kraja rezultata, a nema rukovatelja. Dodaj DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1; i provjeravaj done u petlji.';
+      if (no === 1414) m += '\n\nZa OUT i INOUT parametre predaj varijablu, npr. @rezultat, a ne broj ili tekst.';
+      if (no === 1318) m += '\n\nBroj argumenata u pozivu ne odgovara broju parametara rutine.';
+      if (no === 1064 && /^\s*(DECLARE|IF|WHILE|REPEAT|LOOP|FETCH|OPEN|RETURN)\b/i.test(sql)) m += '\n\nOve naredbe postoje samo unutar tijela trigera ili rutine (CREATE TRIGGER/PROCEDURE … BEGIN … END).';
+      if (no === 1064 && /near '(\/\/|\$\$)/.test(m)) m += '\n\nNa kraju trigera ili rutine je END // (ili END $$), ali nedostaje redak DELIMITER // ispred CREATE. Dodaj ga, ili završi s END; bez DELIMITER-a.';
+      if (no === 1452) m += '\n\nNaredba krši ograničenje stranog ključa.';
+      if (no === 1105 && /koraka/.test(m)) m += ' Petlja se prekida da se preglednik ne zamrzne.';
+      const r = { error: m, partial: e.partial };
+      showResult(r);
+    }
+    renderSchema(); renderRoutines();
+  }
+
+  function check() {
+    if (!SQL) return;
+    const t = TASKS[cur], sql = $('sql').value.trim();
+    const fb = $('feedback');
+    $('expPanel').hidden = true;
+    if (!sql) { fb.hidden = false; fb.className = 'feedback err'; fb.textContent = 'Editor je prazan.'; return; }
+    saveDraft();
+    const r = evaluate(SQL, t, sql);
+    fb.hidden = false;
+    if (r.ok) {
+      fb.className = 'feedback ok';
+      fb.textContent = t.tests ? `Točno! Prošle su sve provjere (${t.tests.length}).` : t.check ? 'Točno! Stanje baze nakon tvojih naredbi odgovara očekivanom.' : 'Točno! Rezultat odgovara očekivanom.';
+      if (!solved.has(t.id)) { solved.add(t.id); store.set('solved', [...solved]); renderNav(); }
+    } else {
+      fb.className = 'feedback err';
+      fb.textContent = r.msg + ' ';
+      if (t.tests) {
+        const b = document.createElement('button'); b.className = 'lnk'; b.textContent = 'Prikaži sve provjere';
+        b.addEventListener('click', () => {
+          $('expTitle').textContent = 'Provjere koje se izvode nakon tvojih naredbi';
+          $('expOut').textContent = (t.setup ? 'Prije tvojih naredbi u bazi već postoji:\n' + t.setup.split('\n').filter(l => /^(CREATE|CALL|INSERT|GRANT)/i.test(l.trim())).map(l => '   ' + l.trim()).join('\n') + '\n\n' : '') + t.tests.map((x, i) => `${i + 1}. ${x.expect || x.expectSql ? 'rezultat' : x.ok ? 'prolazi ' : 'odbija se'}  ${x.sql}\n   ${x.why}`).join('\n');
+          $('expInfo').textContent = t.tests.length + ' provjera';
+          $('expPanel').hidden = false; b.remove();
+        });
+        fb.appendChild(b);
+      }
+      if (r.expected) {
+        const b = document.createElement('button'); b.className = 'lnk'; b.textContent = 'Prikaži očekivani rezultat';
+        b.addEventListener('click', () => {
+          $('expTitle').textContent = 'Očekivani rezultat';
+          $('expOut').textContent = ascii(r.expected);
+          $('expInfo').textContent = (t.check ? 'stanje nakon izmjene · ' : '') + r.expected.values.length + ' ' + plural(r.expected.values.length);
+          $('expPanel').hidden = false; b.remove();
+        });
+        fb.appendChild(b);
+      }
+    }
+  }
+
+  function hint() {
+    const t = TASKS[cur];
+    if (hintsShown >= t.hints.length) return;
+    const d = document.createElement('div'); d.className = 'hint';
+    d.innerHTML = `<b>Naputak ${hintsShown + 1}.</b>${esc(t.hints[hintsShown])}`;
+    $('hints').appendChild(d);
+    hintsShown++;
+    $('hintBtn').textContent = `Naputak (${hintsShown}/${t.hints.length})`;
+    if (hintsShown >= t.hints.length) {
+      $('hintBtn').disabled = true;
+      if (!/^https:/.test(NB_URL)) return;
+      const m = document.createElement('div'); m.className = 'more';
+      m.innerHTML = `Još nije jasno? <a href="${NB_URL}" target="_blank" rel="noopener">Pitaj asistenta</a> i navedi oznaku zadatka (${t.id}).`;
+      $('hints').appendChild(m);
+    }
+  }
+
+  function solution() {
+    const p = $('solPanel');
+    p.hidden = !p.hidden;
+    $('solOut').textContent = TASKS[cur].sol;
+  }
+
+  // priprema zadatka (setup) izvodi se u tvojoj kopiji baze jednom po zadatku;
+  // rutine koje već postoje se preskaču
+  function ensureSetup(t) {
+    db.__applied = db.__applied || new Set();
+    if (db.__applied.has(t.id)) return '';
+    db.__applied.add(t.id);
+    const have = new Set(MSP.routines(db).map(r => r.kind[0] + ':' + r.name.toLowerCase()));
+    const kindName = { FUNCTION: 'funkcija ', PROCEDURE: 'procedura ', TRIGGER: 'triger ' };
+    const added = [];
+    const todo = MSP.splitScript(t.setup).filter(s => {
+      const m = /^\s*CREATE\s+(FUNCTION|PROCEDURE|TRIGGER)\s+(\w+)/i.exec(s);
+      if (m) { if (have.has(m[1][0].toUpperCase() + ':' + m[2].toLowerCase())) return false; added.push(kindName[m[1].toUpperCase()] + m[2]); return true; }
+      added.push(s.replace(/\s+/g, ' ').slice(0, 70));
+      return true;
+    });
+    if (todo.length) MSP.exec(db, todo.join(';\n') + ';');
+    return added.length ? '-- Priprema zadatka ' + t.id + ' u tvojoj kopiji baze:\n' + added.map(x => '--   ' + x).join('\n') + '\n\n' : '';
+  }
+  function resetDb() {
+    if (db) db.close();
+    db = freshDb(SQL);
+    showResult({ message: 'Baza je vraćena na početno stanje (obrisani su i svi tvoji trigeri, procedure, korisnici i uloge).' });
+    renderSchema(); renderRoutines();
+  }
+
+  // Događaji
+  $('runBtn').addEventListener('click', run);
+  $('checkBtn').addEventListener('click', check);
+  $('hintBtn').addEventListener('click', hint);
+  $('solBtn').addEventListener('click', solution);
+  $('solCopy').addEventListener('click', () => { $('sql').value = TASKS[cur].sol; saveDraft(); $('sql').focus(); });
+  $('resetBtn').addEventListener('click', resetDb);
+  $('prevBtn').addEventListener('click', () => go(cur - 1));
+  $('nextBtn').addEventListener('click', () => go(cur + 1));
+  $('sql').addEventListener('input', () => saveDraft());
+  $('sql').addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); }
+    else if (e.key === 'Tab' && !e.shiftKey) {
+      e.preventDefault();
+      const ta = e.target, s = ta.selectionStart, en = ta.selectionEnd;
+      ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(en);
+      ta.selectionStart = ta.selectionEnd = s + 2;
+    }
+  });
+
+  renderSchema(); renderRoutines();
+  go(cur);
+
+  if (typeof initSqlJs !== 'function') {
+    showResult({ error: 'Biblioteka sql.js se nije učitala. Provjeri internetsku vezu i osvježi stranicu.' });
+    return;
+  }
+  initSqlJs().then(S => {
+    SQL = S; db = freshDb(SQL);
+    ['runBtn', 'checkBtn', 'resetBtn'].forEach(id => $(id).disabled = false);
+    const r = db.exec('SELECT * FROM racun;');
+    showResult(r[0], 'Pregled: tablica racun');
+    renderSchema(); renderRoutines();
+  }).catch(e => showResult({ error: 'Baza se nije mogla pokrenuti: ' + e.message }));
+})();
+</script>
+</body>
+</html>
