@@ -2,7 +2,7 @@
 
 Interaktivne SQL vježbe uz predavanja iz kolegija **Baze podataka II** (Fakultet informatike u Puli).
 
-Svaka vježbaonica je jedna samostalna HTML stranica. Baza podataka (SQLite, biblioteka [sql.js](https://github.com/sql-js/sql.js)) radi u pregledniku studenta, pa nije potreban nikakav poslužitelj. Vježbaonice 04 i 06 uz to sadrže mali interpretator MySQL pohranjenih rutina (funkcije, procedure, kursori, rukovatelji, SIGNAL), a vježbaonica 06 i trigera (BEFORE/AFTER, NEW/OLD), INSERT IGNORE, ON DUPLICATE KEY UPDATE, REPLACE te korisnika, uloga i privilegija (GRANT, REVOKE, SHOW GRANTS), pa se sve piše sintaksom sa slajdova.
+Svaka vježbaonica je jedna samostalna HTML stranica. Baza podataka (SQLite, biblioteka [sql.js](https://github.com/sql-js/sql.js)) radi u pregledniku studenta, pa nije potreban nikakav poslužitelj. Vježbaonice 04 i 06 uz to sadrže mali interpretator MySQL pohranjenih rutina (funkcije, procedure, kursori, rukovatelji, SIGNAL), a vježbaonica 06 i trigera (BEFORE/AFTER, NEW/OLD), INSERT IGNORE, ON DUPLICATE KEY UPDATE, REPLACE te korisnika, uloga i privilegija (GRANT, REVOKE, SHOW GRANTS), pa se sve piše sintaksom sa slajdova. Vježbaonica 07 (fizička pohrana) nema SQL zadataka osim upita nad katalogom: odgovori se upisuju u polja, a laboratorij simulira RAID 5, datoteke zapisa, blok sa zaglavljem i buffer.
 
 ## Vježbaonice
 
@@ -14,6 +14,7 @@ Svaka vježbaonica je jedna samostalna HTML stranica. Baza podataka (SQLite, bib
 | 04 | [SQL pohranjene procedure](04-pohranjene-procedure/) · [asistent](https://notebook.google.com/notebook/e4dcc377-d8b2-4585-a8c6-59bce7174ae6) | 27 |
 | 05 | [Skladište](05-skladiste/) (vizualizacija zadatka) · [asistent](https://notebook.google.com/notebook/e4dcc377-d8b2-4585-a8c6-59bce7174ae6) | – |
 | 06 | [Napredni SQL DDL](06-napredni-sql-ddl/) · [asistent](https://notebook.google.com/notebook/4fee5d0d-34fb-42b9-b96b-8a9e04ad0c53) | 25 |
+| 07 | [Sustavi fizičke pohrane](07-fizicka-pohrana/) | 30 |
 
 ## Struktura
 
@@ -31,6 +32,8 @@ index.html                 početna stranica s popisom vježbaonica
   index.html             vizualizacija zadatka sa slajdova 48–67
 06-napredni-sql-ddl/
   index.html
+07-fizicka-pohrana/
+  index.html             zadaci s provjerom, laboratorij (RAID, zapisi, buffer) i katalog
 .nojekyll                  GitHub Pages poslužuje datoteke bez obrade
 ```
 

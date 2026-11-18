@@ -1,0 +1,1374 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fizička pohrana BP2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: zaglavlje s napretkom; ispod tri stupca — popis zadataka | radna ploča (zadatak, odgovor, rješenje) | laboratorij sa simulacijama. Uži ekrani slažu stupce jedan ispod drugog. */
+:root {
+  --bg: #f4f6f8; --surface: #ffffff; --ink: #18212d; --muted: #586474; --line: #dbe1e8;
+  --code-bg: #eef2f6; --navy: #1f3b63; --olive: #765a00; --olive-bg: #f7f0dc;
+  --ok: #23704a; --ok-bg: #e3f3ea; --err: #a8261d; --err-bg: #fbe7e5; --focus: #3b6fd8;
+  --f-body: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --f-head: "IBM Plex Sans Condensed", "Arial Narrow", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", "Courier New", monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #10151c; --surface: #171f29; --ink: #e3e8ee; --muted: #9aa6b5; --line: #2a3443;
+  --code-bg: #0c1117; --navy: #a9c6f5; --olive: #e2bb5c; --olive-bg: #2a2412;
+  --ok: #73cf9b; --ok-bg: #12291d; --err: #ff8f84; --err-bg: #331412; --focus: #8fb4ff; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #10151c; --surface: #171f29; --ink: #e3e8ee; --muted: #9aa6b5; --line: #2a3443;
+  --code-bg: #0c1117; --navy: #a9c6f5; --olive: #e2bb5c; --olive-bg: #2a2412;
+  --ok: #73cf9b; --ok-bg: #12291d; --err: #ff8f84; --err-bg: #331412; --focus: #8fb4ff; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+.back { display: inline-block; font-size: 13px; color: var(--muted); text-decoration: none; margin-bottom: 4px; }
+.back:hover { color: var(--ink); text-decoration: underline; }
+html, body { background: var(--bg); color: var(--ink); }
+body { font: 15px/1.55 var(--f-body); }
+.wrap { max-width: 1440px; margin: 0 auto; padding-inline: 20px; padding-block: 0 40px; }
+h1, h2, h3 { font-family: var(--f-head); font-weight: 600; text-wrap: balance; margin: 0; }
+code, pre, textarea, .mono { font-family: var(--f-mono); }
+button { font: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding-block: 18px 16px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+header.top h1 { font-size: 24px; letter-spacing: .01em; }
+header.top .sub { color: var(--muted); font-size: 13px; }
+.ask { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r); padding: 6px 12px; font-size: 13px; font-weight: 500; text-decoration: none; }
+.ask:hover { border-color: var(--muted); }
+.vizlink { margin: 10px 0 0; font-size: 14px; display: flex; flex-wrap: wrap; gap: 2px 8px; }
+.vizlink a { font-weight: 600; color: var(--navy); }
+.vizlink span { color: var(--muted); }
+.ask small { color: var(--muted); font-weight: 400; }
+.hints .more { font-size: 13px; color: var(--muted); }
+.hints .more a { color: var(--navy); }
+.progress { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { width: 140px; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--ok); width: 0; transition: width .3s; }
+
+.grid { display: grid; grid-template-columns: 250px minmax(0, 1fr) 290px; gap: 20px; align-items: start; }
+@media (max-width: 1180px) { .grid { grid-template-columns: 230px minmax(0, 1fr); } aside.schema { grid-column: 1 / -1; } }
+@media (max-width: 780px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Popis zadataka */
+nav.tasks { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); max-height: calc(100vh - 24px); overflow: auto; padding-right: 4px; }
+@media (max-width: 780px) { nav.tasks { position: static; max-height: none; } }
+.sec { margin-bottom: 14px; }
+.sec h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 8px; }
+.sec h3 span { font-family: var(--f-body); text-transform: none; letter-spacing: 0; font-weight: 400; }
+.sec ul { list-style: none; margin: 0; padding: 0; }
+@media (max-width: 780px) { .sec ul { display: flex; flex-wrap: wrap; gap: 6px; } }
+.tbtn { width: 100%; display: flex; align-items: baseline; gap: 8px; text-align: left; background: none; border: 0; border-radius: var(--r); padding: 5px 8px; color: var(--ink); }
+.tbtn:hover { background: var(--surface); }
+.tbtn[aria-current="true"] { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-weight: 500; }
+.tbtn .tid { font-family: var(--f-mono); font-size: 12px; color: var(--muted); min-width: 22px; }
+.tbtn .dot { margin-left: auto; width: 16px; text-align: center; color: var(--ok); font-weight: 600; }
+@media (max-width: 780px) { .tbtn { width: auto; border: 1px solid var(--line); padding: 4px 8px; } .tbtn .ttl { display: none; } .tbtn .dot { margin-left: 0; width: auto; } }
+
+/* Radna ploča */
+main.work { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.task { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; }
+.meta { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.task h2 { font-size: 22px; margin: 4px 0 8px; }
+.task .text { color: var(--olive); font-style: italic; font-size: 16px; margin: 0; max-width: 70ch; }
+.task .note { margin: 10px 0 0; font-size: 13px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px; max-width: 75ch; }
+
+.editor { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.editor textarea { display: block; width: 100%; min-height: 150px; resize: vertical; border: 0; padding: 14px 16px; background: var(--code-bg); color: var(--navy); font-size: 14px; line-height: 1.6; font-weight: 600; tab-size: 2; }
+.editor textarea::placeholder { color: var(--muted); font-weight: 400; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--line); }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r); padding: 6px 14px; font-weight: 500; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--navy); color: var(--surface); border-color: var(--navy); }
+.btn.check { background: var(--ok); color: var(--surface); border-color: var(--ok); }
+.btn:disabled { opacity: .5; cursor: default; }
+.kbd { font-size: 12px; color: var(--muted); margin-left: auto; }
+@media (max-width: 520px) { .kbd { display: none; } }
+
+.feedback { border-radius: var(--r); padding: 10px 14px; font-weight: 500; }
+.feedback.ok { background: var(--ok-bg); color: var(--ok); }
+.feedback.err { background: var(--err-bg); color: var(--err); }
+.feedback .lnk { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; font-weight: 400; margin-left: 6px; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.panel > .ph { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 9px 14px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.panel > .ph b { color: var(--ink); font-weight: 600; }
+.out { margin: 0; padding: 12px 14px; overflow-x: auto; font-size: 13px; line-height: 1.45; color: var(--ink); white-space: pre; }
+.out.msg { white-space: pre-wrap; font-family: var(--f-body); color: var(--muted); }
+.out.error { white-space: pre-wrap; color: var(--err); }
+
+.hints { display: flex; flex-direction: column; gap: 8px; }
+.hint { background: var(--olive-bg); border-radius: var(--r); padding: 9px 14px; font-size: 14px; }
+.hint b { font-family: var(--f-head); margin-right: 6px; }
+.solution pre { margin: 0; padding: 12px 14px; background: var(--code-bg); color: var(--navy); font-weight: 600; overflow-x: auto; font-size: 13.5px; }
+.solution .toolbar { border-top: 1px solid var(--line); }
+
+.pager { display: flex; justify-content: space-between; gap: 10px; }
+
+/* Shema */
+aside.schema { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+@media (max-width: 1180px) { aside.schema { position: static; } }
+.schema .panel { padding-bottom: 6px; }
+.tbl { padding: 10px 14px 6px; }
+.tbl + .tbl { border-top: 1px dashed var(--line); }
+.tbl h4 { margin: 0 0 4px; font: 600 14px var(--f-mono); color: var(--navy); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.tbl h4 button { font: 12px var(--f-body); background: none; border: 0; color: var(--muted); text-decoration: underline; padding: 0; }
+.tbl ul { list-style: none; margin: 0; padding: 0; font: 12.5px/1.6 var(--f-mono); }
+.tbl li { display: flex; justify-content: space-between; gap: 8px; }
+.tbl li span:last-child { color: var(--muted); }
+.tbl li.pk span:first-child { text-decoration: underline; }
+.tbl h4 em { font: italic 11px var(--f-body); color: var(--olive); margin-right: auto; margin-left: 6px; }
+.tbl.new { background: var(--olive-bg); }
+#expOut { white-space: pre-wrap; }
+.rut { padding: 10px 14px 8px; border-top: 1px solid var(--line); }
+.rut h5 { margin: 0 0 6px; font: 600 12px var(--f-body); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.rut ul { list-style: none; margin: 0; padding: 0; }
+.rut li { font: 12.5px/1.5 var(--f-mono); padding: 3px 0; display: flex; gap: 8px; align-items: baseline; }
+.rut li b { color: var(--navy); font-weight: 600; }
+.rut li .k { font: 10.5px var(--f-body); text-transform: uppercase; letter-spacing: .04em; color: var(--olive); min-width: 30px; }
+.rut li .sg { color: var(--muted); flex: 1; min-width: 0; overflow-wrap: break-word; }
+.rut li button { font: 12px var(--f-body); background: none; border: 0; color: var(--muted); text-decoration: underline; padding: 0; cursor: pointer; }
+.rut .empty { font-size: 12.5px; color: var(--muted); }
+.rut h5.h2 { margin-top: 12px; }
+.schema .foot { padding: 8px 14px 4px; font-size: 12.5px; color: var(--muted); }
+.schema .foot .btn { margin-top: 8px; width: 100%; }
+
+.loading { padding: 40px 0; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+/* Vježbaonica 07: odgovori u poljima umjesto SQL-a; desno laboratorij za simulacije. */
+.grid { grid-template-columns: 240px minmax(0, 1fr) 380px; }
+@media (max-width: 1240px) { .grid { grid-template-columns: 220px minmax(0, 1fr); } aside.lab { grid-column: 1 / -1; } }
+@media (max-width: 780px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.task pre.given { margin: 12px 0 0; padding: 10px 14px; background: var(--code-bg); color: var(--navy); font: 600 14px/1.6 var(--f-mono); border-radius: var(--r); overflow-x: auto; }
+.answer { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
+.fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(170px, auto); gap: 10px 16px; align-items: center; }
+@media (max-width: 560px) { .fields { grid-template-columns: minmax(0, 1fr); gap: 4px 0; } .fields .fi { margin-bottom: 8px; } }
+.fl { font-size: 14px; }
+.fi { display: flex; align-items: center; gap: 6px; }
+.fi input, .fi select, .lab input, .lab select { font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); padding: 5px 8px; min-width: 0; }
+.fi input { width: 150px; }
+.fi input.mono { letter-spacing: .08em; }
+.fi select { max-width: 260px; }
+.unit { font-size: 13px; color: var(--muted); min-width: 28px; }
+.mark { width: 16px; font-weight: 700; }
+.mark.ok { color: var(--ok); } .mark.err { color: var(--err); }
+.order { list-style: decimal; margin: 0; padding-left: 26px; display: flex; flex-direction: column; gap: 6px; }
+.order li { padding: 2px 0; }
+.order li > * { vertical-align: middle; }
+.order .oi { display: inline-block; min-width: 200px; padding: 5px 10px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); }
+.order li.bad .oi { border-color: var(--err); }
+.order .mv { margin-left: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r); width: 32px; height: 32px; }
+.order .mv:disabled { opacity: .35; cursor: default; }
+.small { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+.multi { display: flex; flex-direction: column; gap: 6px; }
+.chk { display: flex; gap: 8px; align-items: center; font-size: 15px; }
+.chk input { width: 18px; height: 18px; }
+.solist { margin: 0; padding: 12px 14px 4px 34px; font-size: 14px; }
+.solist li { margin: 2px 0; }
+.expl { margin: 0; padding: 8px 14px 12px; font-size: 14px; color: var(--ink); max-width: 75ch; }
+pre.code { margin: 0; padding: 12px 14px; background: var(--code-bg); color: var(--navy); font: 600 13.5px/1.5 var(--f-mono); overflow-x: auto; }
+
+aside.lab { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); max-height: calc(100vh - 24px); overflow: auto; }
+@media (max-width: 1240px) { aside.lab { position: static; max-height: none; } }
+.lab .body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.lab-p { margin: 0; font-size: 13px; color: var(--muted); }
+.lab-h { margin: 6px 0 0; font: 600 12px var(--f-body); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.lab-out { margin: 0; padding: 10px 12px; background: var(--code-bg); border-radius: var(--r); font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; color: var(--ink); }
+.lab .lnk { background: none; border: 0; padding: 0; color: var(--navy); text-decoration: underline; font-size: 12.5px; cursor: pointer; }
+.lgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.li { display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; color: var(--muted); }
+.li.wide input { width: 100%; }
+.lrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
+.lt { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.lt th, .lt td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.lt th { font-weight: 600; color: var(--muted); }
+.lt td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.lt small { color: var(--muted); }
+.rec td { white-space: nowrap; }
+.rec tr.empty td { color: var(--muted); background: var(--olive-bg); }
+.rec tr.hdr td { background: var(--code-bg); font-weight: 600; }
+.buf tr.hit td:nth-child(2) { color: var(--ok); }
+.buf tr.miss td:nth-child(2) { color: var(--err); }
+.raid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.rh { font-size: 12px; font-weight: 600; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px; padding-bottom: 2px; }
+.rh.dead { color: var(--err); }
+.rc { display: flex; flex-direction: column; align-items: center; gap: 1px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 4px; padding: 4px 2px; }
+.rc .rl { font-size: 12px; font-weight: 600; }
+.rc .rv { font-size: 10.5px; color: var(--muted); letter-spacing: .02em; }
+.rc.par { background: var(--olive-bg); }
+.rc.par .rl { color: var(--olive); }
+.rc.dead { border-style: dashed; border-color: var(--err); }
+.rc.dead .rv { color: var(--err); }
+.rc.sel { outline: 2px solid var(--focus); outline-offset: 1px; }
+.raidEdit { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12.5px; }
+.raidEdit input { width: 100px; letter-spacing: .08em; }
+.bytes td { white-space: nowrap; }
+.bytes tr.var td { background: var(--olive-bg); }
+.block { display: flex; gap: 2px; font-size: 11px; }
+.block > div { display: flex; flex-direction: column; justify-content: center; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--line); white-space: nowrap; min-width: 0; }
+.block small { color: var(--muted); font-family: var(--f-mono); font-size: 10.5px; }
+.block .bh { background: var(--code-bg); }
+.block .bf { flex: 1; background: var(--bg); border-style: dashed; color: var(--muted); align-items: center; }
+.block .br { background: var(--olive-bg); color: var(--olive); font-weight: 600; }
+.catl { list-style: none; margin: 0; padding: 0; font-size: 12.5px; }
+.catl li { padding: 3px 0; }
+.catl small { color: var(--muted); }
+.lab .tbl { padding: 6px 0 4px; }
+.lab .foot { font-size: 12.5px; color: var(--muted); }
+.lab .foot .btn { margin-top: 8px; width: 100%; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <a class="back" href="../">← Sve vježbaonice</a>
+      <h1>Vježbaonica: fizička pohrana</h1>
+      <div class="sub">Baze podataka II · Predavanje VII.: Sustavi fizičke pohrane (mediji, RAID, zapisi i blokovi, katalog, buffer) · FIPU</div>
+    </div>
+    <a class="ask" id="askLink" href="NB_URL_07" target="_blank" rel="noopener">Pitaj asistenta ↗ <small>Gemini Notebook</small></a>
+    <div class="progress" aria-live="polite">
+      <span id="progTxt">0 / 30 riješeno</span>
+      <div class="bar" aria-hidden="true"><i id="progBar"></i></div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <nav class="tasks" id="taskNav" aria-label="Zadaci"></nav>
+
+    <main class="work" id="work">
+      <section class="task" aria-labelledby="tTitle">
+        <div class="meta"><span id="tMeta">A1 · Mediji za pohranu</span><span id="tSlide">slajd 17</span></div>
+        <h2 id="tTitle">Hijerarhija medija</h2>
+        <p class="text" id="tText"></p>
+        <pre class="given" id="tPre" hidden></pre>
+        <p class="note" id="tNote" hidden></p>
+      </section>
+
+      <div class="answer" id="answer"></div>
+
+      <div id="sqlBox" hidden>
+        <div class="editor">
+          <label for="sql" style="position:absolute;left:-9999px">SQL naredbe</label>
+          <textarea id="sql" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="-- upit nad katalogom (MySQL sintaksa), npr.&#10;SELECT TABLE_NAME, TABLE_ROWS&#10;FROM information_schema.TABLES&#10;WHERE TABLE_SCHEMA = 'unipu';"></textarea>
+          <div class="toolbar">
+            <button class="btn primary" id="runBtn" disabled>Izvrši</button>
+            <span class="kbd">Ctrl + Enter izvršava naredbe</span>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:14px">
+          <div class="ph"><b id="resTitle">Rezultat</b><span id="resInfo"></span></div>
+          <pre class="out msg" id="resOut">Učitavam bazu podataka…</pre>
+        </div>
+      </div>
+
+      <div class="toolbar answerbar" style="padding:0;border:0">
+        <button class="btn check" id="checkBtn">Provjeri odgovor</button>
+        <button class="btn" id="hintBtn">Naputak</button>
+        <button class="btn" id="solBtn">Rješenje</button>
+      </div>
+
+      <div class="feedback" id="feedback" hidden></div>
+      <div class="panel" id="expPanel" hidden>
+        <div class="ph"><b>Očekivani rezultat</b><span></span></div>
+        <pre class="out" id="expOut"></pre>
+      </div>
+
+      <div class="hints" id="hints"></div>
+
+      <div class="panel solution" id="solPanel" hidden>
+        <div class="ph"><b>Rješenje i objašnjenje</b><span>pokušaj prvo sam</span></div>
+        <div id="solBody"></div>
+        <div class="toolbar"><button class="btn" id="solCopy">Prepiši u editor</button></div>
+      </div>
+
+      <div class="pager">
+        <button class="btn" id="prevBtn">← Prethodni</button>
+        <button class="btn" id="nextBtn">Sljedeći →</button>
+      </div>
+    </main>
+
+    <aside class="lab" aria-label="Laboratorij">
+      <div class="panel">
+        <div class="ph"><b id="labTitle">Laboratorij</b><span id="labInfo"></span></div>
+        <div class="body" id="labBody"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-asm.js"></script>
+<script>
+// CAT – katalog (INFORMATION_SCHEMA) nad SQLite bazom iz sql.js.
+// Tablice kataloga grade se iz SQLite metapodataka (sqlite_master, PRAGMA) prije svake
+// naredbe, pa katalog uvijek opisuje trenutno stanje baze, kao u MySQL-u.
+const CAT = (() => {
+  const SCHEMA = 'unipu';
+  const DDL = `
+    CREATE TABLE information_schema.TABLES (TABLE_CATALOG TEXT, TABLE_SCHEMA TEXT, TABLE_NAME TEXT, TABLE_TYPE TEXT, ENGINE TEXT, TABLE_ROWS INTEGER);
+    CREATE TABLE information_schema.COLUMNS (TABLE_CATALOG TEXT, TABLE_SCHEMA TEXT, TABLE_NAME TEXT, COLUMN_NAME TEXT, ORDINAL_POSITION INTEGER, COLUMN_DEFAULT TEXT, IS_NULLABLE TEXT, DATA_TYPE TEXT, CHARACTER_MAXIMUM_LENGTH INTEGER, NUMERIC_PRECISION INTEGER, NUMERIC_SCALE INTEGER, COLUMN_TYPE TEXT, COLUMN_KEY TEXT);
+    CREATE TABLE information_schema.VIEWS (TABLE_CATALOG TEXT, TABLE_SCHEMA TEXT, TABLE_NAME TEXT, VIEW_DEFINITION TEXT);
+    CREATE TABLE information_schema.TABLE_CONSTRAINTS (CONSTRAINT_CATALOG TEXT, CONSTRAINT_SCHEMA TEXT, CONSTRAINT_NAME TEXT, TABLE_SCHEMA TEXT, TABLE_NAME TEXT, CONSTRAINT_TYPE TEXT);
+    CREATE TABLE information_schema.KEY_COLUMN_USAGE (CONSTRAINT_CATALOG TEXT, CONSTRAINT_SCHEMA TEXT, CONSTRAINT_NAME TEXT, TABLE_SCHEMA TEXT, TABLE_NAME TEXT, COLUMN_NAME TEXT, ORDINAL_POSITION INTEGER, REFERENCED_TABLE_SCHEMA TEXT, REFERENCED_TABLE_NAME TEXT, REFERENCED_COLUMN_NAME TEXT);
+    CREATE TABLE information_schema.SCHEMATA (CATALOG_NAME TEXT, SCHEMA_NAME TEXT, DEFAULT_CHARACTER_SET_NAME TEXT);`;
+  const CAT_TABLES = ['TABLES', 'COLUMNS', 'VIEWS', 'TABLE_CONSTRAINTS', 'KEY_COLUMN_USAGE', 'SCHEMATA'];
+
+  function attach(db) {
+    db.exec("ATTACH DATABASE ':memory:' AS information_schema;");
+    db.exec(DDL);
+    db.create_function('database', () => SCHEMA);
+    db.create_function('schema', () => SCHEMA);
+    db.create_function('version', () => '8.0.36 (vježbaonica)');
+    db.create_function('now', () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; });
+    db.create_function('concat', (...a) => a.some(x => x === null) ? null : a.join(''));
+    db.create_function('if', (c, a, b) => (c && c !== '0') ? a : b);
+    refresh(db);
+  }
+
+  const q = (db, sql, p) => { const r = db.exec(sql, p); return r.length ? r[0].values : []; };
+  const qi = s => '"' + String(s).replace(/"/g, '""') + '"';
+
+  function typeInfo(decl) {
+    const m = /^\s*([A-Za-z]+)(?:\s*\(\s*(\d+)\s*(?:,\s*(\d+)\s*)?\))?/.exec(decl || '');
+    if (!m) return { data_type: '', column_type: '' };
+    const t = m[1].toLowerCase(), a = m[2] != null ? +m[2] : null, b = m[3] != null ? +m[3] : null;
+    if (t === 'varchar' || t === 'char') return { data_type: t, len: a, column_type: `${t}(${a})` };
+    if (t === 'numeric' || t === 'decimal') { const p = a ?? 10, s = b ?? 0; return { data_type: 'decimal', prec: p, scale: s, column_type: `decimal(${p},${s})` }; }
+    if (t === 'int' || t === 'integer') return { data_type: 'int', prec: 10, scale: 0, column_type: 'int' };
+    if (t === 'smallint') return { data_type: 'smallint', prec: 5, scale: 0, column_type: 'smallint' };
+    if (t === 'bigint') return { data_type: 'bigint', prec: 19, scale: 0, column_type: 'bigint' };
+    if (t === 'text') return { data_type: 'text', len: 65535, column_type: 'text' };
+    return { data_type: t, column_type: t + (a != null ? `(${a}${b != null ? ',' + b : ''})` : '') };
+  }
+
+  function refresh(db) {
+    for (const t of CAT_TABLES) db.exec(`DELETE FROM information_schema.${t};`);
+    const ins = (t, row) => db.run(`INSERT INTO information_schema.${t} VALUES (${row.map(() => '?').join(',')})`, row);
+    ins('SCHEMATA', ['def', 'information_schema', 'utf8mb3']);
+    ins('SCHEMATA', ['def', SCHEMA, 'utf8mb4']);
+    const objs = q(db, "SELECT type, name, sql FROM main.sqlite_master WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' ORDER BY rowid");
+    for (const [type, name, sql] of objs) {
+      const view = type === 'view';
+      const rows = view ? null : q(db, `SELECT COUNT(*) FROM main.${qi(name)}`)[0][0];
+      ins('TABLES', ['def', SCHEMA, name, view ? 'VIEW' : 'BASE TABLE', view ? null : 'InnoDB', rows]);
+      if (view) ins('VIEWS', ['def', SCHEMA, name, (/\bAS\b([\s\S]*)$/i.exec(sql || '') || [, ''])[1].trim().replace(/;$/, '')]);
+      let cols; try { cols = q(db, `PRAGMA main.table_info(${qi(name)})`); } catch (e) { cols = []; }
+      const fks = view ? [] : q(db, `PRAGMA main.foreign_key_list(${qi(name)})`);
+      const fkCols = new Set(fks.map(f => String(f[3]).toLowerCase()));
+      const pkCols = cols.filter(c => c[5] > 0).sort((x, y) => x[5] - y[5]);
+      const uniq = [];
+      if (!view) for (const [, iname, unique, origin] of q(db, `PRAGMA main.index_list(${qi(name)})`)) {
+        if (unique && origin === 'u') uniq.push(q(db, `PRAGMA main.index_info(${qi(iname)})`).map(r => r[2]));
+      }
+      const uniqFirst = new Set(uniq.filter(u => u.length === 1).map(u => u[0].toLowerCase()));
+      for (const [cid, cname, ctype, notnull, dflt, pk] of cols) {
+        const ti = typeInfo(ctype);
+        const key = pk > 0 ? 'PRI' : uniqFirst.has(cname.toLowerCase()) ? 'UNI' : fkCols.has(cname.toLowerCase()) ? 'MUL' : '';
+        const dv = dflt == null ? null : String(dflt).replace(/^'(.*)'$/, '$1');
+        ins('COLUMNS', ['def', SCHEMA, name, cname, cid + 1, dv, (notnull || pk > 0) ? 'NO' : 'YES', ti.data_type, ti.len ?? null, ti.prec ?? null, ti.scale ?? null, ti.column_type, view ? '' : key]);
+      }
+      if (view) continue;
+      if (pkCols.length) {
+        ins('TABLE_CONSTRAINTS', ['def', SCHEMA, 'PRIMARY', SCHEMA, name, 'PRIMARY KEY']);
+        pkCols.forEach((c, i) => ins('KEY_COLUMN_USAGE', ['def', SCHEMA, 'PRIMARY', SCHEMA, name, c[1], i + 1, null, null, null]));
+      }
+      for (const u of uniq) {
+        ins('TABLE_CONSTRAINTS', ['def', SCHEMA, u[0], SCHEMA, name, 'UNIQUE']);
+        u.forEach((c, i) => ins('KEY_COLUMN_USAGE', ['def', SCHEMA, u[0], SCHEMA, name, c, i + 1, null, null, null]));
+      }
+      // SQLite numerira strane ključeve obrnutim redoslijedom; MySQL ih imenuje tablica_ibfk_1, _2 … redom definicije.
+      const ids = [...new Set(fks.map(f => f[0]))].sort((a, b) => b - a);
+      ids.forEach((id, k) => {
+        const cname = `${name}_ibfk_${k + 1}`;
+        ins('TABLE_CONSTRAINTS', ['def', SCHEMA, cname, SCHEMA, name, 'FOREIGN KEY']);
+        fks.filter(f => f[0] === id).sort((a, b) => a[1] - b[1]).forEach((f, i) => {
+          let rc = f[4];
+          if (rc == null) { const rp = q(db, `PRAGMA main.table_info(${qi(f[2])})`).filter(c => c[5] > 0).sort((x, y) => x[5] - y[5]); rc = rp[f[1]] ? rp[f[1]][1] : null; }
+          ins('KEY_COLUMN_USAGE', ['def', SCHEMA, cname, SCHEMA, name, f[3], i + 1, SCHEMA, f[2], rc]);
+        });
+      });
+    }
+  }
+
+  // Dijeljenje skripte na naredbe (; izvan navodnika i komentara).
+  function split(src) {
+    const out = []; let cur = '', i = 0, qch = null;
+    while (i < src.length) {
+      const c = src[i], n = src[i + 1];
+      if (qch) { cur += c; if (c === qch) { if (n === qch) { cur += n; i += 2; continue; } qch = null; } i++; continue; }
+      if (c === '-' && n === '-' || c === '#') { while (i < src.length && src[i] !== '\n') i++; continue; }
+      if (c === '/' && n === '*') { const e = src.indexOf('*/', i + 2); i = e < 0 ? src.length : e + 2; continue; }
+      if (c === "'" || c === '"' || c === '`') { qch = c; cur += c; i++; continue; }
+      if (c === ';') { if (cur.trim()) out.push(cur.trim()); cur = ''; i++; continue; }
+      cur += c; i++;
+    }
+    if (cur.trim()) out.push(cur.trim());
+    return out;
+  }
+
+  function err(no, state, msg) { const e = new Error(msg); e.mysql = `ERROR ${no} (${state}): ${msg}`; e.errno = no; return e; }
+
+  function translateError(e, stmt) {
+    const m = e.message || String(e);
+    let x;
+    if ((x = /no such table: (?:main\.|information_schema\.)?(\S+)/.exec(m))) return err(1146, '42S02', `Table '${/information_schema/i.test(stmt) && /information_schema\./i.test(m) ? 'information_schema' : SCHEMA}.${x[1]}' doesn't exist`);
+    if ((x = /no such column: (\S+)/.exec(m))) return err(1054, '42S22', `Unknown column '${x[1]}' in 'field list'`);
+    if ((x = /near "([^"]*)": syntax error/.exec(m))) return err(1064, '42000', `You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '${x[1]}'`);
+    if (/incomplete input/.test(m)) return err(1064, '42000', 'You have an error in your SQL syntax; naredba je nepotpuna');
+    if ((x = /UNIQUE constraint failed: (\S+)/.exec(m))) return err(1062, '23000', `Duplicate entry for key '${x[1]}'`);
+    if (/FOREIGN KEY constraint failed/.test(m)) return err(1452, '23000', 'Cannot add or update a child row: a foreign key constraint fails');
+    if ((x = /NOT NULL constraint failed: (\S+)/.exec(m))) return err(1048, '23000', `Column '${x[1].split('.').pop()}' cannot be null`);
+    if ((x = /table (\S+) already exists/.exec(m))) return err(1050, '42S01', `Table '${x[1]}' already exists`);
+    if ((x = /ambiguous column name: (\S+)/.exec(m))) return err(1052, '23000', `Column '${x[1]}' in field list is ambiguous`);
+    if ((x = /no such function: (\S+)/.exec(m))) return err(1305, '42000', `FUNCTION ${SCHEMA}.${x[1]} does not exist`);
+    return err(1105, 'HY000', m);
+  }
+
+  // Izvođenje jedne naredbe s nekoliko MySQL dodataka (SHOW, DESCRIBE, USE).
+  function execOne(db, stmt) {
+    let s = stmt.trim(), m;
+    if (/^(INSERT|UPDATE|DELETE|REPLACE|CREATE|DROP|ALTER|TRUNCATE)\b[\s\S]*\binformation_schema\s*\./i.test(s) || /^(CREATE|DROP)\s+(DATABASE|SCHEMA)\b/i.test(s))
+      throw err(1044, '42000', "Access denied for user 'root'@'localhost' to database 'information_schema'");
+    if ((m = /^USE\s+`?(\w+)`?$/i.exec(s))) {
+      if (m[1].toLowerCase() === SCHEMA) return { msg: 'Database changed' };
+      throw err(1049, '42000', `Unknown database '${m[1]}'`);
+    }
+    if (/^SHOW\s+(DATABASES|SCHEMAS)$/i.test(s)) s = 'SELECT SCHEMA_NAME AS `Database` FROM information_schema.SCHEMATA ORDER BY 1';
+    else if ((m = /^SHOW\s+(FULL\s+)?TABLES(?:\s+(?:FROM|IN)\s+`?(\w+)`?)?$/i.exec(s))) {
+      const db_ = (m[2] || SCHEMA).toLowerCase();
+      s = `SELECT TABLE_NAME AS \`Tables_in_${db_}\`${m[1] ? ', TABLE_TYPE AS `Table_type`' : ''} FROM information_schema.TABLES WHERE TABLE_SCHEMA = '${db_}' ORDER BY 1`;
+    } else if ((m = /^(?:DESCRIBE|DESC|SHOW\s+(?:FULL\s+)?(?:COLUMNS|FIELDS)\s+(?:FROM|IN))\s+`?(\w+)`?$/i.exec(s))) {
+      const t = m[1];
+      if (!q(db, 'SELECT 1 FROM information_schema.TABLES WHERE lower(TABLE_NAME) = lower(?)', [t]).length) throw err(1146, '42S02', `Table '${SCHEMA}.${t}' doesn't exist`);
+      s = `SELECT COLUMN_NAME AS \`Field\`, COLUMN_TYPE AS \`Type\`, IS_NULLABLE AS \`Null\`, COLUMN_KEY AS \`Key\`, COLUMN_DEFAULT AS \`Default\`, '' AS \`Extra\` FROM information_schema.COLUMNS WHERE lower(TABLE_NAME) = lower('${t.replace(/'/g, "''")}') ORDER BY ORDINAL_POSITION`;
+    } else if ((m = /^SHOW\s+CREATE\s+(TABLE|VIEW)\s+`?(\w+)`?$/i.exec(s))) {
+      const r = q(db, "SELECT name, sql FROM main.sqlite_master WHERE lower(name) = lower(?)", [m[2]]);
+      if (!r.length) throw err(1146, '42S02', `Table '${SCHEMA}.${m[2]}' doesn't exist`);
+      return { result: { columns: [m[1].toUpperCase() === 'VIEW' ? 'View' : 'Table', m[1].toUpperCase() === 'VIEW' ? 'Create View' : 'Create Table'], values: [[r[0][0], r[0][1]]] } };
+    }
+    s = s.replace(/`/g, '"');
+    try {
+      const before = db.getRowsModified ? db.getRowsModified() : 0;
+      const r = db.exec(s);
+      if (!/^(SELECT|WITH|VALUES|PRAGMA)\b/i.test(s.replace(/^\(+/, ''))) refresh(db);
+      if (r.length) return { result: r[r.length - 1] };
+      if (/^(INSERT|UPDATE|DELETE|REPLACE)\b/i.test(s)) return { msg: `Query OK, ${db.getRowsModified()} row(s) affected` };
+      return { msg: 'Query OK, 0 rows affected' };
+    } catch (e) { throw translateError(e, s); }
+  }
+
+  function run(db, src) {
+    const out = [];
+    refresh(db);
+    for (const st of split(src)) {
+      try { out.push(Object.assign({ stmt: st }, execOne(db, st))); }
+      catch (e) { out.push({ stmt: st, error: e.mysql || ('ERROR: ' + e.message), errno: e.errno }); break; }
+    }
+    return out;
+  }
+
+  function fmtVal(v) {
+    if (v === null || v === undefined) return 'NULL';
+    if (typeof v === 'number' && !Number.isInteger(v)) return String(Math.round(v * 1e6) / 1e6);
+    return String(v);
+  }
+  function table(res) {
+    const cols = res.columns, rows = res.values.map(r => r.map(fmtVal));
+    const w = cols.map((c, i) => Math.max(String(c).length, ...rows.map(r => r[i].length)));
+    const line = '+' + w.map(n => '-'.repeat(n + 2)).join('+') + '+';
+    const isNum = i => res.values.some(r => typeof r[i] === 'number') && res.values.every(r => r[i] === null || typeof r[i] === 'number');
+    const fmt = (r, head) => '| ' + r.map((v, i) => (!head && isNum(i)) ? v.padStart(w[i]) : v.padEnd(w[i])).join(' | ') + ' |';
+    return [line, fmt(cols, true), line, ...rows.map(r => fmt(r)), line].join('\n') + `\n${rows.length} row${rows.length === 1 ? '' : 's'} in set`;
+  }
+
+  const norm = v => v === null || v === undefined ? null : (typeof v === 'number' ? Math.round(v * 100) / 100 : (/^-?\d+(\.\d+)?$/.test(String(v).trim()) ? Math.round(+v * 100) / 100 : String(v).trim()));
+  const key = r => JSON.stringify(r.map(norm));
+
+  // Provjera SQL zadatka: korisnikov zadnji rezultat mora odgovarati rezultatu referentnog upita.
+  function check(SQL, initSql, task, userSql) {
+    const mk = () => { const d = new SQL.Database(); d.exec('PRAGMA foreign_keys = ON;'); d.exec(initSql); attach(d); return d; };
+    const dbU = mk(), dbE = mk();
+    try {
+      const outs = run(dbU, userSql);
+      const bad = outs.find(o => o.error);
+      if (bad) return { ok: false, msg: 'Naredba javlja grešku:\n' + bad.error };
+      const last = [...outs].reverse().find(o => o.result);
+      if (!last) return { ok: false, msg: 'Nema rezultata: zadatak traži upit SELECT (ili SHOW / DESCRIBE).' };
+      const exp = run(dbE, task.expectSql).find(o => o.result).result;
+      const got = last.result;
+      if (got.columns.length !== exp.columns.length) return { ok: false, msg: `Rezultat ima ${got.columns.length} stupaca, a očekuje se ${exp.columns.length} (${exp.columns.join(', ')}).`, exp };
+      if (got.values.length !== exp.values.length) return { ok: false, msg: `Rezultat ima ${got.values.length} redaka, a očekuje se ${exp.values.length}.`, exp };
+      let a = got.values.map(key), b = exp.values.map(key);
+      if (!task.ordered) { a = [...a].sort(); b = [...b].sort(); }
+      for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) {
+        const sameSet = [...a].sort().join() === [...b].sort().join();
+        return { ok: false, msg: sameSet ? 'Retci su točni, ali nisu u traženom redoslijedu (ORDER BY).' : `Vrijednosti se ne slažu s očekivanim rezultatom (prvi različit redak: ${i + 1}).`, exp };
+      }
+      return { ok: true, msg: 'Točno! Rezultat odgovara očekivanom.' };
+    } finally { dbU.close(); dbE.close(); }
+  }
+
+  return { attach, refresh, run, table, check, split, SCHEMA };
+})();
+</script>
+<script>
+// CHK – provjera odgovora i simulacije (RAID 5, buffer, zapisi) bez DOM-a.
+const CHK = (() => {
+  // Broj u hrvatskom ili engleskom zapisu: 57.077 / 57077 / 41,67 / 5e8 / 5·10^8 / 5*10^8.
+  function parseNum(s) {
+    if (s == null) return NaN;
+    let t = String(s).trim().replace(/\s+/g, '').replace(/[−–]/g, '-');
+    if (!t) return NaN;
+    let m = /^(-?[\d.,]+)[x*·×]10\^?(-?\d+)$/i.exec(t);
+    if (m) return parseNum(m[1]) * Math.pow(10, +m[2]);
+    if (/^-?\d+(\.\d+)?e-?\d+$/i.test(t)) return +t;
+    t = t.replace(/[a-zčćšđž%€]+$/i, '');
+    if (t.includes('.') && t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+    else if (t.includes(',')) t = t.replace(',', '.');
+    else if (/^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+    return /^-?\d+(\.\d+)?$/.test(t) ? +t : NaN;
+  }
+  const bits = s => String(s || '').replace(/[\s_]/g, '');
+  const nums = s => (String(s || '').match(/-?\d+/g) || []).map(Number);
+
+  function checkField(f, v) {
+    switch (f.type) {
+      case 'num': {
+        const x = parseNum(v);
+        if (Number.isNaN(x)) return { ok: false, empty: !String(v || '').trim() };
+        const tol = f.rel != null ? Math.abs(f.answer) * f.rel : (f.tol || 0);
+        return { ok: Math.abs(x - f.answer) <= tol + 1e-9 };
+      }
+      case 'bits': { const b = bits(v); if (!b) return { ok: false, empty: true }; return { ok: b === f.answer, badFormat: !/^[01]+$/.test(b) || b.length !== f.answer.length }; }
+      case 'choice': return { ok: v !== '' && v != null && +v === f.answer, empty: v === '' || v == null };
+      case 'list': { const n = nums(v); return { ok: n.length === f.answer.length && n.every((x, i) => x === f.answer[i]), empty: !n.length }; }
+      case 'set': { const n = [...new Set(nums(v))].sort((a, b) => a - b); const a = [...f.answer].sort((a, b) => a - b); return { ok: n.length === a.length && n.every((x, i) => x === a[i]), empty: !n.length }; }
+    }
+    return { ok: false };
+  }
+
+  // Provjera cijelog zadatka. ans: za 'fields' niz vrijednosti, za 'order' niz indeksa, za 'multi' niz označenih indeksa.
+  function check(task, ans) {
+    if (task.type === 'fields') {
+      const res = task.fields.map((f, i) => checkField(f, ans ? ans[i] : ''));
+      const good = res.filter(r => r.ok).length;
+      if (good === res.length) return { ok: true, res, msg: 'Točno! Svi odgovori su ispravni.' };
+      if (res.every(r => r.empty)) return { ok: false, res, msg: 'Upiši odgovore u polja pa ih provjeri.' };
+      const fmt = res.some(r => r.badFormat) ? ' Bitove upiši kao niz nula i jedinica iste duljine kao u zadatku.' : '';
+      return { ok: false, res, msg: `Točno je ${good} od ${res.length} odgovora. Netočna polja su označena.${fmt}` };
+    }
+    if (task.type === 'order') {
+      const wrong = ans.map((x, i) => x !== i);
+      const n = wrong.filter(Boolean).length;
+      return n ? { ok: false, wrong, msg: `Redoslijed nije točan: ${n} od ${ans.length} medija nije na svom mjestu.` } : { ok: true, wrong, msg: 'Točno! Redoslijed odgovara hijerarhiji medija.' };
+    }
+    if (task.type === 'multi') {
+      const set = new Set(ans), exp = new Set(task.answer);
+      const miss = task.answer.filter(x => !set.has(x)).length, extra = ans.filter(x => !exp.has(x)).length;
+      if (!miss && !extra) return { ok: true, msg: 'Točno!' };
+      return { ok: false, msg: `Nije točno: ${miss ? `nedostaje ${miss} ${miss === 1 ? 'medij' : 'medija'}` : ''}${miss && extra ? ', a ' : ''}${extra ? `${extra} ${extra === 1 ? 'označeni medij nije stalna pohrana' : 'označena medija nisu stalna pohrana'}` : ''}.` };
+    }
+    return { ok: false, msg: '' };
+  }
+
+  // Buffer: refs je niz {b, w}; vraća korake i ukupne brojeve.
+  function parseRefs(s) {
+    return (String(s).match(/\d+\s*[wWrR]?/g) || []).map(t => ({ b: parseInt(t, 10), w: /w/i.test(t) }));
+  }
+  function buffer(refs, frames, policy) {
+    const buf = []; // {b, dirty}, poredano od najdavnije do najnovije korištenog
+    const steps = []; let hits = 0, reads = 0, writes = 0; const written = [];
+    for (const r of refs) {
+      const i = buf.findIndex(x => x.b === r.b);
+      let hit = i >= 0, evicted = null, wb = false;
+      if (hit) { hits++; const [x] = buf.splice(i, 1); if (r.w) x.dirty = true; buf.push(x); }
+      else {
+        reads++;
+        if (buf.length >= frames) {
+          const v = policy === 'MRU' ? buf.pop() : buf.shift();
+          evicted = v.b; if (v.dirty) { wb = true; writes++; written.push(v.b); }
+        }
+        buf.push({ b: r.b, dirty: r.w });
+      }
+      steps.push({ ref: r, hit, evicted, wb, buf: buf.map(x => ({ ...x })) });
+    }
+    return { steps, hits, reads, writes, written, final: buf.map(x => x.b) };
+  }
+
+  // RAID 5 s D diskova: skup k ima paritet na disku k mod D; vraća {disk, stripe} za podatkovni blok b.
+  function raid5Pos(b, D) {
+    const k = Math.floor(b / (D - 1)), j = b % (D - 1), p = k % D;
+    return { stripe: k, disk: j < p ? j : j + 1, parityDisk: p };
+  }
+  const xor = (...xs) => xs.reduce((a, b) => a ^ b, 0);
+  const b8 = n => (n >>> 0).toString(2).padStart(8, '0');
+
+  // Zapis varijabilne veličine kao na slajdu 40: vals = [ID, ime, fakultet, primanja].
+  function varRecord(vals) {
+    const varIdx = [0, 1, 2]; let pos = 12 + 8 + 1; const pairs = [];
+    for (const i of varIdx) { const v = vals[i]; const len = v == null ? 0 : new TextEncoder().encode(v).length; pairs.push([pos, len]); pos += len; }
+    const bitmap = vals.map(v => v == null ? '1' : '0').join('');
+    return { pairs, bitmap, length: pos };
+  }
+
+  return { parseNum, checkField, check, parseRefs, buffer, raid5Pos, xor, b8, varRecord };
+})();
+</script>
+<script>
+// Zadaci za vježbaonicu 07 (Sustavi fizičke pohrane). Slajdovi prema ispravljenoj prezentaciji.
+const INIT_SQL = `
+CREATE TABLE fakultet (
+  naziv VARCHAR(20) PRIMARY KEY,
+  zgrada VARCHAR(15),
+  proracun NUMERIC(12,2)
+);
+CREATE TABLE nastavnik (
+  ID VARCHAR(5) PRIMARY KEY,
+  ime VARCHAR(20) NOT NULL,
+  fakultet VARCHAR(20) REFERENCES fakultet (naziv),
+  primanja NUMERIC(8,2)
+);
+CREATE TABLE kolegij (
+  kolegij_id VARCHAR(8) PRIMARY KEY,
+  naziv VARCHAR(50) NOT NULL,
+  fakultet VARCHAR(20) REFERENCES fakultet (naziv),
+  ects NUMERIC(2,0)
+);
+CREATE TABLE predaje (
+  ID VARCHAR(5) REFERENCES nastavnik (ID),
+  kolegij_id VARCHAR(8) REFERENCES kolegij (kolegij_id),
+  semestar VARCHAR(6),
+  godina NUMERIC(4,0),
+  PRIMARY KEY (ID, kolegij_id, semestar, godina)
+);
+CREATE VIEW nastavnik_javno AS SELECT ID, ime, fakultet FROM nastavnik;
+INSERT INTO fakultet VALUES ('Informatika', 'Zgrada A', 100000), ('Ekonomija', 'Zgrada B', 90000), ('Fizika', 'Zgrada C', 70000);
+INSERT INTO nastavnik VALUES
+  ('10101', 'Horvat', 'Informatika', 65000), ('12121', 'Kovačević', 'Ekonomija', 90000),
+  ('22222', 'Babić', 'Fizika', 95000), ('32343', 'Marić', 'Ekonomija', 60000),
+  ('45565', 'Novak', 'Informatika', 75000), ('83821', 'Jurić', 'Informatika', 92000),
+  ('98345', 'Knežević', 'Fizika', 80000);
+INSERT INTO kolegij VALUES
+  ('BP1', 'Baze podataka I', 'Informatika', 6), ('BP2', 'Baze podataka II', 'Informatika', 6),
+  ('PROG', 'Programiranje', 'Informatika', 7), ('MIKRO', 'Mikroekonomija', 'Ekonomija', 5),
+  ('FIZ1', 'Fizika I', 'Fizika', 6);
+INSERT INTO predaje VALUES
+  ('10101', 'BP1', 'zimski', 2026), ('10101', 'BP2', 'ljetni', 2026), ('45565', 'PROG', 'zimski', 2026),
+  ('83821', 'BP2', 'ljetni', 2026), ('12121', 'MIKRO', 'zimski', 2026), ('22222', 'FIZ1', 'zimski', 2026);
+`;
+
+const SECTIONS = [
+  { id: 'A', title: 'Mediji za pohranu', slides: '10–17', lab: 'mediji' },
+  { id: 'B', title: 'Pouzdanost diskova', slides: '20–21', lab: 'pouzdanost' },
+  { id: 'C', title: 'RAID', slides: '22–27', lab: 'raid' },
+  { id: 'D', title: 'Zapisi fiksne veličine', slides: '31–37', lab: 'fiksni' },
+  { id: 'E', title: 'Zapisi varijabilne veličine', slides: '38–41', lab: 'varijabilni' },
+  { id: 'F', title: 'Organizacija i katalog', slides: '42–46', lab: 'katalog' },
+  { id: 'G', title: 'Buffer baze podataka', slides: '47–48', lab: 'buffer' },
+];
+
+const ORG = ['organizacija pomoću hrpe (heap)', 'sekvencijalna', 'višetablična (clustering)', 'B+ stablo', 'hash'];
+const RAIDS = ['RAID 0', 'RAID 1 (10)', 'RAID 5', 'RAID 6'];
+const RAZ = ['primarna', 'sekundarna', 'tercijarna'];
+
+const TASKS = [
+  // A — mediji
+  { id: 'A1', s: 'A', slide: 17, star: true, type: 'order', title: 'Hijerarhija medija',
+    text: 'Poredaj medije od najbržeg i najskupljeg po bajtu (vrh hijerarhije) do najsporijeg i najjeftinijeg.',
+    items: ['cache', 'glavna memorija', 'flash memorija (SSD)', 'magnetni disk', 'optički disk', 'magnetna traka'],
+    explain: 'Hijerarhija sa slajda 17 (DSC slika 10.1): cache → glavna memorija → flash memorija → magnetni disk → optički disk → magnetna traka. Prema vrhu raste brzina i cijena po bajtu, a prema dnu kapacitet.',
+    hints: ['Najbrži je medij na samom procesoru (slajd 11).', 'Na dnu je medij sa sekvencijalnim pristupom koji se koristi za arhive (slajd 16).'] },
+
+  { id: 'A2', s: 'A', slide: 12, star: true, type: 'multi', title: 'Nestalna i stalna pohrana',
+    text: 'Označi sve medije koji su stalna pohrana (engl. non-volatile): podaci ostaju sačuvani nakon nestanka struje ili pada sustava.',
+    options: ['cache', 'glavna memorija (RAM)', 'flash memorija (SSD, USB)', 'magnetni disk', 'optički disk', 'magnetna traka'],
+    answer: [2, 3, 4, 5],
+    explain: 'Nestalni (volatile) su cache i glavna memorija: njihov se sadržaj gubi kad nestane struje (slajd 12). Flash, magnetni disk, optički mediji i trake su stalna pohrana (slajdovi 13–16).',
+    hints: ['Slajd 12: kako se zove glavna memorija i zašto?'] },
+
+  { id: 'A3', s: 'A', slide: 17, type: 'fields', title: 'Primarna, sekundarna, tercijarna',
+    text: 'Za svaki medij odaberi razinu pohrane sa slajda 17.',
+    fields: [
+      { label: 'cache', type: 'choice', options: RAZ, answer: 0 },
+      { label: 'glavna memorija', type: 'choice', options: RAZ, answer: 0 },
+      { label: 'flash memorija (SSD)', type: 'choice', options: RAZ, answer: 1 },
+      { label: 'magnetni disk', type: 'choice', options: RAZ, answer: 1 },
+      { label: 'optički disk', type: 'choice', options: RAZ, answer: 2 },
+      { label: 'magnetna traka', type: 'choice', options: RAZ, answer: 2 },
+    ],
+    explain: 'Primarna pohrana su najbrži, nestalni mediji (cache, glavna memorija). Sekundarna (online) su flash i magnetni disk. Tercijarna (offline) su optički diskovi i trake, koji se koriste za arhive i sigurnosne kopije.',
+    hints: ['Na slajdu 17 strelice dijele hijerarhiju na tri dijela: prva dva medija, sljedeća dva i zadnja dva.'] },
+
+  { id: 'A4', s: 'A', slide: 16, type: 'fields', title: 'Koji medij za koju namjenu?',
+    text: 'Za svaku situaciju odaberi najprikladniji medij.',
+    fields: [
+      { label: 'banka mora 10 godina čuvati zapise transakcija koji se gotovo nikad ne čitaju', type: 'choice', options: ['glavna memorija', 'SSD', 'magnetni disk', 'magnetna traka'], answer: 3 },
+      { label: 'aktivna baza s mnogo nasumičnih čitanja malih zapisa', type: 'choice', options: ['glavna memorija', 'SSD', 'magnetni disk', 'magnetna traka'], answer: 1 },
+      { label: 'velika količina podataka koja se čita rijetko, ali mora biti odmah dostupna, uz što nižu cijenu', type: 'choice', options: ['glavna memorija', 'SSD', 'magnetni disk', 'magnetna traka'], answer: 2 },
+      { label: 'koji od ovih medija ima sekvencijalni pristup?', type: 'choice', options: ['SSD', 'magnetni disk', 'magnetna traka', 'optički disk'], answer: 2 },
+    ],
+    explain: 'Trake su jeftine i pouzdane, ali sekvencijalne, pa služe za arhive (slajd 16). SSD nema mehaničkih dijelova pa je najbrži za nasumični pristup. Magnetni disk je najjeftiniji medij s direktnim pristupom (slajd 14).',
+    hints: ['Slajd 16: pohrana sekvencijalnog i direktnog pristupa.'] },
+
+  // B — pouzdanost
+  { id: 'B1', s: 'B', slide: 20, star: true, type: 'fields', title: 'Kvar jednog od N diskova',
+    text: 'Srednje vrijeme do kvara (MTTF) jednog diska je 100.000 sati. Sustav ima 100 diskova. Koliko je srednje vrijeme do kvara nekog od diskova?',
+    fields: [
+      { label: 'u satima', type: 'num', answer: 1000, tol: 0.5, unit: 'h' },
+      { label: 'u danima (zaokruži na cijeli broj)', type: 'num', answer: 41.67, tol: 0.7, unit: 'dana' },
+    ],
+    explain: 'MTTF niza = MTTF diska / N = 100.000 / 100 = 1000 sati = 1000 / 24 ≈ 42 dana (slajd 20).',
+    hints: ['Što je više diskova, to je veća vjerojatnost da se jedan od njih pokvari: podijeli MTTF s brojem diskova.'] },
+
+  { id: 'B2', s: 'B', slide: 21, star: true, type: 'fields', title: 'Zrcaljeni diskovi',
+    text: 'Dva diska su zrcaljena. MTTF svakog diska je 100.000 sati, a srednje vrijeme popravka (MTTR) 10 sati. Koliko je srednje vrijeme do gubitka podataka (SVG)?',
+    note: 'SVG = MTTF² / (2 · MTTR), uz pretpostavku da su kvarovi neovisni. Broj možeš upisati i kao 5e8.',
+    fields: [
+      { label: 'u satima', type: 'num', answer: 5e8, rel: 0.01, unit: 'h' },
+      { label: 'u godinama (1 godina = 8760 h)', type: 'num', answer: 57077, rel: 0.01, unit: 'god.' },
+    ],
+    explain: 'SVG = 100.000² / (2 · 10) = 10¹⁰ / 20 = 5 · 10⁸ sati; 5 · 10⁸ / 8760 ≈ 57.000 godina (slajd 21). U praksi kvarovi nisu neovisni, pa realni sustavi postižu 55–110 godina.',
+    hints: ['Podaci se gube samo ako se drugi disk pokvari dok se prvi popravlja.', '100.000² = 10.000.000.000 (10¹⁰).'] },
+
+  { id: 'B3', s: 'B', slide: 21, type: 'fields', title: 'Brži popravak',
+    text: 'Zrcaljeni par ima MTTF diska 1.000.000 sati. Vrijeme popravka (zamjena diska i kopiranje podataka) smanji se s 24 na 6 sati. Koliko puta se poveća SVG? Koliki je novi SVG u godinama?',
+    fields: [
+      { label: 'SVG se poveća (puta)', type: 'num', answer: 4, tol: 0.01, unit: '×' },
+      { label: 'novi SVG u godinama', type: 'num', answer: 1e12 / 12 / 8760, rel: 0.01, unit: 'god.' },
+    ],
+    explain: 'SVG je obrnuto proporcionalan s MTTR: 24 / 6 = 4 puta veći. Novi SVG = 10¹² / (2 · 6) ≈ 8,33 · 10¹⁰ sati ≈ 9,5 milijuna godina.',
+    hints: ['U formuli MTTF² / (2 · MTTR) mijenja se samo nazivnik.'] },
+
+  // C — RAID
+  { id: 'C1', s: 'C', slide: 23, star: true, type: 'fields', title: 'Paritetni blok',
+    text: 'Skup ima tri podatkovna bloka (prikazana s 8 bitova). Izračunaj paritetni blok P.',
+    pre: 'B0 = 1011 0010\nB1 = 0110 1100\nB2 = 1110 0001',
+    fields: [{ label: 'P', type: 'bits', answer: '00111111' }],
+    explain: 'i-ti bit pariteta je XOR i-tih bitova: 10110010 ⊕ 01101100 = 11011110; 11011110 ⊕ 11100001 = 00111111 (slajd 23). Bit pariteta je 1 kad je u stupcu neparan broj jedinica.',
+    hints: ['XOR dva bita je 1 ako su različiti, a 0 ako su isti.', 'Računaj stupac po stupac: prebroji jedinice u stupcu.'] },
+
+  { id: 'C2', s: 'C', slide: 23, star: true, type: 'fields', title: 'Obnova izgubljenog bloka',
+    text: 'Disk s blokom B1 se pokvario. Iz preostalih blokova skupa i paritetnog bloka obnovi B1.',
+    pre: 'B0 = 1100 1010\nB1 = ???? ????\nB2 = 0011 1100\nP  = 0101 0101',
+    fields: [{ label: 'B1', type: 'bits', answer: '10100011' }],
+    explain: 'B1 = B0 ⊕ B2 ⊕ P = 11001010 ⊕ 00111100 ⊕ 01010101 = 11110110 ⊕ 01010101 = 10100011. Isto se može provjeriti u laboratoriju (RAID 5): pokvari disk pa ga obnovi.',
+    hints: ['Izgubljeni blok je XOR svih ostalih blokova skupa i pariteta (slajd 23).'] },
+
+  { id: 'C3', s: 'C', slide: 24, type: 'fields', title: 'Zapis jednog bloka u RAID 5',
+    text: 'Blok mijenja vrijednost iz 1001 0110 u 1111 0000. Stari paritet skupa je 0110 1001. Izračunaj novi paritet drugim načinom sa slajda 24 i navedi koliko je za to pristupa disku.',
+    fields: [
+      { label: 'novi P', type: 'bits', answer: '00001111' },
+      { label: 'broj čitanja s diska', type: 'num', answer: 2, tol: 0, unit: '' },
+      { label: 'broj pisanja na disk', type: 'num', answer: 2, tol: 0, unit: '' },
+    ],
+    explain: 'P_novi = P_stari ⊕ B_stari ⊕ B_novi = 01101001 ⊕ 10010110 ⊕ 11110000 = 11111111 ⊕ 11110000 = 00001111. Čitaju se stari blok i stari paritet (2 čitanja), a pišu novi blok i novi paritet (2 pisanja), bez obzira na broj diskova.',
+    hints: ['Slajd 24: XOR stare vrijednosti pariteta, stare i nove vrijednosti bloka.', 'Što sve treba pročitati prije računanja, a što zapisati nakon njega?'] },
+
+  { id: 'C4', s: 'C', slide: 26, star: true, type: 'fields', title: 'Raspored blokova u RAID 5',
+    text: 'RAID 5 s pet diskova (0–4) raspoređuje blokove kao u tablici na slajdu 26. Na kojem se disku nalaze traženi blokovi?',
+    fields: [
+      { label: 'blok 13', type: 'num', answer: 1, tol: 0, unit: 'disk' },
+      { label: 'paritet skupa kojem pripada blok 13', type: 'num', answer: 3, tol: 0, unit: 'disk' },
+      { label: 'blok 18', type: 'num', answer: 2, tol: 0, unit: 'disk' },
+      { label: 'blok 21 (sljedeći skup, P5 je ponovno na disku 0)', type: 'num', answer: 2, tol: 0, unit: 'disk' },
+    ],
+    explain: 'Svaki skup ima 4 podatkovna bloka; skup k ima paritet Pk na disku k mod 5, a podatkovni blokovi popunjavaju ostale diskove redom. Blok 13 je u skupu 3 (12, 13, 14, P3, 15), pa je na disku 1, a P3 na disku 3. Blok 18 je u skupu 4 (16, 17, 18, 19, P4): disk 2. Skup 5 je P5, 20, 21, 22, 23, pa je blok 21 na disku 2.',
+    hints: ['Skup bloka b je ⌊b / 4⌋.', 'U skupu k paritet je na disku k mod 5; ostale diskove popunjavaju podaci slijeva nadesno.'] },
+
+  { id: 'C5', s: 'C', slide: 26, star: true, type: 'fields', title: 'Kapacitet RAID razina',
+    text: 'Imamo 6 diskova po 4 TB. Koliko je korisnog prostora (za podatke) na pojedinoj RAID razini i koliko istodobnih kvarova diskova RAID 6 sigurno podnosi?',
+    fields: [
+      { label: 'RAID 0', type: 'num', answer: 24, tol: 0, unit: 'TB' },
+      { label: 'RAID 1 (zrcaljenje)', type: 'num', answer: 12, tol: 0, unit: 'TB' },
+      { label: 'RAID 5', type: 'num', answer: 20, tol: 0, unit: 'TB' },
+      { label: 'RAID 6', type: 'num', answer: 16, tol: 0, unit: 'TB' },
+      { label: 'RAID 6 podnosi kvar (diskova)', type: 'num', answer: 2, tol: 0, unit: '' },
+    ],
+    explain: 'RAID 0 koristi sve: 6 · 4 = 24 TB. Zrcaljenje troši polovicu: 12 TB. RAID 5 troši jedan disk na paritet: (6 − 1) · 4 = 20 TB. RAID 6 troši dva (P + Q): (6 − 2) · 4 = 16 TB i podnosi kvar dvaju diskova (slajd 27).',
+    hints: ['Koliko diskova „ode” na redundanciju kod pojedine razine?'] },
+
+  { id: 'C6', s: 'C', slide: 27, type: 'fields', title: 'Odabir RAID razine',
+    text: 'Za svaku situaciju odaberi najprikladniju RAID razinu.',
+    fields: [
+      { label: 'privremeni podaci koji se lako ponovno izračunaju, važna je samo brzina', type: 'choice', options: RAIDS, answer: 0 },
+      { label: 'baza s vrlo mnogo upisa (npr. dnevnik transakcija), cijena nije važna', type: 'choice', options: RAIDS, answer: 1 },
+      { label: 'velika količina podataka koja se rijetko mijenja; prihvatljiv je kvar jednog diska', type: 'choice', options: RAIDS, answer: 2 },
+      { label: 'kao prethodno, ali obnova velikih diskova traje dugo pa se mora preživjeti kvar dvaju diskova', type: 'choice', options: RAIDS, answer: 3 },
+    ],
+    explain: 'RAID 0 je najbrži, ali bez redundancije. Za mnogo upisa najbolje je zrcaljenje (RAID 1/10): upis je jedan dodatni zapis, a ne 2 čitanja i 2 pisanja kao kod RAID 5. RAID 5 i 6 štede prostor za podatke koji se rijetko mijenjaju; RAID 6 podnosi kvar dvaju diskova (slajdovi 26–27).',
+    hints: ['Sjeti se cijene zapisa jednog bloka u RAID 5 (zadatak C3).'] },
+
+  // D — zapisi fiksne veličine
+  { id: 'D1', s: 'D', slide: 31, star: true, type: 'fields', title: 'Zapisi u bloku',
+    text: 'Zapis nastavnik ima atribute ID varchar(5), ime varchar(20), fakultet varchar(20) i primanja numeric(8,2), uz najveći prostor za svaki atribut (numeric(8,2) zauzima 8 bajtova). Blok ima 4096 bajtova i zapis se ne smije dijeliti na dva bloka.',
+    fields: [
+      { label: 'veličina zapisa', type: 'num', answer: 53, tol: 0, unit: 'B' },
+      { label: 'broj zapisa u jednom bloku', type: 'num', answer: 77, tol: 0, unit: '' },
+      { label: 'neiskorišteni bajtovi na kraju bloka', type: 'num', answer: 15, tol: 0, unit: 'B' },
+      { label: 'broj blokova za 20.000 nastavnika', type: 'num', answer: 260, tol: 0, unit: '' },
+    ],
+    explain: '5 + 20 + 20 + 8 = 53 B (slajd 31). U blok stane ⌊4096 / 53⌋ = 77 zapisa, a ostaje 4096 − 77 · 53 = 15 B (slajd 33). Za 20.000 zapisa treba ⌈20.000 / 77⌉ = 260 blokova.',
+    hints: ['Zapis se ne dijeli na dva bloka: koristi cjelobrojno dijeljenje (⌊ ⌋).', 'Za zadnji blok koji nije pun ipak treba cijeli blok (⌈ ⌉).'] },
+
+  { id: 'D2', s: 'D', slide: 33, type: 'fields', title: 'Zapis preko granice bloka',
+    text: 'U jednostavnom pristupu sa slajda 32 zapisi od 53 B slažu se jedan za drugim (zapis 0 počinje na bajtu 0), a blok ima 4096 B. Koji je prvi zapis podijeljen između blokova 0 i 1 i na kojem bajtu počinje?',
+    fields: [
+      { label: 'redni broj zapisa', type: 'num', answer: 77, tol: 0, unit: '' },
+      { label: 'početni bajt', type: 'num', answer: 4081, tol: 0, unit: '' },
+      { label: 'koliko njegovih bajtova je u bloku 1', type: 'num', answer: 38, tol: 0, unit: 'B' },
+    ],
+    explain: 'Zapis i počinje na bajtu 53 · i. Zapis 77 počinje na 4081 i završava na 4133, a blok 0 završava na 4095: 15 bajtova je u bloku 0, a 53 − 15 = 38 u bloku 1. Čitanje tog zapisa traži dva pristupa bloku (slajd 33).',
+    hints: ['Traži prvi i za koji je 53 · i + 53 > 4096.'] },
+
+  { id: 'D3', s: 'D', slide: 35, star: true, type: 'fields', title: 'Brisanje zapisa',
+    text: 'Datoteka ima 12 zapisa (0–11) kao na slajdu 32. Briše se zapis 3. Koliko zapisa treba premjestiti kod pojedinog pristupa?',
+    fields: [
+      { label: 'pomicanje svih sljedećih zapisa (slajd 34)', type: 'num', answer: 8, tol: 0, unit: '' },
+      { label: 'premještanje zadnjeg zapisa (slajd 35)', type: 'num', answer: 1, tol: 0, unit: '' },
+      { label: 'slobodna lista (slajd 36)', type: 'num', answer: 0, tol: 0, unit: '' },
+      { label: 'koji zapis je kod premještanja zadnjeg na mjestu 3?', type: 'num', answer: 11, tol: 0, unit: '' },
+    ],
+    explain: 'Pomicanjem se zapisi 4–11 (njih 8) pomiču za jedno mjesto. Kod drugog pristupa samo zadnji zapis (11) prelazi na mjesto 3. Sa slobodnom listom ništa se ne pomiče: mjesto 3 dodaje se u listu i čeka sljedeće umetanje. Isprobaj sva tri načina u laboratoriju.',
+    hints: ['Koliko je zapisa iza zapisa 3?'] },
+
+  { id: 'D4', s: 'D', slide: 37, star: true, type: 'fields', title: 'Slobodna lista',
+    text: 'Iz datoteke s 12 zapisa brišu se zapisi 1, 4 i 6, tim redom. Kao na slajdu 37, svako novo prazno mjesto dodaje se na kraj slobodne liste. Zatim se umeće jedan novi zapis.',
+    fields: [
+      { label: 'slobodna lista nakon brisanja (redni brojevi od zaglavlja, npr. 2, 5, 9)', type: 'list', answer: [1, 4, 6] },
+      { label: 'mjesto na koje se upisuje novi zapis', type: 'num', answer: 1, tol: 0, unit: '' },
+      { label: 'na koje mjesto nakon umetanja pokazuje zaglavlje', type: 'num', answer: 4, tol: 0, unit: '' },
+    ],
+    explain: 'Zaglavlje pokazuje na zapis 1, zapis 1 na 4, a 4 na 6 (kraj liste). Novi zapis uzima prvo mjesto iz liste (1), pa zaglavlje nakon toga pokazuje na 4.',
+    hints: ['Novi zapis uzima mjesto na koje pokazuje zaglavlje.'] },
+
+  // E — zapisi varijabilne veličine
+  { id: 'E1', s: 'E', slide: 40, star: true, type: 'fields', title: 'Raspored zapisa varijabilne veličine',
+    text: "Zapis ('22222', 'Babić', 'Fizika', 95000) sprema se kao na slajdu 40: tri para (pomak, duljina) po 4 B (2 + 2), primanja 8 B, null bitmap 1 B, a zatim redom vrijednosti ID, ime i fakultet. Znakovi su ASCII, pa ćemo „Babić” pisati „Babic” (5 B).",
+    fields: [
+      { label: 'pomak ID-a', type: 'num', answer: 21, tol: 0, unit: '' },
+      { label: 'pomak imena', type: 'num', answer: 26, tol: 0, unit: '' },
+      { label: 'pomak fakulteta', type: 'num', answer: 31, tol: 0, unit: '' },
+      { label: 'duljina fakulteta', type: 'num', answer: 6, tol: 0, unit: 'B' },
+      { label: 'ukupna duljina zapisa', type: 'num', answer: 37, tol: 0, unit: 'B' },
+    ],
+    explain: 'Fiksni dio: 3 · 4 = 12 B parova (bajtovi 0–11), primanja 12–19, bitmap 20. Varijabilni dio počinje na 21: ID (21, 5), ime (26, 5), fakultet (31, 6). Zapis ima 21 + 5 + 5 + 6 = 37 B (bajtovi 0–36). Raspored možeš provjeriti u laboratoriju.',
+    hints: ['Varijabilni dio počinje odmah iza null bitmapa: 12 + 8 + 1 = 21.', 'Svaki sljedeći atribut počinje gdje prethodni završava.'] },
+
+  { id: 'E2', s: 'E', slide: 40, type: 'fields', title: 'NULL vrijednosti',
+    text: "Isti raspored kao u E1, za zapis ('33456', NULL, 'Fizika', NULL). Atribut s vrijednošću NULL ima duljinu 0, a bit u null bitmapu redom je ID, ime, fakultet, primanja (kao 0001 na slajdu 40).",
+    fields: [
+      { label: 'null bitmap', type: 'bits', answer: '0101' },
+      { label: 'pomak fakulteta', type: 'num', answer: 26, tol: 0, unit: '' },
+      { label: 'ukupna duljina zapisa', type: 'num', answer: 32, tol: 0, unit: 'B' },
+    ],
+    explain: 'NULL su ime (drugi bit) i primanja (četvrti bit): 0101. Bajtovi 12–19 se zanemaruju. ID je (21, 5), ime (26, 0), fakultet (26, 6), pa zapis ima 21 + 5 + 0 + 6 = 32 B.',
+    hints: ['Na slajdu 40 primanja = NULL daje 0001: četvrti bit odgovara četvrtom atributu.'] },
+
+  { id: 'E3', s: 'E', slide: 41, star: true, type: 'fields', title: 'Blok sa zaglavljem',
+    text: 'Blok od 4096 B organiziran je kao na slajdu 41: zaglavlje ima broj zapisa (4 B), kraj slobodnog prostora (4 B) i po jedan unos (lokacija, veličina) od 8 B za svaki zapis. Zapisi se slažu od kraja bloka prema početku. Umeću se zapisi od 46, 37 i 32 B.',
+    fields: [
+      { label: 'lokacija prvog zapisa', type: 'num', answer: 4050, tol: 0, unit: '' },
+      { label: 'lokacija trećeg zapisa', type: 'num', answer: 3981, tol: 0, unit: '' },
+      { label: 'kraj slobodnog prostora', type: 'num', answer: 3981, tol: 0, unit: '' },
+      { label: 'veličina zaglavlja', type: 'num', answer: 32, tol: 0, unit: 'B' },
+      { label: 'slobodno', type: 'num', answer: 3949, tol: 0, unit: 'B' },
+    ],
+    explain: 'Prvi zapis: 4096 − 46 = 4050; drugi: 4050 − 37 = 4013; treći: 4013 − 32 = 3981, što je ujedno kraj slobodnog prostora. Zaglavlje ima 4 + 4 + 3 · 8 = 32 B, pa je slobodno 3981 − 32 = 3949 B. Zaglavlje raste prema kraju bloka, a zapisi prema početku.',
+    hints: ['Svaki zapis smješta se neposredno ispred prethodnog.', 'Zaglavlje: 4 + 4 + 3 · 8 B. Slobodni prostor je između kraja zaglavlja i kraja slobodnog prostora.'] },
+
+  { id: 'E4', s: 'E', slide: 41, type: 'fields', title: 'Brisanje iz bloka',
+    text: 'U bloku iz E3 briše se drugi zapis (37 B). Zapisi se premještaju tako da slobodni prostor ostane u jednom komadu, a unos za obrisani zapis u zaglavlju označava se kao prazan.',
+    fields: [
+      { label: 'nova lokacija trećeg zapisa', type: 'num', answer: 4018, tol: 0, unit: '' },
+      { label: 'novi kraj slobodnog prostora', type: 'num', answer: 4018, tol: 0, unit: '' },
+      { label: 'mijenja li se lokacija prvog zapisa? (0 = ne, 1 = da)', type: 'num', answer: 0, tol: 0, unit: '' },
+    ],
+    explain: 'Zapisi koji su bliže slobodnom prostoru od obrisanog (ovdje treći) pomiču se za 37 B prema kraju bloka: 3981 + 37 = 4018. Kraj slobodnog prostora je 4018. Prvi zapis ostaje na 4050. Zapisi se unutar bloka smiju premještati jer se izvana dohvaćaju preko unosa u zaglavlju, a ne izravno.',
+    hints: ['Koji su zapisi između obrisanog zapisa i slobodnog prostora?'] },
+
+  // F — organizacija i katalog
+  { id: 'F1', s: 'F', slide: 42, type: 'fields', title: 'Organizacija datoteke',
+    text: 'Za svaku situaciju odaberi organizaciju datoteke sa slajdova 42–43.',
+    fields: [
+      { label: 'dnevnik događaja: zapisi se samo dodaju, a čitaju rijetko i u cijelosti', type: 'choice', options: ORG, answer: 0 },
+      { label: 'upit gotovo uvijek spaja nastavnika s njegovim fakultetom (JOIN)', type: 'choice', options: ORG, answer: 2 },
+      { label: 'zapisi se uvijek traže po točnoj vrijednosti ključa (WHERE ID = …)', type: 'choice', options: ORG, answer: 4 },
+      { label: 'ispis po redu ključa uz česta umetanja i brisanja', type: 'choice', options: ORG, answer: 3 },
+    ],
+    explain: 'Hrpa: novi zapis ide gdje ima mjesta, idealno za dodavanje. Višetablična organizacija drži povezane zapise dviju tablica u istom bloku. Hash smješta zapis u blok prema funkciji ključa, pa je traženje po točnoj vrijednosti jedan pristup. B+ stablo čuva redoslijed i dobro podnosi umetanja i brisanja (slajd 43).',
+    hints: ['Sekvencijalna organizacija čuva redoslijed, ali česta umetanja i brisanja je kvare (slajd 43).'] },
+
+  { id: 'F2', s: 'F', slide: 46, star: true, type: 'sql', title: 'Katalog: tablice baze',
+    text: 'Katalog je i sam spremljen u relacijama (slajd 46). U MySQL-u se čita iz baze INFORMATION_SCHEMA. Ispiši imena svih tablica i pogleda baze unipu i njihovu vrstu (TABLE_TYPE).',
+    note: 'Tablice kataloga: INFORMATION_SCHEMA.TABLES, COLUMNS, VIEWS, TABLE_CONSTRAINTS, KEY_COLUMN_USAGE. U vježbaonici rade i SHOW TABLES i DESCRIBE.',
+    expectSql: "SELECT TABLE_NAME, TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'unipu';",
+    sol: "SELECT TABLE_NAME, TABLE_TYPE\nFROM information_schema.TABLES\nWHERE TABLE_SCHEMA = 'unipu';",
+    explain: 'Svaki red tablice TABLES opisuje jednu tablicu ili pogled. Uvjet na TABLE_SCHEMA potreban je jer katalog opisuje sve baze na poslužitelju.',
+    hints: ['FROM information_schema.TABLES', "WHERE TABLE_SCHEMA = 'unipu' (ili = DATABASE())"] },
+
+  { id: 'F3', s: 'F', slide: 44, star: true, type: 'sql', title: 'Katalog: atributi relacije',
+    text: 'Ispiši za tablicu nastavnik ime svakog stupca, tip podatka (COLUMN_TYPE) i smije li biti NULL, redom kako su stupci definirani.',
+    expectSql: "SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'unipu' AND TABLE_NAME = 'nastavnik' ORDER BY ORDINAL_POSITION;",
+    ordered: true,
+    sol: "SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE\nFROM information_schema.COLUMNS\nWHERE TABLE_SCHEMA = 'unipu' AND TABLE_NAME = 'nastavnik'\nORDER BY ORDINAL_POSITION;",
+    explain: 'Tablica COLUMNS ima red za svaki atribut svake relacije: broj atributa, domene i veličine sa slajda 44. Redoslijed definicije čuva ORDINAL_POSITION.',
+    hints: ['Stupci kataloga: COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, ORDINAL_POSITION.'] },
+
+  { id: 'F4', s: 'F', slide: 31, star: true, type: 'sql', title: 'Veličina zapisa iz kataloga',
+    text: 'Iz kataloga izračunaj veličinu zapisa fiksne veličine za svaku tablicu baze (ne i za poglede), kao na slajdu 31: VARCHAR(n) zauzima n bajtova, a svaki NUMERIC (u katalogu decimal) 8 bajtova. Ispiši ime tablice i veličinu.',
+    note: 'Za nastavnik mora izaći 53 B, kao na slajdu 31.',
+    expectSql: "SELECT c.TABLE_NAME, SUM(CASE WHEN c.DATA_TYPE = 'varchar' THEN c.CHARACTER_MAXIMUM_LENGTH ELSE 8 END) FROM information_schema.COLUMNS c JOIN information_schema.TABLES t ON t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME WHERE c.TABLE_SCHEMA = 'unipu' AND t.TABLE_TYPE = 'BASE TABLE' GROUP BY c.TABLE_NAME;",
+    sol: "SELECT c.TABLE_NAME,\n       SUM(CASE WHEN c.DATA_TYPE = 'varchar' THEN c.CHARACTER_MAXIMUM_LENGTH\n                ELSE 8 END) AS velicina_zapisa\nFROM information_schema.COLUMNS c\nJOIN information_schema.TABLES t\n  ON t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME\nWHERE c.TABLE_SCHEMA = 'unipu' AND t.TABLE_TYPE = 'BASE TABLE'\nGROUP BY c.TABLE_NAME;",
+    explain: 'Katalog sadrži domene i veličine atributa (slajd 44), pa baza iz njega može izračunati raspored zapisa. Pogledi nemaju zapise na disku, pa ih isključujemo spajanjem s TABLES.',
+    hints: ['SUM(CASE WHEN DATA_TYPE = \'varchar\' THEN CHARACTER_MAXIMUM_LENGTH ELSE 8 END)', 'Poglede isključi spajanjem s information_schema.TABLES i uvjetom TABLE_TYPE = \'BASE TABLE\'.'] },
+
+  { id: 'F5', s: 'F', slide: 44, type: 'sql', title: 'Ograničenja u katalogu',
+    text: 'Ispiši sve strane ključeve baze unipu: tablicu, stupac, tablicu na koju pokazuje i stupac na koji pokazuje.',
+    expectSql: "SELECT TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = 'unipu' AND REFERENCED_TABLE_NAME IS NOT NULL;",
+    sol: "SELECT TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME\nFROM information_schema.KEY_COLUMN_USAGE\nWHERE TABLE_SCHEMA = 'unipu' AND REFERENCED_TABLE_NAME IS NOT NULL;",
+    explain: 'KEY_COLUMN_USAGE ima red za svaki stupac primarnog, jedinstvenog i stranog ključa. Strani ključevi su redovi s popunjenim REFERENCED_TABLE_NAME. MySQL neimenovane strane ključeve imenuje tablica_ibfk_1, tablica_ibfk_2 …',
+    hints: ['Tablica kataloga je KEY_COLUMN_USAGE.', 'Primarni ključevi nemaju REFERENCED_TABLE_NAME.'] },
+
+  { id: 'F6', s: 'F', slide: 46, type: 'sql', title: 'Katalog se mijenja s bazom',
+    text: 'Stvori tablicu ured (broj VARCHAR(10) primarni ključ, zgrada VARCHAR(15), kapacitet NUMERIC(3,0)), a zatim iz kataloga ispiši broj stupaca svake tablice baze unipu (bez pogleda).',
+    expectSql: "CREATE TABLE ured (broj VARCHAR(10) PRIMARY KEY, zgrada VARCHAR(15), kapacitet NUMERIC(3,0)); SELECT c.TABLE_NAME, COUNT(*) FROM information_schema.COLUMNS c JOIN information_schema.TABLES t ON t.TABLE_NAME = c.TABLE_NAME AND t.TABLE_SCHEMA = c.TABLE_SCHEMA WHERE c.TABLE_SCHEMA = 'unipu' AND t.TABLE_TYPE = 'BASE TABLE' GROUP BY c.TABLE_NAME;",
+    sol: "CREATE TABLE ured (\n  broj VARCHAR(10) PRIMARY KEY,\n  zgrada VARCHAR(15),\n  kapacitet NUMERIC(3,0)\n);\nSELECT c.TABLE_NAME, COUNT(*) AS broj_stupaca\nFROM information_schema.COLUMNS c\nJOIN information_schema.TABLES t\n  ON t.TABLE_NAME = c.TABLE_NAME AND t.TABLE_SCHEMA = c.TABLE_SCHEMA\nWHERE c.TABLE_SCHEMA = 'unipu' AND t.TABLE_TYPE = 'BASE TABLE'\nGROUP BY c.TABLE_NAME;",
+    explain: 'CREATE TABLE ne zapisuje samo novu datoteku, nego i nove retke u katalog. Zato se nova tablica odmah vidi u TABLES i COLUMNS.',
+    hints: ['Prvo CREATE TABLE, zatim upit nad COLUMNS s GROUP BY.'] },
+
+  // G — buffer
+  { id: 'G1', s: 'G', slide: 48, star: true, type: 'fields', title: 'Zamjena blokova LRU',
+    text: 'Buffer ima 3 okvira i na početku je prazan. Upravitelj izbacuje blok koji najdulje nije korišten (LRU, DSC 10.8.2). Traženi su blokovi redom: 1 2 3 1 4 2 5 1 2 3.',
+    fields: [
+      { label: 'broj čitanja s diska (promašaja)', type: 'num', answer: 8, tol: 0, unit: '' },
+      { label: 'broj pogodaka', type: 'num', answer: 2, tol: 0, unit: '' },
+      { label: 'koji je blok izbačen kad je zatražen blok 4?', type: 'num', answer: 2, tol: 0, unit: '' },
+      { label: 'blokovi u bufferu na kraju', type: 'set', answer: [1, 2, 3] },
+    ],
+    explain: '1, 2, 3 su promašaji; 1 je pogodak. Za 4 izbacuje se 2 (najdulje nekorišten); za 2 izbacuje se 3; za 5 izbacuje se 1; za 1 izbacuje se 4; 2 je pogodak; za 3 izbacuje se 5. Ukupno 8 promašaja i 2 pogotka; na kraju su u bufferu 1, 2 i 3. Provjeri korak po korak u laboratoriju.',
+    hints: ['Vodi popis blokova u bufferu poredan od najdavnije do najnovije korištenog.', 'Pogodak ne čita disk, ali blok postaje najnovije korišten.'] },
+
+  { id: 'G2', s: 'G', slide: 48, type: 'fields', title: 'Izmijenjeni blokovi',
+    text: 'Isti buffer i LRU kao u G1, a slijed je 1 2w 3 1 4 2 5w 1 2 3, gdje w znači da se blok mijenja. Izbačeni blok zapisuje se na disk samo ako je izmijenjen nakon učitavanja (slajd 48).',
+    fields: [
+      { label: 'broj zapisivanja na disk', type: 'num', answer: 2, tol: 0, unit: '' },
+      { label: 'koji su blokovi zapisani (redom)', type: 'list', answer: [2, 5] },
+    ],
+    explain: 'Blok 2 je izmijenjen, a izbacuje se kad stigne 4, pa se zapisuje. Kasnije se 2 ponovno učitava, ali samo čita, pa je čist. Blok 5 je izmijenjen i izbacuje se kad stigne 3, pa se zapisuje. Ostala izbacivanja ne pišu na disk.',
+    hints: ['Promašaji su isti kao u G1; prati samo koji su izbačeni blokovi „prljavi”.'] },
+
+  { id: 'G3', s: 'G', slide: 48, type: 'fields', title: 'Kad LRU nije dobar',
+    text: 'Upit dvaput zaredom čita cijelu tablicu od 4 bloka: 1 2 3 4 1 2 3 4. Buffer ima 3 okvira. Koliko je pogodaka uz LRU, a koliko uz MRU (izbacuje se najnovije korišten blok)?',
+    fields: [
+      { label: 'pogoci uz LRU', type: 'num', answer: 0, tol: 0, unit: '' },
+      { label: 'pogoci uz MRU', type: 'num', answer: 3, tol: 0, unit: '' },
+    ],
+    explain: 'Uz LRU svaki blok bude izbačen upravo prije nego što ponovno zatreba, pa nema nijednog pogotka. Uz MRU kod bloka 4 izbacuje se 3; 1 i 2 su pogoci; za 3 izbacuje se 2; 4 je pogodak: ukupno 3. Zato baze za ponovljena čitanja tablice ne koriste slijepo LRU (DSC 10.8.2).',
+    hints: ['Pokreni oba slijeda u laboratoriju i usporedi.'] },
+];
+</script>
+<script>
+(() => {
+  const NB_URL = 'NB_URL_07';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const h = (tag, attrs = {}, ...kids) => {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'class') e.className = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+      else if (v === true) e.setAttribute(k, ''); else if (v !== false && v != null) e.setAttribute(k, v);
+    }
+    for (const k of kids.flat()) if (k != null && k !== false) e.append(k.nodeType ? k : document.createTextNode(String(k)));
+    return e;
+  };
+  if (!/^https:/.test(NB_URL)) $('askLink').hidden = true;
+
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('sqlvj7:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('sqlvj7:' + k, JSON.stringify(v)); } catch (e) { } },
+  };
+  let solved = new Set(store.get('solved', []));
+  let cur = 0;
+  const secOf = id => SECTIONS.find(s => s.id === id);
+
+  // ---------- popis zadataka ----------
+  function renderNav() {
+    const nav = $('taskNav'); nav.innerHTML = '';
+    for (const s of SECTIONS) {
+      const list = TASKS.map((t, i) => [t, i]).filter(([t]) => t.s === s.id);
+      const done = list.filter(([t]) => solved.has(t.id)).length;
+      nav.append(h('div', { class: 'sec' },
+        h('h3', {}, `${s.id} · ${s.title}`, h('span', {}, `${done}/${list.length}`)),
+        h('ul', {}, list.map(([t, i]) => h('li', {}, h('button', { class: 'tbtn', 'data-i': i, 'aria-current': i === cur ? 'true' : 'false', onclick: () => go(i) },
+          h('span', { class: 'tid' }, t.id), h('span', { class: 'ttl' }, t.title + (t.star ? ' ★' : '')), h('span', { class: 'dot' }, solved.has(t.id) ? '✓' : '')))))));
+    }
+    $('progTxt').textContent = `${solved.size} / ${TASKS.length} riješeno`;
+    $('progBar').style.width = (100 * solved.size / TASKS.length) + '%';
+  }
+
+  // ---------- odgovori ----------
+  let answerState = null; // za order: trenutni redoslijed indeksa
+  function shuffled(n, seed) { const a = [...Array(n).keys()]; let x = seed; for (let i = n - 1; i > 0; i--) { x = (x * 9301 + 49297) % 233280; const j = Math.floor(x / 233280 * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } if (a.every((v, i) => v === i)) a.reverse(); return a; }
+
+  function renderAnswer(t) {
+    const box = $('answer'); box.innerHTML = '';
+    $('sqlBox').hidden = t.type !== 'sql'; box.hidden = t.type === 'sql';
+    const draft = store.get('draft:' + t.id, null);
+    if (t.type === 'fields') {
+      const g = h('div', { class: 'fields' });
+      t.fields.forEach((f, i) => {
+        const id = `f_${t.id}_${i}`; let input;
+        if (f.type === 'choice') {
+          input = h('select', { id }, h('option', { value: '' }, '— odaberi —'), f.options.map((o, k) => h('option', { value: k }, o)));
+        } else {
+          input = h('input', { id, type: 'text', inputmode: f.type === 'num' ? 'decimal' : f.type === 'bits' ? 'numeric' : 'text', autocomplete: 'off', spellcheck: 'false', class: f.type === 'bits' ? 'mono' : '', placeholder: f.type === 'bits' ? '0'.repeat(f.answer.length) : f.type === 'list' || f.type === 'set' ? 'npr. 1, 2, 3' : '' });
+        }
+        if (draft && draft[i] != null) input.value = draft[i];
+        input.addEventListener('input', saveDraft); input.addEventListener('change', saveDraft);
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doCheck(); } });
+        g.append(h('label', { class: 'fl', for: id }, f.label), h('div', { class: 'fi' }, input, f.unit ? h('span', { class: 'unit' }, f.unit) : null, h('span', { class: 'mark', id: id + '_m', 'aria-live': 'polite' })));
+      });
+      box.append(g);
+    } else if (t.type === 'order') {
+      answerState = Array.isArray(draft) && draft.length === t.items.length ? draft : shuffled(t.items.length, 7);
+      const ol = h('ol', { class: 'order', id: 'orderList' }); box.append(ol, h('p', { class: 'small' }, 'Strelicama pomiči stavke gore i dolje. Na vrhu je najbrži medij.'));
+      drawOrder(t);
+    } else if (t.type === 'multi') {
+      const ul = h('div', { class: 'multi' });
+      t.options.forEach((o, i) => {
+        const cb = h('input', { type: 'checkbox', id: `m_${t.id}_${i}`, value: i });
+        if (Array.isArray(draft) && draft.includes(i)) cb.checked = true;
+        cb.addEventListener('change', saveDraft);
+        ul.append(h('label', { class: 'chk' }, cb, ' ', o));
+      });
+      box.append(ul);
+    } else if (t.type === 'sql') {
+      $('sql').value = draft || '';
+    }
+  }
+  function drawOrder(t) {
+    const ol = $('orderList'); ol.innerHTML = '';
+    answerState.forEach((it, pos) => ol.append(h('li', { 'data-pos': pos },
+      h('span', { class: 'oi' }, t.items[it]),
+      h('button', { class: 'mv', 'aria-label': 'Pomakni gore', disabled: pos === 0, onclick: () => { [answerState[pos - 1], answerState[pos]] = [answerState[pos], answerState[pos - 1]]; saveDraft(); drawOrder(t); ol.querySelectorAll('li')[pos - 1].querySelector('.mv').focus(); } }, '↑'),
+      h('button', { class: 'mv', 'aria-label': 'Pomakni dolje', disabled: pos === answerState.length - 1, onclick: () => { [answerState[pos + 1], answerState[pos]] = [answerState[pos], answerState[pos + 1]]; saveDraft(); drawOrder(t); ol.querySelectorAll('li')[pos + 1].querySelectorAll('.mv')[1].focus(); } }, '↓'))));
+  }
+  function collect(t) {
+    if (t.type === 'fields') return t.fields.map((f, i) => $(`f_${t.id}_${i}`).value);
+    if (t.type === 'order') return answerState.slice();
+    if (t.type === 'multi') return t.options.map((_, i) => i).filter(i => $(`m_${t.id}_${i}`).checked);
+    if (t.type === 'sql') return $('sql').value;
+  }
+  function saveDraft() { const t = TASKS[cur]; store.set('draft:' + t.id, collect(t)); }
+
+  function feedback(ok, msg) { const f = $('feedback'); f.hidden = false; f.className = 'feedback ' + (ok ? 'ok' : 'err'); f.textContent = msg; }
+  function markSolved(t) { if (!solved.has(t.id)) { solved.add(t.id); store.set('solved', [...solved]); renderNav(); } }
+
+  function doCheck() {
+    const t = TASKS[cur];
+    if (t.type === 'sql') {
+      if (!SQLOBJ) { feedback(false, 'Baza se još učitava, pokušaj za trenutak.'); return; }
+      const r = CAT.check(SQLOBJ, INIT_SQL, t, $('sql').value);
+      feedback(r.ok, r.msg);
+      if (r.exp && !r.ok) { $('expPanel').hidden = false; $('expOut').textContent = CAT.table(r.exp); }
+      else $('expPanel').hidden = true;
+      if (r.ok) markSolved(t);
+      return;
+    }
+    const ans = collect(t), r = CHK.check(t, ans);
+    if (t.type === 'fields') r.res.forEach((x, i) => { const m = $(`f_${t.id}_${i}_m`); m.textContent = x.ok ? '✓' : (x.empty ? '' : '✗'); m.className = 'mark ' + (x.ok ? 'ok' : 'err'); });
+    if (t.type === 'order') $('orderList').querySelectorAll('li').forEach((li, pos) => li.classList.toggle('bad', answerState[pos] !== pos));
+    feedback(r.ok, r.msg);
+    if (r.ok) markSolved(t);
+  }
+
+  // ---------- prikaz zadatka ----------
+  let hintN = 0;
+  function go(i) {
+    cur = Math.max(0, Math.min(TASKS.length - 1, i)); store.set('current', TASKS[cur].id);
+    const t = TASKS[cur], s = secOf(t.s);
+    $('tMeta').textContent = `${t.id}${t.star ? ' ★' : ''} · ${s.title}`; $('tSlide').textContent = 'slajd ' + t.slide;
+    $('tTitle').textContent = t.title; $('tText').textContent = t.text;
+    $('tPre').hidden = !t.pre; $('tPre').textContent = t.pre || '';
+    $('tNote').hidden = !t.note; $('tNote').textContent = t.note || '';
+    $('feedback').hidden = true; $('expPanel').hidden = true; $('hints').innerHTML = ''; hintN = 0; $('solPanel').hidden = true;
+    $('hintBtn').disabled = false;
+    renderAnswer(t); renderNav(); showLab(s);
+    if (t.type === 'sql') { $('resTitle').textContent = 'Rezultat'; $('resInfo').textContent = ''; $('resOut').className = 'out msg'; $('resOut').textContent = SQLOBJ ? 'Napiši upit i pritisni Izvrši (Ctrl + Enter).' : 'Učitavam bazu podataka…'; }
+  }
+  $('prevBtn').onclick = () => go(cur - 1); $('nextBtn').onclick = () => go(cur + 1);
+  $('checkBtn').onclick = doCheck;
+  $('hintBtn').onclick = () => {
+    const t = TASKS[cur]; if (hintN >= t.hints.length) return;
+    $('hints').append(h('div', { class: 'hint' }, h('b', {}, `Naputak ${hintN + 1}`), t.hints[hintN])); hintN++;
+    if (hintN >= t.hints.length) $('hintBtn').disabled = true;
+  };
+  $('solBtn').onclick = () => {
+    const t = TASKS[cur], p = $('solBody'); p.innerHTML = '';
+    if (t.type === 'fields') p.append(h('ul', { class: 'solist' }, t.fields.map(f => h('li', {}, h('span', {}, f.label + ': '), h('b', {}, f.type === 'choice' ? f.options[f.answer] : f.type === 'list' || f.type === 'set' ? f.answer.join(', ') : f.type === 'num' ? fmtNum(f.answer) + (f.unit ? ' ' + f.unit : '') : f.answer)))));
+    if (t.type === 'order') p.append(h('ol', { class: 'solist' }, t.items.map(x => h('li', {}, x))));
+    if (t.type === 'multi') p.append(h('ul', { class: 'solist' }, t.answer.map(i => h('li', {}, t.options[i]))));
+    if (t.type === 'sql') p.append(h('pre', { class: 'code' }, t.sol));
+    p.append(h('p', { class: 'expl' }, t.explain));
+    $('solCopy').hidden = t.type !== 'sql';
+    $('solPanel').hidden = false;
+  };
+  $('solCopy').onclick = () => { $('sql').value = TASKS[cur].sol; saveDraft(); $('sql').focus(); };
+  const fmtNum = x => Number.isInteger(x) ? x.toLocaleString('hr-HR') : x >= 1e5 ? Math.round(x).toLocaleString('hr-HR') : x.toLocaleString('hr-HR', { maximumFractionDigits: 2 });
+
+  // ---------- SQL (katalog) ----------
+  let SQLOBJ = null, db = null;
+  function freshDb() { const d = new SQLOBJ.Database(); d.exec('PRAGMA foreign_keys = ON;'); d.exec(INIT_SQL); CAT.attach(d); return d; }
+  function runSql(src, title) {
+    if (!db) return;
+    const outs = CAT.run(db, src);
+    const o = $('resOut'), parts = [];
+    let err = false;
+    for (const x of outs) {
+      if (x.error) { parts.push(x.error + hintFor(x.errno)); err = true; }
+      else if (x.result) parts.push(CAT.table(x.result));
+      else parts.push(x.msg);
+    }
+    o.className = 'out' + (err ? ' error' : ''); o.textContent = parts.join('\n\n') || 'Nema naredbi.';
+    $('resTitle').textContent = title || 'Rezultat'; $('resInfo').textContent = outs.length ? `${outs.length} naredb${outs.length === 1 ? 'a' : 'e'}` : '';
+    if (labNow === 'katalog') drawKatalog();
+  }
+  function hintFor(no) {
+    if (no === 1146) return '\n\nTablica ne postoji. Tablice kataloga pišu se s prefiksom information_schema., npr. information_schema.COLUMNS.';
+    if (no === 1054) return '\n\nStupac ne postoji. Popis stupaca tablica kataloga je desno, u laboratoriju.';
+    if (no === 1044) return '\n\nKatalog održava sama baza: mijenja se naredbama CREATE, ALTER i DROP, a ne izravnim upisom.';
+    return '';
+  }
+  $('runBtn').onclick = () => { saveDraft(); runSql($('sql').value); };
+  $('sql').addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); $('runBtn').click(); } });
+  $('sql').addEventListener('input', saveDraft);
+
+  // ---------- laboratorij ----------
+  let labNow = null;
+  const LAB = {};
+  function showLab(s) {
+    if (labNow === s.lab) return;
+    labNow = s.lab; $('labTitle').textContent = 'Laboratorij · ' + s.title; $('labInfo').textContent = 'slajdovi ' + s.slides;
+    const b = $('labBody'); b.innerHTML = ''; LAB[s.lab](b);
+  }
+
+  LAB.mediji = b => {
+    const rows = [['cache (L1)', '~1 ns', 1e-9, 'primarna', 'nestalna'], ['glavna memorija', '~100 ns', 1e-7, 'primarna', 'nestalna'], ['SSD (NVMe)', '~50 µs', 5e-5, 'sekundarna', 'stalna'], ['magnetni disk', '~5–10 ms', 7e-3, 'sekundarna', 'stalna'], ['optički disk', '~100 ms', 0.1, 'tercijarna', 'stalna'], ['magnetna traka', '~10 s do minute', 10, 'tercijarna', 'stalna']];
+    const human = sec => { const x = sec * 1e9; if (x < 120) return Math.round(x) + ' s'; if (x < 7200) return Math.round(x / 60) + ' min'; if (x < 172800) return Math.round(x / 3600) + ' h'; if (x < 3e7) return Math.round(x / 86400) + ' dana'; return Math.round(x / 3.15e7) + ' god.'; };
+    b.append(h('p', { class: 'lab-p' }, 'Okvirno vrijeme pristupa jednom podatku. U stupcu „ljudska skala” 1 ns je produljena na 1 sekundu.'),
+      h('table', { class: 'lt' }, h('thead', {}, h('tr', {}, ['medij', 'pristup', 'ljudska skala', 'razina'].map(x => h('th', {}, x)))),
+        h('tbody', {}, rows.map(r => h('tr', {}, h('td', {}, r[0], h('small', {}, ' ' + r[4])), h('td', {}, r[1]), h('td', {}, human(r[2])), h('td', {}, r[3]))))),
+      h('p', { class: 'lab-p' }, 'Zato baza nastoji držati tražene blokove u memoriji (buffer, slajd 47), a s diska čitati cijele blokove odjednom.'));
+  };
+
+  LAB.pouzdanost = b => {
+    const inp = (id, v, lab) => h('label', { class: 'li' }, lab, h('input', { id, type: 'text', inputmode: 'decimal', value: v }));
+    const out = h('div', { class: 'lab-out mono' });
+    const calc = () => {
+      const mttf = CHK.parseNum($('pMttf').value), n = CHK.parseNum($('pN').value), mttr = CHK.parseNum($('pMttr').value);
+      if ([mttf, n, mttr].some(x => !(x > 0))) { out.textContent = 'Upiši pozitivne brojeve.'; return; }
+      const arr = mttf / n, mtdl = mttf * mttf / (2 * mttr);
+      out.textContent = `MTTF jednog od ${fmtNum(n)} diskova\n  = ${fmtNum(mttf)} / ${fmtNum(n)} = ${fmtNum(arr)} h ≈ ${fmtNum(arr / 24)} dana\n\nSVG zrcaljenog para\n  = MTTF² / (2 · MTTR)\n  = ${mttf.toExponential(2)}² / (2 · ${fmtNum(mttr)})\n  = ${mtdl.toExponential(3)} h ≈ ${fmtNum(mtdl / 8760)} god.`;
+    };
+    b.append(h('p', { class: 'lab-p' }, 'Kalkulator za slajdove 20 i 21. Mijenjaj vrijednosti i prati rezultat.'),
+      h('div', { class: 'lgrid' }, inp('pMttf', '100.000', 'MTTF diska (h)'), inp('pN', '100', 'broj diskova N'), inp('pMttr', '10', 'MTTR, vrijeme popravka (h)')), out);
+    b.querySelectorAll('input').forEach(x => x.addEventListener('input', calc)); calc();
+  };
+
+  // RAID 5 s pet diskova i četiri skupa, kao na slajdu 26.
+  const R = { D: 5, S: 4, data: [], failed: -1, sel: null, log: '' };
+  (function initRaid() { let x = 0x5a; for (let b = 0; b < (R.D - 1) * R.S; b++) { x = (x * 73 + 41) & 255; R.data[b] = x; } })();
+  const parityOf = k => { let p = 0; for (let j = 0; j < R.D - 1; j++) p ^= R.data[k * (R.D - 1) + j]; return p; };
+  LAB.raid = b => {
+    b.append(h('p', { class: 'lab-p' }, 'RAID 5 s pet diskova (slajd 26). Klikni podatkovni blok da ga promijeniš, ili pokvari disk i obnovi ga.'), h('div', { id: 'raidBox' }));
+    drawRaid();
+  };
+  function drawRaid() {
+    const box = $('raidBox'); if (!box) return; box.innerHTML = '';
+    const grid = h('div', { class: 'raid' });
+    for (let d = 0; d < R.D; d++) grid.append(h('div', { class: 'rh' + (R.failed === d ? ' dead' : '') }, `disk ${d}`, h('button', { class: 'lnk', onclick: () => { R.failed = R.failed === d ? -1 : d; R.log = R.failed === d ? `Disk ${d} se pokvario. Njegovi blokovi i dalje se mogu pročitati kao XOR ostalih blokova u skupu.` : `Disk ${d} je zamijenjen i obnovljen: svaki blok izračunat je kao XOR ostalih blokova skupa.`; drawRaid(); } }, R.failed === d ? 'obnovi' : 'pokvari')));
+    for (let k = 0; k < R.S; k++) for (let d = 0; d < R.D; d++) {
+      const p = k % R.D; let label, val, isP = d === p, b = null;
+      if (isP) { label = 'P' + k; val = parityOf(k); }
+      else { const j = d < p ? d : d - 1; b = k * (R.D - 1) + j; label = String(b); val = R.data[b]; }
+      const dead = R.failed === d;
+      const cell = h('button', { class: 'rc' + (isP ? ' par' : '') + (dead ? ' dead' : '') + (R.sel === b && b != null ? ' sel' : ''), title: isP ? 'paritetni blok' : 'podatkovni blok ' + b, onclick: () => { if (isP) { explainStripe(k); } else { R.sel = b; drawRaid(); } } }, h('span', { class: 'rl' }, label), h('span', { class: 'rv mono' }, dead ? '????????' : CHK.b8(val)));
+      grid.append(cell);
+    }
+    box.append(grid);
+    if (R.sel != null) {
+      const pos = CHK.raid5Pos(R.sel, R.D);
+      const inp = h('input', { type: 'text', class: 'mono', id: 'raidNew', value: CHK.b8(R.data[R.sel]), maxlength: 8, inputmode: 'numeric', 'aria-label': 'Nova vrijednost bloka' });
+      box.append(h('div', { class: 'raidEdit' }, h('span', {}, `Blok ${R.sel} (disk ${pos.disk}, skup ${pos.stripe}, paritet na disku ${pos.parityDisk}):`), inp,
+        h('button', { class: 'btn', onclick: () => {
+          const v = $('raidNew').value.replace(/\s/g, ''); if (!/^[01]{8}$/.test(v)) { R.log = 'Upiši točno 8 bitova (0 ili 1).'; drawRaid(); return; }
+          const old = R.data[R.sel], nv = parseInt(v, 2), oldP = parityOf(pos.stripe);
+          R.data[R.sel] = nv; const newP = parityOf(pos.stripe);
+          R.log = `Zapis bloka ${R.sel} (slajd 24, drugi način):\n  čitanja: stari blok ${CHK.b8(old)}, stari P${pos.stripe} ${CHK.b8(oldP)}\n  novi P = ${CHK.b8(oldP)} ⊕ ${CHK.b8(old)} ⊕ ${CHK.b8(nv)} = ${CHK.b8(newP)}\n  pisanja: novi blok i novi P${pos.stripe}\n  ukupno 2 čitanja i 2 pisanja`;
+          drawRaid();
+        } }, 'Zapiši')));
+    }
+    if (R.failed >= 0 && R.sel != null && CHK.raid5Pos(R.sel, R.D).disk === R.failed && !R.log.startsWith('Čitanje')) {
+      const pos = CHK.raid5Pos(R.sel, R.D), others = [];
+      for (let d = 0; d < R.D; d++) if (d !== R.failed) { if (d === pos.parityDisk) others.push(['P' + pos.stripe, parityOf(pos.stripe)]); else { const j = d < pos.parityDisk ? d : d - 1; const bb = pos.stripe * (R.D - 1) + j; others.push([String(bb), R.data[bb]]); } }
+      R.log = `Čitanje bloka ${R.sel} s pokvarenog diska ${R.failed}:\n  ${others.map(o => o[0]).join(' ⊕ ')}\n  = ${others.map(o => CHK.b8(o[1])).join(' ⊕ ')}\n  = ${CHK.b8(CHK.xor(...others.map(o => o[1])))}`;
+    }
+    box.append(h('pre', { class: 'lab-out mono' }, R.log || 'Klik na paritetni blok P prikazuje kako je izračunat.'));
+  }
+  function explainStripe(k) {
+    const vals = []; for (let j = 0; j < R.D - 1; j++) vals.push([k * (R.D - 1) + j, R.data[k * (R.D - 1) + j]]);
+    R.log = `P${k} = ${vals.map(v => v[0]).join(' ⊕ ')}\n${vals.map(v => '     ' + CHK.b8(v[1])).join('\n')}\n   = ${CHK.b8(parityOf(k))}\nBit pariteta je 1 kad je u stupcu neparan broj jedinica.`;
+    drawRaid();
+  }
+
+  // Datoteka sa zapisima fiksne veličine (slajdovi 32–37).
+  const ORIG = [['10101', 'Horvat', 'Informatika', 65000], ['12121', 'Kovačević', 'Ekonomija', 90000], ['15151', 'Perić', 'Glazba', 40000], ['22222', 'Babić', 'Fizika', 95000], ['32343', 'Marić', 'Povijest', 60000], ['33456', 'Grgić', 'Fizika', 87000], ['45565', 'Novak', 'Informatika', 75000], ['58583', 'Šimić', 'Povijest', 62000], ['76543', 'Jurić', 'Ekonomija', 80000], ['76766', 'Tomić', 'Biologija', 72000], ['83821', 'Knežević', 'Informatika', 92000], ['98345', 'Pavić', 'Elektrotehnika', 80000]];
+  const F = { mode: 'lista', slots: [], free: [], moves: 0, next: 0, log: '' };
+  const NEW = [['11111', 'Vuković', 'Fizika', 70000], ['24680', 'Lovrić', 'Glazba', 52000], ['31415', 'Matić', 'Informatika', 81000], ['27182', 'Radić', 'Ekonomija', 66000]];
+  function resetF() { F.slots = ORIG.map(r => r.slice()); F.free = []; F.moves = 0; F.next = 0; F.log = ''; }
+  resetF();
+  LAB.fiksni = b => {
+    const sel = h('select', { id: 'fMode', onchange: e => { F.mode = e.target.value; resetF(); drawF(); } },
+      h('option', { value: 'sve' }, 'pomicanje svih sljedećih (slajd 34)'), h('option', { value: 'zadnji' }, 'premještanje zadnjeg (slajd 35)'), h('option', { value: 'lista' }, 'slobodna lista (slajdovi 36–37)'));
+    sel.value = F.mode;
+    b.append(h('p', { class: 'lab-p' }, 'Datoteka zapisa nastavnik od 53 B (slajd 32). Briši zapise i umeći nove pa usporedi načine.'),
+      h('div', { class: 'lrow' }, h('label', { for: 'fMode' }, 'način brisanja '), sel),
+      h('div', { id: 'fBox' }));
+    drawF();
+  };
+  function drawF() {
+    const box = $('fBox'); if (!box) return; box.innerHTML = '';
+    const tbl = h('table', { class: 'lt rec' });
+    if (F.mode === 'lista') tbl.append(h('tr', { class: 'hdr' }, h('td', {}, 'zaglavlje'), h('td', { colspan: 4, class: 'mono' }, F.free.length ? `→ ${F.free[0]}` : '→ ∅ (nema slobodnih mjesta)'), h('td')));
+    F.slots.forEach((r, i) => {
+      if (r == null) {
+        const k = F.free.indexOf(i);
+        tbl.append(h('tr', { class: 'empty' }, h('td', {}, 'zapis ' + i), h('td', { colspan: 4, class: 'mono' }, F.mode === 'lista' ? `slobodno → ${k + 1 < F.free.length ? F.free[k + 1] : '∅'}` : 'prazno'), h('td')));
+      } else tbl.append(h('tr', {}, h('td', {}, 'zapis ' + i), r.map((v, j) => h('td', { class: j === 3 ? 'num' : '' }, String(v))), h('td', {}, h('button', { class: 'lnk', onclick: () => delF(i) }, 'obriši'))));
+    });
+    box.append(tbl,
+      h('div', { class: 'lrow' }, h('button', { class: 'btn', onclick: insF }, 'Umetni novi zapis'), h('button', { class: 'btn', onclick: () => { resetF(); drawF(); } }, 'Vrati na početak')),
+      h('pre', { class: 'lab-out mono' }, `premještenih zapisa: ${F.moves}${F.mode === 'lista' ? `\nslobodna lista: zaglavlje${F.free.map(x => ' → ' + x).join('')} → ∅` : ''}${F.log ? '\n\n' + F.log : ''}`));
+  }
+  function delF(i) {
+    const n = F.slots.length;
+    if (F.mode === 'sve') { const moved = n - 1 - i; F.slots.splice(i, 1); F.moves += moved; F.log = `Obrisan zapis ${i}: pomaknuto ${moved} zapisa za jedno mjesto.`; }
+    else if (F.mode === 'zadnji') { if (i === n - 1) { F.slots.pop(); F.log = `Obrisan zadnji zapis ${i}: ništa se ne premješta.`; } else { F.slots[i] = F.slots.pop(); F.moves++; F.log = `Obrisan zapis ${i}: na njegovo mjesto premješten je zadnji zapis (${n - 1}).`; } }
+    else { F.slots[i] = null; F.free.push(i); F.log = `Obrisan zapis ${i}: mjesto je dodano na kraj slobodne liste, ništa se ne premješta.`; }
+    drawF();
+  }
+  function insF() {
+    const r = NEW[F.next++ % NEW.length].slice();
+    if (F.mode === 'lista' && F.free.length) { const i = F.free.shift(); F.slots[i] = r; F.log = `Novi zapis upisan je na mjesto ${i}, prvo iz slobodne liste. Zaglavlje sada pokazuje na ${F.free.length ? F.free[0] : '∅'}.`; }
+    else { F.slots.push(r); F.log = `Novi zapis dodan je na kraj datoteke (mjesto ${F.slots.length - 1}).`; }
+    drawF();
+  }
+
+  // Zapis varijabilne veličine (slajd 40) i blok sa zaglavljem (slajd 41).
+  const SP = { size: 4096, recs: [] }; // recs: {size, loc} ili null
+  LAB.varijabilni = b => {
+    const inp = (id, v, lab) => h('label', { class: 'li' }, lab, h('input', { id, type: 'text', value: v, autocomplete: 'off' }));
+    b.append(h('p', { class: 'lab-p' }, 'Raspored zapisa nastavnik kao na slajdu 40. Prazno polje znači NULL. Znakovi se broje u bajtovima (UTF-8: č i ć zauzimaju 2 B).'),
+      h('div', { class: 'lgrid' }, inp('vId', '10101', 'ID'), inp('vIme', 'Srinivasan', 'ime'), inp('vFak', 'Comp. Sci.', 'fakultet'), inp('vPr', '65000', 'primanja')),
+      h('div', { id: 'vRec' }),
+      h('h5', { class: 'lab-h' }, 'Blok sa zaglavljem (slajd 41)'),
+      h('div', { class: 'lrow' }, h('button', { class: 'btn', onclick: () => { const r = curVar(); placeRec(r.length); } }, 'Dodaj ovaj zapis u blok'), h('button', { class: 'btn', onclick: () => { SP.recs = []; drawSP(); } }, 'Isprazni blok')),
+      h('div', { id: 'spBox' }));
+    b.querySelectorAll('input').forEach(x => x.addEventListener('input', drawVar));
+    drawVar(); drawSP();
+  };
+  const curVar = () => CHK.varRecord(['vId', 'vIme', 'vFak', 'vPr'].map(id => $(id).value === '' ? null : $(id).value));
+  function drawVar() {
+    const box = $('vRec'); if (!box) return;
+    const vals = ['vId', 'vIme', 'vFak', 'vPr'].map(id => $(id).value === '' ? null : $(id).value);
+    const r = CHK.varRecord(vals);
+    const segs = [['ID: (pomak, duljina)', 0, 4, `${r.pairs[0][0]}, ${r.pairs[0][1]}`], ['ime: (pomak, duljina)', 4, 4, `${r.pairs[1][0]}, ${r.pairs[1][1]}`], ['fakultet: (pomak, duljina)', 8, 4, `${r.pairs[2][0]}, ${r.pairs[2][1]}`], ['primanja', 12, 8, vals[3] == null ? '(ignorira se)' : vals[3]], ['null bitmap', 20, 1, r.bitmap]];
+    ['ID', 'ime', 'fakultet'].forEach((n, i) => { if (r.pairs[i][1]) segs.push([n + ' (vrijednost)', r.pairs[i][0], r.pairs[i][1], vals[i]]); });
+    box.innerHTML = '';
+    box.append(h('table', { class: 'lt bytes' }, h('thead', {}, h('tr', {}, ['bajtovi', 'sadržaj', 'značenje'].map(x => h('th', {}, x)))),
+        h('tbody', {}, segs.map(s => h('tr', { class: s[1] >= 21 ? 'var' : '' }, h('td', { class: 'mono' }, s[2] === 1 ? String(s[1]) : `${s[1]}–${s[1] + s[2] - 1}`), h('td', { class: 'mono' }, String(s[3])), h('td', {}, s[0]))))),
+      h('pre', { class: 'lab-out mono' }, `parovi (pomak, duljina): ${r.pairs.map(p => `(${p[0]}, ${p[1]})`).join(' ')}\nnull bitmap: ${r.bitmap}\nukupna duljina zapisa: ${r.length} B`));
+  }
+  function placeRec(size) {
+    const end = SP.recs.filter(Boolean).reduce((m, x) => Math.min(m, x.loc), SP.size);
+    const hdr = 8 + 8 * (SP.recs.length + 1);
+    if (end - size < hdr) { $('spLog').textContent = 'Zapis više ne stane u blok.'; return; }
+    SP.recs.push({ size, loc: end - size }); drawSP(`Novi zapis od ${size} B smješten je na ${end - size}, neposredno ispred prethodnog.`);
+  }
+  function delRec(i) {
+    const r = SP.recs[i]; if (!r) return;
+    let moved = [];
+    SP.recs.forEach((x, k) => { if (x && x.loc < r.loc) { x.loc += r.size; moved.push(k + 1); } });
+    SP.recs[i] = null;
+    drawSP(`Obrisan zapis ${i + 1}. ${moved.length ? `${moved.length === 1 ? 'Zapis' : 'Zapisi'} ${moved.join(', ')} ${moved.length === 1 ? 'pomaknut je' : 'pomaknuti su'} za ${r.size} B prema kraju bloka, da slobodni prostor ostane u jednom komadu.` : 'Nijedan zapis se ne pomiče.'} Unos ${i + 1} u zaglavlju označen je kao prazan.`);
+  }
+  function drawSP(msg) {
+    const box = $('spBox'); if (!box) return; box.innerHTML = '';
+    const live = SP.recs.filter(Boolean), end = live.reduce((m, x) => Math.min(m, x.loc), SP.size), hdr = 8 + 8 * SP.recs.length;
+    const bar = h('div', { class: 'block' });
+    bar.append(h('div', { class: 'bh', title: `zaglavlje ${hdr} B` }, `zaglavlje`, h('small', {}, `0–${hdr - 1}`)));
+    bar.append(h('div', { class: 'bf' }, `slobodno ${end - hdr} B`, h('small', {}, `${hdr}–${end - 1}`)));
+    SP.recs.map((x, k) => [x, k]).filter(([x]) => x).sort((a, b) => a[0].loc - b[0].loc).forEach(([x, k]) => bar.append(h('div', { class: 'br', title: `zapis ${k + 1}` }, `zapis ${k + 1}`, h('small', {}, `${x.loc}–${x.loc + x.size - 1}`))));
+    const tbl = h('table', { class: 'lt' }, h('thead', {}, h('tr', {}, ['unos', 'lokacija', 'veličina', ''].map(x => h('th', {}, x)))),
+      h('tbody', {}, SP.recs.map((x, k) => h('tr', {}, h('td', {}, String(k + 1)), h('td', { class: 'num' }, x ? String(x.loc) : '—'), h('td', { class: 'num' }, x ? x.size + ' B' : 'prazno'), h('td', {}, x ? h('button', { class: 'lnk', onclick: () => delRec(k) }, 'obriši') : '')))));
+    box.append(bar, h('pre', { class: 'lab-out mono', id: 'spLog' }, `broj unosa u zaglavlju: ${SP.recs.length}\nkraj slobodnog prostora: ${end}\nzaglavlje: 8 + 8 · ${SP.recs.length} = ${hdr} B\nslobodno: ${end} − ${hdr} = ${end - hdr} B${msg ? '\n\n' + msg : ''}`), SP.recs.length ? tbl : '');
+  }
+
+  // Katalog (slajdovi 44–46).
+  LAB.katalog = b => { b.append(h('p', { class: 'lab-p' }, 'Katalog baze unipu čita se iz INFORMATION_SCHEMA. Klik na tablicu kataloga upisuje upit u editor i izvodi ga.'), h('div', { id: 'katBox' })); drawKatalog(); };
+  function drawKatalog() {
+    const box = $('katBox'); if (!box) return; box.innerHTML = '';
+    if (!db) { box.append(h('p', { class: 'lab-p' }, 'Učitavam bazu…')); return; }
+    const rs = CAT.run(db, "SELECT TABLE_NAME, TABLE_TYPE, TABLE_ROWS FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'unipu' ORDER BY TABLE_TYPE, TABLE_NAME")[0].result;
+    const cols = CAT.run(db, "SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, COLUMN_KEY FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'unipu' ORDER BY TABLE_NAME, ORDINAL_POSITION")[0].result.values;
+    box.append(h('h5', { class: 'lab-h' }, 'Baza unipu'));
+    for (const [tn, tt, n] of rs.values) box.append(h('div', { class: 'tbl' }, h('h4', {}, tn, h('em', {}, tt === 'VIEW' ? 'pogled' : `${n} redaka`)),
+      h('ul', {}, cols.filter(c => c[0] === tn).map(c => h('li', { class: c[3] === 'PRI' ? 'pk' : '' }, h('span', {}, c[1]), h('span', {}, c[2]))))));
+    box.append(h('h5', { class: 'lab-h' }, 'Tablice kataloga (INFORMATION_SCHEMA)'));
+    const CATT = { TABLES: 'TABLE_NAME, TABLE_TYPE, ENGINE, TABLE_ROWS', COLUMNS: 'TABLE_NAME, COLUMN_NAME, ORDINAL_POSITION, IS_NULLABLE, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, COLUMN_TYPE, COLUMN_KEY', VIEWS: 'TABLE_NAME, VIEW_DEFINITION', TABLE_CONSTRAINTS: 'CONSTRAINT_NAME, TABLE_NAME, CONSTRAINT_TYPE', KEY_COLUMN_USAGE: 'CONSTRAINT_NAME, TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME' };
+    box.append(h('ul', { class: 'catl' }, Object.entries(CATT).map(([t, c]) => h('li', {}, h('button', { class: 'lnk mono', onclick: () => { const q = `SELECT ${c}\nFROM information_schema.${t}\nWHERE TABLE_SCHEMA = 'unipu';`; runSql(q, 'information_schema.' + t); } }, t), h('small', {}, ' ' + c.toLowerCase())))));
+    box.append(h('div', { class: 'foot' }, 'Naredbe u editoru mijenjaju tvoju kopiju baze, a katalog se osvježava nakon svake naredbe. Provjera rješenja radi na izvornoj bazi.', h('button', { class: 'btn', onclick: () => { db.close(); db = freshDb(); drawKatalog(); $('resOut').className = 'out msg'; $('resOut').textContent = 'Baza je vraćena na početno stanje.'; } }, 'Vrati bazu na početno stanje')));
+  }
+
+  // Buffer (slajdovi 47–48).
+  LAB.buffer = b => {
+    b.append(h('p', { class: 'lab-p' }, 'Upravitelj buffera s n okvira. LRU izbacuje najdulje nekorišten blok, a MRU najnovije korišten. Upiši slijed traženih blokova; w iza broja znači da se blok mijenja (npr. 2w).'),
+      h('div', { class: 'lgrid' },
+        h('label', { class: 'li' }, 'okviri', h('input', { id: 'bN', type: 'number', min: 1, max: 8, value: 3 })),
+        h('label', { class: 'li' }, 'politika', h('select', { id: 'bPol' }, h('option', { value: 'LRU' }, 'LRU'), h('option', { value: 'MRU' }, 'MRU')))),
+      h('label', { class: 'li wide' }, 'slijed', h('input', { id: 'bRefs', type: 'text', class: 'mono', value: '1 2 3 1 4 2 5 1 2 3' })),
+      h('div', { id: 'bBox' }));
+    b.querySelectorAll('input,select').forEach(x => x.addEventListener('input', drawBuf)); drawBuf();
+  };
+  function drawBuf() {
+    const box = $('bBox'); if (!box) return; box.innerHTML = '';
+    const n = Math.max(1, Math.min(8, parseInt($('bN').value, 10) || 3)), refs = CHK.parseRefs($('bRefs').value);
+    const r = CHK.buffer(refs, n, $('bPol').value);
+    const tbl = h('table', { class: 'lt buf' }, h('thead', {}, h('tr', {}, h('th', {}, 'traži'), h('th', {}, 'ishod'), h('th', {}, `buffer (od najdavnije korištenog)`))),
+      h('tbody', {}, r.steps.map(s => h('tr', { class: s.hit ? 'hit' : 'miss' }, h('td', { class: 'mono' }, s.ref.b + (s.ref.w ? 'w' : '')),
+        h('td', {}, s.hit ? 'pogodak' : 'promašaj' + (s.evicted != null ? `, izbačen ${s.evicted}${s.wb ? ' (zapisan na disk)' : ''}` : '')),
+        h('td', { class: 'mono' }, s.buf.map(x => x.b + (x.dirty ? '*' : '')).join(' '))))));
+    box.append(tbl, h('pre', { class: 'lab-out mono' }, `pogoci: ${r.hits}   čitanja s diska: ${r.reads}   zapisivanja: ${r.writes}${r.written.length ? ` (${r.written.join(', ')})` : ''}\n* blok je izmijenjen i zapisat će se na disk kad bude izbačen`));
+  }
+
+  // ---------- pokretanje ----------
+  const startId = store.get('current', 'A1');
+  go(Math.max(0, TASKS.findIndex(t => t.id === startId)));
+  if (typeof initSqlJs !== 'function') { $('resOut').textContent = 'Biblioteka sql.js nije učitana. Provjeri internetsku vezu i osvježi stranicu.'; return; }
+  initSqlJs().then(S => {
+    SQLOBJ = S; db = freshDb(); $('runBtn').disabled = false;
+    if (TASKS[cur].type === 'sql') { $('resOut').textContent = 'Napiši upit i pritisni Izvrši (Ctrl + Enter).'; }
+    if (labNow === 'katalog') drawKatalog();
+  }).catch(e => { $('resOut').textContent = 'Baza se nije učitala: ' + e.message; });
+})();
+</script>
+</body>
+</html>
