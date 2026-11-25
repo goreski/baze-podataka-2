@@ -1,0 +1,1696 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Performanse i indeksi BP2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: zaglavlje s napretkom; ispod tri stupca — popis zadataka | radna ploča (zadatak, odgovor, editor, rješenje) | laboratorij. Uži ekrani slažu stupce jedan ispod drugog. */
+:root {
+  --bg: #f4f6f8; --surface: #ffffff; --ink: #18212d; --muted: #586474; --line: #dbe1e8;
+  --code-bg: #eef2f6; --navy: #1f3b63; --olive: #765a00; --olive-bg: #f7f0dc;
+  --ok: #23704a; --ok-bg: #e3f3ea; --err: #a8261d; --err-bg: #fbe7e5; --focus: #3b6fd8;
+  --f-body: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --f-head: "IBM Plex Sans Condensed", "Arial Narrow", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", "Courier New", monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #10151c; --surface: #171f29; --ink: #e3e8ee; --muted: #9aa6b5; --line: #2a3443;
+  --code-bg: #0c1117; --navy: #a9c6f5; --olive: #e2bb5c; --olive-bg: #2a2412;
+  --ok: #73cf9b; --ok-bg: #12291d; --err: #ff8f84; --err-bg: #331412; --focus: #8fb4ff; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #10151c; --surface: #171f29; --ink: #e3e8ee; --muted: #9aa6b5; --line: #2a3443;
+  --code-bg: #0c1117; --navy: #a9c6f5; --olive: #e2bb5c; --olive-bg: #2a2412;
+  --ok: #73cf9b; --ok-bg: #12291d; --err: #ff8f84; --err-bg: #331412; --focus: #8fb4ff; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+.back { display: inline-block; font-size: 13px; color: var(--muted); text-decoration: none; margin-bottom: 4px; }
+.back:hover { color: var(--ink); text-decoration: underline; }
+html, body { background: var(--bg); color: var(--ink); }
+body { font: 15px/1.55 var(--f-body); }
+.wrap { max-width: 1440px; margin: 0 auto; padding-inline: 20px; padding-block: 0 40px; }
+h1, h2, h3 { font-family: var(--f-head); font-weight: 600; text-wrap: balance; margin: 0; }
+code, pre, textarea, .mono { font-family: var(--f-mono); }
+button { font: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding-block: 18px 16px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+header.top h1 { font-size: 24px; letter-spacing: .01em; }
+header.top .sub { color: var(--muted); font-size: 13px; }
+.ask { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r); padding: 6px 12px; font-size: 13px; font-weight: 500; text-decoration: none; }
+.ask:hover { border-color: var(--muted); }
+.vizlink { margin: 10px 0 0; font-size: 14px; display: flex; flex-wrap: wrap; gap: 2px 8px; }
+.vizlink a { font-weight: 600; color: var(--navy); }
+.vizlink span { color: var(--muted); }
+.ask small { color: var(--muted); font-weight: 400; }
+.hints .more { font-size: 13px; color: var(--muted); }
+.hints .more a { color: var(--navy); }
+.progress { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { width: 140px; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--ok); width: 0; transition: width .3s; }
+
+.grid { display: grid; grid-template-columns: 250px minmax(0, 1fr) 290px; gap: 20px; align-items: start; }
+@media (max-width: 1180px) { .grid { grid-template-columns: 230px minmax(0, 1fr); } aside.schema { grid-column: 1 / -1; } }
+@media (max-width: 780px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Popis zadataka */
+nav.tasks { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); max-height: calc(100vh - 24px); overflow: auto; padding-right: 4px; }
+@media (max-width: 780px) { nav.tasks { position: static; max-height: none; } }
+.sec { margin-bottom: 14px; }
+.sec h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 8px; }
+.sec h3 span { font-family: var(--f-body); text-transform: none; letter-spacing: 0; font-weight: 400; }
+.sec ul { list-style: none; margin: 0; padding: 0; }
+@media (max-width: 780px) { .sec ul { display: flex; flex-wrap: wrap; gap: 6px; } }
+.tbtn { width: 100%; display: flex; align-items: baseline; gap: 8px; text-align: left; background: none; border: 0; border-radius: var(--r); padding: 5px 8px; color: var(--ink); }
+.tbtn:hover { background: var(--surface); }
+.tbtn[aria-current="true"] { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-weight: 500; }
+.tbtn .tid { font-family: var(--f-mono); font-size: 12px; color: var(--muted); min-width: 22px; }
+.tbtn .dot { margin-left: auto; width: 16px; text-align: center; color: var(--ok); font-weight: 600; }
+@media (max-width: 780px) { .tbtn { width: auto; border: 1px solid var(--line); padding: 4px 8px; } .tbtn .ttl { display: none; } .tbtn .dot { margin-left: 0; width: auto; } }
+
+/* Radna ploča */
+main.work { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.task { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; }
+.meta { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.task h2 { font-size: 22px; margin: 4px 0 8px; }
+.task .text { color: var(--olive); font-style: italic; font-size: 16px; margin: 0; max-width: 70ch; }
+.task .note { margin: 10px 0 0; font-size: 13px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px; max-width: 75ch; }
+
+.editor { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.editor textarea { display: block; width: 100%; min-height: 150px; resize: vertical; border: 0; padding: 14px 16px; background: var(--code-bg); color: var(--navy); font-size: 14px; line-height: 1.6; font-weight: 600; tab-size: 2; }
+.editor textarea::placeholder { color: var(--muted); font-weight: 400; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--line); }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r); padding: 6px 14px; font-weight: 500; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--navy); color: var(--surface); border-color: var(--navy); }
+.btn.check { background: var(--ok); color: var(--surface); border-color: var(--ok); }
+.btn:disabled { opacity: .5; cursor: default; }
+.kbd { font-size: 12px; color: var(--muted); margin-left: auto; }
+@media (max-width: 520px) { .kbd { display: none; } }
+
+.feedback { border-radius: var(--r); padding: 10px 14px; font-weight: 500; }
+.feedback.ok { background: var(--ok-bg); color: var(--ok); }
+.feedback.err { background: var(--err-bg); color: var(--err); }
+.feedback .lnk { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; font-weight: 400; margin-left: 6px; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.panel > .ph { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 9px 14px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.panel > .ph b { color: var(--ink); font-weight: 600; }
+.out { margin: 0; padding: 12px 14px; overflow-x: auto; font-size: 13px; line-height: 1.45; color: var(--ink); white-space: pre; }
+.out.msg { white-space: pre-wrap; font-family: var(--f-body); color: var(--muted); }
+.out.error { white-space: pre-wrap; color: var(--err); }
+
+.hints { display: flex; flex-direction: column; gap: 8px; }
+.hint { background: var(--olive-bg); border-radius: var(--r); padding: 9px 14px; font-size: 14px; }
+.hint b { font-family: var(--f-head); margin-right: 6px; }
+.solution pre { margin: 0; padding: 12px 14px; background: var(--code-bg); color: var(--navy); font-weight: 600; overflow-x: auto; font-size: 13.5px; }
+.solution .toolbar { border-top: 1px solid var(--line); }
+
+.pager { display: flex; justify-content: space-between; gap: 10px; }
+
+/* Shema */
+aside.schema { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+@media (max-width: 1180px) { aside.schema { position: static; } }
+.schema .panel { padding-bottom: 6px; }
+.tbl { padding: 10px 14px 6px; }
+.tbl + .tbl { border-top: 1px dashed var(--line); }
+.tbl h4 { margin: 0 0 4px; font: 600 14px var(--f-mono); color: var(--navy); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.tbl h4 button { font: 12px var(--f-body); background: none; border: 0; color: var(--muted); text-decoration: underline; padding: 0; }
+.tbl ul { list-style: none; margin: 0; padding: 0; font: 12.5px/1.6 var(--f-mono); }
+.tbl li { display: flex; justify-content: space-between; gap: 8px; }
+.tbl li span:last-child { color: var(--muted); }
+.tbl li.pk span:first-child { text-decoration: underline; }
+.tbl h4 em { font: italic 11px var(--f-body); color: var(--olive); margin-right: auto; margin-left: 6px; }
+.tbl.new { background: var(--olive-bg); }
+#expOut { white-space: pre-wrap; }
+.rut { padding: 10px 14px 8px; border-top: 1px solid var(--line); }
+.rut h5 { margin: 0 0 6px; font: 600 12px var(--f-body); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.rut ul { list-style: none; margin: 0; padding: 0; }
+.rut li { font: 12.5px/1.5 var(--f-mono); padding: 3px 0; display: flex; gap: 8px; align-items: baseline; }
+.rut li b { color: var(--navy); font-weight: 600; }
+.rut li .k { font: 10.5px var(--f-body); text-transform: uppercase; letter-spacing: .04em; color: var(--olive); min-width: 30px; }
+.rut li .sg { color: var(--muted); flex: 1; min-width: 0; overflow-wrap: break-word; }
+.rut li button { font: 12px var(--f-body); background: none; border: 0; color: var(--muted); text-decoration: underline; padding: 0; cursor: pointer; }
+.rut .empty { font-size: 12.5px; color: var(--muted); }
+.rut h5.h2 { margin-top: 12px; }
+.schema .foot { padding: 8px 14px 4px; font-size: 12.5px; color: var(--muted); }
+.schema .foot .btn { margin-top: 8px; width: 100%; }
+
+.loading { padding: 40px 0; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+/* Odgovori u poljima; desno laboratorij. */
+.grid { grid-template-columns: 240px minmax(0, 1fr) 380px; }
+@media (max-width: 1240px) { .grid { grid-template-columns: 220px minmax(0, 1fr); } aside.lab { grid-column: 1 / -1; } }
+@media (max-width: 780px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.task pre.given { margin: 12px 0 0; padding: 10px 14px; background: var(--code-bg); color: var(--navy); font: 600 14px/1.6 var(--f-mono); border-radius: var(--r); overflow-x: auto; }
+.answer { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
+.fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(170px, auto); gap: 10px 16px; align-items: center; }
+@media (max-width: 560px) { .fields { grid-template-columns: minmax(0, 1fr); gap: 4px 0; } .fields .fi { margin-bottom: 8px; } }
+.fl { font-size: 14px; }
+.fi { display: flex; align-items: center; gap: 6px; }
+.fi input, .fi select, .lab input, .lab select { font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); padding: 5px 8px; min-width: 0; }
+.fi input { width: 150px; }
+.fi input.mono { letter-spacing: .08em; }
+.fi select { max-width: 260px; }
+.unit { font-size: 13px; color: var(--muted); min-width: 28px; }
+.mark { width: 16px; font-weight: 700; }
+.mark.ok { color: var(--ok); } .mark.err { color: var(--err); }
+.order { list-style: decimal; margin: 0; padding-left: 26px; display: flex; flex-direction: column; gap: 6px; }
+.order li { padding: 2px 0; }
+.order li > * { vertical-align: middle; }
+.order .oi { display: inline-block; min-width: 200px; padding: 5px 10px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); }
+.order li.bad .oi { border-color: var(--err); }
+.order .mv { margin-left: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r); width: 32px; height: 32px; }
+.order .mv:disabled { opacity: .35; cursor: default; }
+.small { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+.multi { display: flex; flex-direction: column; gap: 6px; }
+.chk { display: flex; gap: 8px; align-items: center; font-size: 15px; }
+.chk input { width: 18px; height: 18px; }
+.solist { margin: 0; padding: 12px 14px 4px 34px; font-size: 14px; }
+.solist li { margin: 2px 0; }
+.expl { margin: 0; padding: 8px 14px 12px; font-size: 14px; color: var(--ink); max-width: 75ch; }
+pre.code { margin: 0; padding: 12px 14px; background: var(--code-bg); color: var(--navy); font: 600 13.5px/1.5 var(--f-mono); overflow-x: auto; }
+
+aside.lab { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); max-height: calc(100vh - 24px); overflow: auto; }
+@media (max-width: 1240px) { aside.lab { position: static; max-height: none; } }
+.lab .body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.lab-p { margin: 0; font-size: 13px; color: var(--muted); }
+.lab-h { margin: 6px 0 0; font: 600 12px var(--f-body); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.lab-out { margin: 0; padding: 10px 12px; background: var(--code-bg); border-radius: var(--r); font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; color: var(--ink); }
+.lab .lnk { background: none; border: 0; padding: 0; color: var(--navy); text-decoration: underline; font-size: 12.5px; cursor: pointer; }
+.lgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.li { display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; color: var(--muted); }
+.li.wide input { width: 100%; }
+.lrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
+.lt { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.lt th, .lt td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.lt th { font-weight: 600; color: var(--muted); }
+.lt td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.lt small { color: var(--muted); }
+.rec td { white-space: nowrap; }
+.rec tr.empty td { color: var(--muted); background: var(--olive-bg); }
+.rec tr.hdr td { background: var(--code-bg); font-weight: 600; }
+.buf tr.hit td:nth-child(2) { color: var(--ok); }
+.buf tr.miss td:nth-child(2) { color: var(--err); }
+.raid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.rh { font-size: 12px; font-weight: 600; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px; padding-bottom: 2px; }
+.rh.dead { color: var(--err); }
+.rc { display: flex; flex-direction: column; align-items: center; gap: 1px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 4px; padding: 4px 2px; }
+.rc .rl { font-size: 12px; font-weight: 600; }
+.rc .rv { font-size: 10.5px; color: var(--muted); letter-spacing: .02em; }
+.rc.par { background: var(--olive-bg); }
+.rc.par .rl { color: var(--olive); }
+.rc.dead { border-style: dashed; border-color: var(--err); }
+.rc.dead .rv { color: var(--err); }
+.rc.sel { outline: 2px solid var(--focus); outline-offset: 1px; }
+.raidEdit { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12.5px; }
+.raidEdit input { width: 100px; letter-spacing: .08em; }
+.bytes td { white-space: nowrap; }
+.bytes tr.var td { background: var(--olive-bg); }
+.block { display: flex; gap: 2px; font-size: 11px; }
+.block > div { display: flex; flex-direction: column; justify-content: center; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--line); white-space: nowrap; min-width: 0; }
+.block small { color: var(--muted); font-family: var(--f-mono); font-size: 10.5px; }
+.block .bh { background: var(--code-bg); }
+.block .bf { flex: 1; background: var(--bg); border-style: dashed; color: var(--muted); align-items: center; }
+.block .br { background: var(--olive-bg); color: var(--olive); font-weight: 600; }
+.catl { list-style: none; margin: 0; padding: 0; font-size: 12.5px; }
+.catl li { padding: 3px 0; }
+.catl small { color: var(--muted); }
+.lab .tbl { padding: 6px 0 4px; }
+.lab .foot { font-size: 12.5px; color: var(--muted); }
+.lab .foot .btn { margin-top: 8px; width: 100%; }
+/* Vježbaonica 08: polja za odgovore, SQL editor (sandbox) i laboratorij: trošak, B+ stablo, plan izvođenja. */
+.multi code { font: 600 13.5px var(--f-mono); color: var(--navy); }
+.tree { display: flex; flex-direction: column; gap: 10px; overflow-x: auto; padding: 4px 0; }
+.tlevel { display: flex; gap: 6px; justify-content: center; align-items: center; min-width: max-content; }
+.tnode { display: flex; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); font-size: 11.5px; }
+.tnode span { padding: 3px 5px; border-left: 1px solid var(--line); white-space: nowrap; }
+.tnode span:first-child { border-left: 0; }
+.tnode.leaf { background: var(--olive-bg); }
+.tnode.on { outline: 2px solid var(--focus); outline-offset: 1px; }
+.tnode.scan { outline: 2px dashed var(--ok); outline-offset: 1px; }
+.tnode .empty { color: var(--muted); }
+.tarrow { color: var(--muted); font-size: 12px; }
+.pstep { border: 1px solid var(--line); border-radius: var(--r); padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
+.pstep p { margin: 0; font-size: 12.5px; }
+.phead { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+.phead code { font: 600 12px var(--f-mono); padding: 1px 6px; border-radius: 4px; background: var(--code-bg); color: var(--navy); }
+.ptype.t-ALL { background: #f6dede; color: var(--err); }
+.ptype.t-const, .ptype.t-eq_ref { background: #dff0e3; color: var(--ok); }
+@media (prefers-color-scheme: dark) { .ptype.t-ALL { background: rgba(220, 90, 90, .18); } .ptype.t-const, .ptype.t-eq_ref { background: rgba(90, 190, 120, .18); } }
+.pbar { height: 6px; background: var(--code-bg); border-radius: 3px; overflow: hidden; }
+.pbar i { display: block; height: 100%; background: var(--navy); }
+.small2 { color: var(--muted); }
+.pex { margin: 0; padding-left: 16px; font-size: 12px; }
+.pex code { font: 600 11.5px var(--f-mono); }
+.psql { white-space: pre-wrap; }
+.muted { color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <a class="back" href="../">← Sve vježbaonice</a>
+      <h1>Vježbaonica: performanse i indeksi</h1>
+      <div class="sub">Baze podataka II · Predavanje VIII.: Performanse baze podataka i indeksi (B+ stablo, CREATE INDEX, EXPLAIN) · FIPU</div>
+    </div>
+    <a class="ask" id="askLink" href="NB_URL_08" target="_blank" rel="noopener">Pitaj asistenta ↗ <small>Gemini Notebook</small></a>
+    <div class="progress" aria-live="polite">
+      <span id="progTxt">0 / 24 riješeno</span>
+      <div class="bar" aria-hidden="true"><i id="progBar"></i></div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <nav class="tasks" id="taskNav" aria-label="Zadaci"></nav>
+
+    <main class="work" id="work">
+      <section class="task" aria-labelledby="tTitle">
+        <div class="meta"><span id="tMeta">A1 · Pristup disku i stranice</span><span id="tSlide">slajd 11</span></div>
+        <h2 id="tTitle">Koliko je disk sporiji?</h2>
+        <p class="text" id="tText"></p>
+        <p class="note" id="tNote" hidden></p>
+      </section>
+
+      <div id="sqlBox" hidden>
+        <div class="editor">
+          <label for="sql" style="position:absolute;left:-9999px">SQL naredbe</label>
+          <textarea id="sql" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="-- MySQL sintaksa, npr.&#10;EXPLAIN SELECT * FROM nastavnik WHERE id = 240;&#10;CREATE INDEX idx_primanja ON nastavnik (primanja);&#10;SHOW INDEX FROM nastavnik;"></textarea>
+          <div class="toolbar">
+            <button class="btn primary" id="runBtn" disabled>Izvrši</button>
+            <button class="btn" id="resetBtn">Vrati bazu</button>
+            <span class="kbd">Ctrl + Enter izvršava naredbe</span>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:14px">
+          <div class="ph"><b id="resTitle">Rezultat</b><span id="resInfo"></span></div>
+          <pre class="out msg" id="resOut">Učitavam bazu podataka…</pre>
+        </div>
+      </div>
+
+      <div class="answer" id="answer"></div>
+
+      <div class="toolbar answerbar" style="padding:0;border:0">
+        <button class="btn check" id="checkBtn">Provjeri odgovor</button>
+        <button class="btn" id="hintBtn">Naputak</button>
+        <button class="btn" id="solBtn">Rješenje</button>
+      </div>
+
+      <div class="feedback" id="feedback" hidden></div>
+      <div class="panel" id="expPanel" hidden>
+        <div class="ph"><b>Očekivani rezultat</b><span></span></div>
+        <pre class="out" id="expOut"></pre>
+      </div>
+      <div class="hints" id="hints"></div>
+      <div class="panel solution" id="solPanel" hidden>
+        <div class="ph"><b>Rješenje i objašnjenje</b><span>pokušaj prvo sam</span></div>
+        <div id="solBody"></div>
+        <div class="toolbar"><button class="btn" id="solCopy">Prepiši u editor</button></div>
+      </div>
+      <div class="pager">
+        <button class="btn" id="prevBtn">← Prethodni</button>
+        <button class="btn" id="nextBtn">Sljedeći →</button>
+      </div>
+    </main>
+
+    <aside class="lab" aria-label="Laboratorij">
+      <div class="panel">
+        <div class="ph"><b id="labTitle">Laboratorij</b><span id="labInfo"></span></div>
+        <div class="body" id="labBody"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-asm.js"></script>
+<script>
+// SQL8 – MySQL sloj nad SQLite bazom (sql.js) za vježbaonicu 08:
+// indeksi (CREATE INDEX s prefiksom, ALTER TABLE … ADD/DROP INDEX, DROP INDEX … ON),
+// SHOW INDEX, DESCRIBE, SHOW TABLES, SHOW CREATE TABLE, INFORMATION_SCHEMA.STATISTICS
+// i EXPLAIN s pojednostavljenim MySQL optimizatorom (tipovi const, eq_ref, ref, range, index, ALL).
+const SQL8 = (() => {
+  const SCHEMA = 'unipu';
+  const META = new WeakMap(); // db -> { prefix: {idx: {col: n}}, fkIdx: Set }
+  const meta = db => { if (!META.has(db)) META.set(db, { prefix: {}, last: null }); return META.get(db); };
+  const q = (db, sql, p) => { const r = db.exec(sql, p); return r.length ? r[0].values : []; };
+  const qi = s => '"' + String(s).replace(/"/g, '""') + '"';
+  const lc = s => String(s).toLowerCase();
+
+  function err(no, state, msg) { const e = new Error(msg); e.mysql = `ERROR ${no} (${state}): ${msg}`; e.errno = no; return e; }
+
+  // ---------- funkcije ----------
+  function attach(db) {
+    const f = (n, fn) => db.create_function(n, fn);
+    f('database', () => SCHEMA);
+    f('version', () => '8.0.36 (vježbaonica)');
+    f('now', () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; });
+    f('concat', (...a) => a.some(x => x === null) ? null : a.join(''));
+    f('left', (s, n) => s == null ? null : String(s).slice(0, n));
+    f('right', (s, n) => s == null ? null : (n > 0 ? String(s).slice(-n) : ''));
+    f('char_length', s => s == null ? null : [...String(s)].length);
+    f('if', (c, a, b) => (c && c !== '0') ? a : b);
+    f('year', s => s == null ? null : parseInt(String(s).slice(0, 4), 10));
+    f('month', s => s == null ? null : parseInt(String(s).slice(5, 7), 10));
+    f('truncate', (x, d) => x == null ? null : Math.trunc(x * 10 ** d) / 10 ** d);
+    f('floor', x => x == null ? null : Math.floor(x));
+    f('ceil', x => x == null ? null : Math.ceil(x));
+    for (const [t, type] of tables(db)) if (type === 'table') autoFkIndexes(db, t);
+    db.exec("ATTACH DATABASE ':memory:' AS information_schema;");
+    db.exec(`CREATE TABLE information_schema.STATISTICS (TABLE_CATALOG TEXT, TABLE_SCHEMA TEXT, TABLE_NAME TEXT, NON_UNIQUE INTEGER, INDEX_SCHEMA TEXT, INDEX_NAME TEXT, SEQ_IN_INDEX INTEGER, COLUMN_NAME TEXT, CARDINALITY INTEGER, SUB_PART INTEGER, NULLABLE TEXT, INDEX_TYPE TEXT);
+             CREATE TABLE information_schema.TABLES (TABLE_SCHEMA TEXT, TABLE_NAME TEXT, TABLE_TYPE TEXT, ENGINE TEXT, TABLE_ROWS INTEGER);
+             CREATE TABLE information_schema.COLUMNS (TABLE_SCHEMA TEXT, TABLE_NAME TEXT, COLUMN_NAME TEXT, ORDINAL_POSITION INTEGER, IS_NULLABLE TEXT, DATA_TYPE TEXT, COLUMN_TYPE TEXT, COLUMN_KEY TEXT);`);
+    refresh(db);
+  }
+
+  // ---------- metapodaci ----------
+  function tables(db) { return q(db, "SELECT name, type, sql FROM main.sqlite_master WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' ORDER BY name"); }
+  function findTable(db, name) { const r = q(db, "SELECT name, type FROM main.sqlite_master WHERE type IN ('table','view') AND lower(name) = lower(?)", [name]); return r.length ? { name: r[0][0], view: r[0][1] === 'view' } : null; }
+  function columns(db, t) {
+    return q(db, `PRAGMA main.table_info(${qi(t)})`).map(([cid, name, type, notnull, dflt, pk]) => ({ cid, name, type: type || '', notnull: !!notnull || pk > 0, pk }));
+  }
+  function typeInfo(decl) {
+    const m = /^\s*([A-Za-z]+)(?:\s*\(\s*(\d+)\s*(?:,\s*(\d+)\s*)?\))?/.exec(decl || '');
+    if (!m) return { t: '', ct: '' };
+    const t = lc(m[1]), a = m[2] != null ? +m[2] : null, b = m[3] != null ? +m[3] : null;
+    if (t === 'varchar' || t === 'char') return { t, len: a, ct: `${t}(${a})` };
+    if (t === 'numeric' || t === 'decimal') { const p = a ?? 10, s = b ?? 0; return { t: 'decimal', p, s, ct: `decimal(${p},${s})` }; }
+    if (t === 'int' || t === 'integer') return { t: 'int', ct: 'int' };
+    if (t === 'text') return { t: 'text', ct: 'text' };
+    if (t === 'date') return { t: 'date', ct: 'date' };
+    if (t === 'datetime' || t === 'timestamp') return { t, ct: t };
+    return { t, ct: t + (a != null ? `(${a}${b != null ? ',' + b : ''})` : '') };
+  }
+  const decBytes = d => Math.floor(d / 9) * 4 + [0, 1, 1, 2, 2, 3, 3, 4, 4, 4][d % 9];
+  function keyLen(col, sub) {
+    const ti = typeInfo(col.type); let n;
+    switch (ti.t) {
+      case 'int': n = 4; break;
+      case 'bigint': n = 8; break;
+      case 'smallint': n = 2; break;
+      case 'varchar': n = 4 * (sub || ti.len) + 2; break;
+      case 'char': n = 4 * (sub || ti.len); break;
+      case 'text': n = 4 * (sub || 0) + 2; break;
+      case 'decimal': n = decBytes(ti.p - ti.s) + decBytes(ti.s); break;
+      case 'date': n = 3; break;
+      case 'datetime': n = 5; break;
+      case 'timestamp': n = 4; break;
+      default: n = 8;
+    }
+    return n + (col.notnull ? 0 : 1);
+  }
+
+  // Indeksi tablice u MySQL obliku: PRIMARY, UNIQUE (ime po prvom stupcu) i stvoreni indeksi.
+  function indexes(db, t) {
+    const cols = columns(db, t), out = [];
+    const pk = cols.filter(c => c.pk > 0).sort((a, b) => a.pk - b.pk);
+    if (pk.length) out.push({ name: 'PRIMARY', unique: true, primary: true, cols: pk.map(c => ({ name: c.name, sub: null })) });
+    const pref = meta(db).prefix;
+    const list = q(db, `PRAGMA main.index_list(${qi(t)})`).reverse();
+    for (const [, iname, unique, origin] of list) {
+      if (origin === 'pk') continue;
+      const ic = q(db, `PRAGMA main.index_info(${qi(iname)})`).sort((a, b) => a[0] - b[0]).map(r => ({ name: r[2], sub: (pref[lc(iname)] || {})[lc(r[2])] || null }));
+      const name = origin === 'u' ? ic[0].name : (iname.includes('$') ? iname.slice(iname.indexOf('$') + 1) : iname);
+      out.push({ name, unique: !!unique, primary: false, cols: ic, sqlite: iname });
+    }
+    return out;
+  }
+
+  function refresh(db) {
+    for (const t of ['STATISTICS', 'TABLES', 'COLUMNS']) db.exec(`DELETE FROM information_schema.${t}`);
+    const ins = (t, row) => db.run(`INSERT INTO information_schema.${t} VALUES (${row.map(() => '?').join(',')})`, row);
+    for (const [name, type] of tables(db)) {
+      const view = type === 'view';
+      ins('TABLES', [SCHEMA, name, view ? 'VIEW' : 'BASE TABLE', view ? null : 'InnoDB', view ? null : q(db, `SELECT COUNT(*) FROM main.${qi(name)}`)[0][0]]);
+      const idx = view ? [] : indexes(db, name);
+      const first = new Map(); idx.forEach(i => { const c = lc(i.cols[0].name); if (!first.has(c)) first.set(c, i.primary ? 'PRI' : i.unique && i.cols.length === 1 ? 'UNI' : 'MUL'); });
+      columns(db, name).forEach(c => ins('COLUMNS', [SCHEMA, name, c.name, c.cid + 1, c.notnull ? 'NO' : 'YES', typeInfo(c.type).t, typeInfo(c.type).ct, first.get(lc(c.name)) || '']));
+      for (const i of idx) i.cols.forEach((c, k) => {
+        const card = q(db, `SELECT COUNT(DISTINCT ${i.cols.slice(0, k + 1).map(x => x.sub ? `substr(${qi(x.name)},1,${x.sub})` : qi(x.name)).join(' || char(1) || ')}) FROM main.${qi(name)}`)[0][0];
+        const col = columns(db, name).find(x => lc(x.name) === lc(c.name));
+        ins('STATISTICS', ['def', SCHEMA, name, i.unique ? 0 : 1, SCHEMA, i.name, k + 1, c.name, card, c.sub, col && !col.notnull ? 'YES' : '', 'BTREE']);
+      });
+    }
+  }
+
+  // ---------- leksički analizator ----------
+  const KW = new Set('select from where and or not join inner left right outer cross on as order by group having limit offset asc desc between in like is null distinct union exists case when then else end straight_join natural using all any some'.split(' '));
+  function tokenize(src) {
+    const T = []; let i = 0;
+    while (i < src.length) {
+      const c = src[i];
+      if (/\s/.test(c)) { i++; continue; }
+      if (c === '-' && src[i + 1] === '-' || c === '#') { while (i < src.length && src[i] !== '\n') i++; continue; }
+      if (c === '/' && src[i + 1] === '*') { const e = src.indexOf('*/', i + 2); i = e < 0 ? src.length : e + 2; continue; }
+      const s = i;
+      if (c === "'" || c === '"') {
+        let j = i + 1, v = '';
+        while (j < src.length) { if (src[j] === c) { if (src[j + 1] === c) { v += c; j += 2; continue; } break; } if (src[j] === '\\' && j + 1 < src.length) { v += src[j + 1]; j += 2; continue; } v += src[j++]; }
+        T.push({ k: 'str', v, s, e: j + 1 }); i = j + 1; continue;
+      }
+      if (c === '`') { const j = src.indexOf('`', i + 1); T.push({ k: 'id', v: src.slice(i + 1, j < 0 ? src.length : j), s, e: (j < 0 ? src.length : j + 1) }); i = j < 0 ? src.length : j + 1; continue; }
+      if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(src[i + 1]))) { let j = i; while (j < src.length && /[0-9.eE]/.test(src[j])) j++; T.push({ k: 'num', v: src.slice(i, j), s, e: j }); i = j; continue; }
+      if (/[A-Za-z_À-ſ]/.test(c)) { let j = i; while (j < src.length && /[A-Za-z0-9_$À-ſ]/.test(src[j])) j++; const w = src.slice(i, j); T.push({ k: KW.has(lc(w)) ? 'kw' : 'id', v: w, u: lc(w), s, e: j }); i = j; continue; }
+      const two = src.slice(i, i + 2);
+      if (['<=', '>=', '<>', '!=', '||'].includes(two)) { T.push({ k: 'op', v: two, s, e: i + 2 }); i += 2; continue; }
+      T.push({ k: 'op', v: c, s, e: i + 1 }); i++;
+    }
+    return T;
+  }
+  const isKw = (t, ...w) => t && t.k === 'kw' && w.includes(t.u);
+  const isOp = (t, v) => t && t.k === 'op' && t.v === v;
+
+  // ---------- EXPLAIN ----------
+  const UNSUP = 'Vježbaonica prikazuje plan izvođenja samo za upite SELECT nad jednom tablicom ili jednostavne spojeve (JOIN … ON), bez podupita i UNION.';
+  function parseSelect(src) {
+    const T = tokenize(src);
+    if (!isKw(T[0], 'select')) throw err(1064, '42000', 'EXPLAIN u vježbaonici podržava samo naredbu SELECT.');
+    let depth = 0;
+    for (const t of T) { if (isOp(t, '(')) depth++; if (isOp(t, ')')) depth--; if (depth > 0 && isKw(t, 'select')) throw err(1235, '42000', UNSUP); if (isKw(t, 'union')) throw err(1235, '42000', UNSUP); }
+    // podjela na dijelove na razini 0
+    const at = (i, ...w) => isKw(T[i], ...w);
+    const parts = {}; let cur = 'select', start = 1; depth = 0;
+    const order = [];
+    for (let i = 1; i <= T.length; i++) {
+      const t = T[i];
+      if (t && isOp(t, '(')) depth++; if (t && isOp(t, ')')) depth--;
+      let nxt = null;
+      if (!t) nxt = 'end';
+      else if (depth === 0 && t.k === 'kw') {
+        if (t.u === 'from') nxt = 'from'; else if (t.u === 'where') nxt = 'where'; else if (t.u === 'having') nxt = 'having'; else if (t.u === 'limit') nxt = 'limit';
+        else if (t.u === 'group' && at(i + 1, 'by')) nxt = 'group'; else if (t.u === 'order' && at(i + 1, 'by')) nxt = 'order';
+      }
+      if (nxt) { parts[cur] = T.slice(start, i); order.push(cur); cur = nxt; start = i + ((nxt === 'group' || nxt === 'order') ? 2 : 1); if (nxt === 'end') break; }
+    }
+    if (!parts.from) throw err(1235, '42000', UNSUP);
+    // FROM: tablica [AS] alias { [INNER|LEFT] JOIN tablica [AS] alias ON uvjet | , tablica alias }
+    const F = parts.from, refs = [], onConds = []; let i = 0;
+    const readTable = () => {
+      const t = F[i]; if (!t || t.k !== 'id') throw err(1235, '42000', UNSUP); i++;
+      let alias = t.v;
+      if (isKw(F[i], 'as')) i++;
+      if (F[i] && F[i].k === 'id') { alias = F[i].v; i++; }
+      refs.push({ table: t.v, alias });
+    };
+    readTable();
+    while (i < F.length) {
+      if (isOp(F[i], ',')) { i++; readTable(); continue; }
+      if (isKw(F[i], 'inner', 'left', 'cross', 'straight_join')) { if (isKw(F[i], 'left')) refs.leftJoin = true; i++; if (isKw(F[i], 'outer')) i++; }
+      if (isKw(F[i], 'join') || isKw(F[i - 1], 'straight_join')) { if (isKw(F[i], 'join')) i++; readTable();
+        if (isKw(F[i], 'on')) { i++; const s0 = i; let d = 0; while (i < F.length && !(d === 0 && (isKw(F[i], 'join', 'inner', 'left', 'cross') || isOp(F[i], ',')))) { if (isOp(F[i], '(')) d++; if (isOp(F[i], ')')) d--; i++; } onConds.push(F.slice(s0, i)); }
+        else if (isKw(F[i], 'using')) throw err(1235, '42000', UNSUP);
+        continue; }
+      throw err(1235, '42000', UNSUP);
+    }
+    return { src, T, parts, refs, onConds };
+  }
+
+  // Podjela uvjeta na konjunkte (AND na razini 0; AND unutar BETWEEN pripada BETWEEN-u).
+  function conjuncts(toks) {
+    const out = []; let cur = [], d = 0, betw = false;
+    for (const t of toks) {
+      if (isOp(t, '(')) d++; if (isOp(t, ')')) d--;
+      if (d === 0 && isKw(t, 'between')) betw = true;
+      if (d === 0 && isKw(t, 'and')) { if (betw) { betw = false; cur.push(t); continue; } out.push(cur); cur = []; continue; }
+      cur.push(t);
+    }
+    if (cur.length) out.push(cur);
+    return out.filter(c => c.length);
+  }
+  const strip = c => { while (c.length > 2 && isOp(c[0], '(') && isOp(c[c.length - 1], ')')) { let d = 0, ok = true; for (let k = 0; k < c.length - 1; k++) { if (isOp(c[k], '(')) d++; if (isOp(c[k], ')')) d--; if (d === 0) { ok = false; break; } } if (!ok) break; c = c.slice(1, -1); } return c; };
+
+  // Prepoznaje stupac (alias.stupac ili stupac) na početku niza tokena; vraća {ref, col, n}.
+  function colAt(toks, k) {
+    const t = toks[k]; if (!t || t.k !== 'id') return null;
+    if (isOp(toks[k + 1], '(')) return null; // poziv funkcije
+    if (isOp(toks[k + 1], '.') && toks[k + 2] && toks[k + 2].k === 'id') return { q: t.v, col: toks[k + 2].v, n: 3 };
+    return { q: null, col: t.v, n: 1 };
+  }
+  const hasCol = toks => toks.some((t, k) => t.k === 'id' && !isOp(toks[k + 1], '(') && !isOp(toks[k - 1], '.') || (t.k === 'id' && isOp(toks[k - 1], '.')));
+  const constExpr = toks => toks.length > 0 && !toks.some((t, k) => t.k === 'id' && !isOp(toks[k + 1], '('));
+
+  // Klasifikacija konjunkta: {kind:'eq'|'range'|'in'|'null'|'join'|'other', cols:[...], text}
+  function classify(c, src) {
+    c = strip(c);
+    const text = src.slice(c[0].s, c[c.length - 1].e);
+    const a = colAt(c, 0);
+    const refsIn = []; c.forEach((t, k) => { const x = colAt(c, k); if (x && !(isOp(c[k - 1], '.'))) refsIn.push(x); });
+    const base = { text, refs: refsIn };
+    if (c.some(t => isKw(t, 'or'))) return { ...base, kind: 'other' };
+    if (a) {
+      const rest = c.slice(a.n), op = rest[0];
+      if (op && op.k === 'op' && ['=', '<', '>', '<=', '>=', '<>', '!='].includes(op.v)) {
+        const rhs = rest.slice(1), b = colAt(rhs, 0);
+        if (b && b.n === rhs.length && op.v === '=') return { ...base, kind: 'join', a, b };
+        if (constExpr(rhs)) return { ...base, kind: op.v === '=' ? 'eq' : (op.v === '<>' || op.v === '!=') ? 'ne' : 'range', col: a, numLit: rhs.every(t => t.k === 'num' || (t.k === 'op' && t.v !== "'")) && rhs.some(t => t.k === 'num') };
+      }
+      if (isKw(op, 'between') && constExpr(rest.slice(1).filter(t => !isKw(t, 'and')))) return { ...base, kind: 'range', between: true, col: a };
+      if (isKw(op, 'in') && isOp(rest[1], '(') && constExpr(rest.slice(2, -1).filter(t => !isOp(t, ',')))) { const n = rest.slice(2, -1).filter(t => !isOp(t, ',')).length; return { ...base, kind: n === 1 ? 'eq' : 'in', n, col: a }; }
+      if (isKw(op, 'like') && rest[1] && rest[1].k === 'str') { const v = rest[1].v; return { ...base, kind: /^[^%_]/.test(v) ? 'range' : 'other', like: true, col: a }; }
+      if (isKw(op, 'is') && isKw(rest[1], 'null')) return { ...base, kind: 'eq', isnull: true, col: a };
+      if (isKw(op, 'is') && isKw(rest[1], 'not')) return { ...base, kind: 'other', col: a };
+    }
+    // literal op stupac
+    const last = c.length; const b2 = (() => { for (let k = 0; k < c.length; k++) { const x = colAt(c, k); if (x && k + x.n === last) return { x, k }; } return null; })();
+    if (b2 && b2.k >= 2) { const op = c[b2.k - 1]; const lhs = c.slice(0, b2.k - 1); if (op.k === 'op' && constExpr(lhs) && ['=', '<', '>', '<=', '>='].includes(op.v)) return { ...base, kind: op.v === '=' ? 'eq' : 'range', col: b2.x }; }
+    return { ...base, kind: 'other' };
+  }
+
+  function explain(db, src) {
+    const P = parseSelect(src);
+    const R = P.refs.map(r => {
+      const t = findTable(db, r.table);
+      if (!t) throw err(1146, '42S02', `Table '${SCHEMA}.${r.table}' doesn't exist`);
+      if (t.view) throw err(1235, '42000', 'Vježbaonica ne prikazuje plan za upite nad pogledima.');
+      return { ...r, table: t.name, cols: columns(db, t.name), idx: indexes(db, t.name), N: q(db, `SELECT COUNT(*) FROM main.${qi(t.name)}`)[0][0] };
+    });
+    const resolve = c => {
+      const cands = R.filter(r => c.q ? lc(r.alias) === lc(c.q) || lc(r.table) === lc(c.q) : r.cols.some(x => lc(x.name) === lc(c.col)));
+      if (!cands.length) throw err(1054, '42S22', `Unknown column '${c.q ? c.q + '.' : ''}${c.col}' in 'where clause'`);
+      if (cands.length > 1) throw err(1052, '23000', `Column '${c.col}' in where clause is ambiguous`);
+      const r = cands[0]; const col = r.cols.find(x => lc(x.name) === lc(c.col));
+      if (!col) throw err(1054, '42S22', `Unknown column '${c.q ? c.q + '.' : ''}${c.col}' in 'where clause'`);
+      return { r, col: col.name };
+    };
+    const conds = [];
+    for (const ct of P.onConds) conjuncts(ct).forEach(c => conds.push(classify(c, src)));
+    if (P.parts.where) conjuncts(P.parts.where).forEach(c => conds.push(classify(c, src)));
+    for (const c of conds) {
+      if (c.kind === 'join') { c.ra = resolve(c.a); c.rb = resolve(c.b); if (c.ra.r === c.rb.r) { c.kind = 'other'; c.owner = c.ra.r; } }
+      else if (c.col) {
+        const x = resolve(c.col); c.owner = x.r; c.cname = x.col;
+        const ct = typeInfo(x.r.cols.find(y => lc(y.name) === lc(x.col)).type).t;
+        if (['varchar', 'char', 'text'].includes(ct) && c.numLit) { c.mismatch = c.kind; c.kind = 'other'; }
+      }
+      else { const owners = [...new Set(c.refs.map(x => resolve(x).r))]; c.owner = owners.length === 1 ? owners[0] : null; c.multi = owners; }
+    }
+    // stupci koje upit koristi po tablici (za pokrivajući indeks)
+    const used = new Map(R.map(r => [r, new Set()])); let star = false;
+    const sel = P.parts.select || [];
+    sel.forEach((t, k) => { if (isOp(t, '*')) { if (isOp(sel[k - 1], '.')) { const al = sel[k - 2].v; R.filter(r => lc(r.alias) === lc(al)).forEach(r => r.star = true); } else if (!isOp(sel[k - 1], '(')) star = true; } });
+    const addRefs = toks => toks.forEach((t, k) => { const x = colAt(toks, k); if (x && !isOp(toks[k - 1], '.')) { try { const r = resolve(x); used.get(r.r).add(lc(r.col)); } catch (e) { if (e.errno === 1054 && toks === sel) { /* alias u SELECT-u */ } else if (e.errno === 1054) throw e; } } });
+    ['select', 'where', 'group', 'order', 'having'].forEach(p => P.parts[p] && addRefs(P.parts[p]));
+    P.onConds.forEach(addRefs);
+    if (star) R.forEach(r => r.star = true);
+    const orderCols = []; if (P.parts.order) { const O = P.parts.order; for (let k = 0; k < O.length; k++) { const x = colAt(O, k); if (x && !isOp(O[k - 1], '.')) { try { orderCols.push({ ...resolve(x), desc: isKw(O[k + x.n], 'desc') }); } catch (e) { } k += x.n - 1; } } }
+    const groupCols = []; if (P.parts.group) { const G = P.parts.group; for (let k = 0; k < G.length; k++) { const x = colAt(G, k); if (x && !isOp(G[k - 1], '.')) { try { groupCols.push(resolve(x)); } catch (e) { } k += x.n - 1; } } }
+    const limit = P.parts.limit ? +((P.parts.limit.find(t => t.k === 'num') || {}).v || 0) : null;
+
+    const count = (r, cs) => { if (!cs.length) return r.N; const sql = `SELECT COUNT(*) FROM main.${qi(r.table)} AS ${qi(r.alias)} WHERE ${cs.map(c => '(' + c.text.replace(/`/g, '"') + ')').join(' AND ')}`; try { return q(db, sql)[0][0]; } catch (e) { return Math.round(r.N / 3); } };
+    const covers = (r, idx) => { if (r.star) return false; const have = new Set(idx.cols.filter(c => !c.sub).map(c => lc(c.name))); const pk = r.idx.find(i => i.primary); if (pk) pk.cols.forEach(c => have.add(lc(c.name))); return [...used.get(r)].every(c => have.has(c)); };
+    const defaultSel = c => c.kind === 'eq' ? 0.1 : c.between || c.like ? 0.1111 : c.kind === 'in' ? Math.min(0.5, 0.1 * c.n) : c.kind === 'range' ? 0.3333 : c.kind === 'ne' ? 0.9 : 0.1;
+    const indexedCol = (r, col) => r.idx.some(i => lc(i.cols[0].name) === lc(col));
+
+    // pristup jednoj tablici (s konjunktima koji ovise samo o njoj i o već pročitanim tablicama)
+    function access(r, prev) {
+      const local = conds.filter(c => c.owner === r && c.kind !== 'join');
+      const joins = conds.filter(c => c.kind === 'join' && ((c.ra.r === r && prev.includes(c.rb.r)) || (c.rb.r === r && prev.includes(c.ra.r))))
+        .map(c => c.ra.r === r ? { col: c.ra.col, other: c.rb } : { col: c.rb.col, other: c.ra });
+      const allPrevConst = prev.length > 0 && prev.every(p => p.plan && p.plan.type === 'const');
+      const cands = [];
+      for (const ix of r.idx) {
+        const eq = []; let k = 0, range = null, refs = [];
+        for (; k < ix.cols.length; k++) {
+          const cn = lc(ix.cols[k].name);
+          const e = local.find(c => c.kind === 'eq' && lc(c.cname) === cn);
+          const j = joins.find(x => lc(x.col) === cn);
+          if (e) { eq.push(e); refs.push('const'); continue; }
+          if (j) { eq.push({ join: j }); refs.push(allPrevConst ? 'const' : `${SCHEMA}.${j.other.r.alias}.${j.other.col}`); continue; }
+          break;
+        }
+        if (k < ix.cols.length) { const cn = lc(ix.cols[k].name); range = local.filter(c => (c.kind === 'range' || c.kind === 'in') && lc(c.cname) === cn); if (!range.length) range = null; }
+        if (!eq.length && !range) continue;
+        const isJoin = eq.some(e => e.join);
+        const full = ix.unique && eq.length === ix.cols.length && !range && !ix.cols.some(c => c.sub);
+        let type = full ? (isJoin && !allPrevConst ? 'eq_ref' : 'const') : (range ? 'range' : 'ref');
+        const usedConds = [...eq.filter(e => !e.join), ...(range || [])];
+        let rows;
+        if (type === 'const' || type === 'eq_ref') rows = 1;
+        else if (isJoin && !allPrevConst) { const cols = ix.cols.slice(0, eq.length).map(c => qi(c.name)).join(" || char(1) || "); const dist = q(db, `SELECT COUNT(DISTINCT ${cols}) FROM main.${qi(r.table)}`)[0][0] || 1; rows = Math.max(1, Math.round(count(r, usedConds) / dist)); }
+        else rows = Math.max(1, count(r, usedConds));
+        const nUsed = eq.length + (range ? 1 : 0);
+        const klen = ix.cols.slice(0, nUsed).reduce((s, c) => s + keyLen(r.cols.find(x => lc(x.name) === lc(c.name)), c.sub), 0);
+        const cov = covers(r, ix);
+        const rest = local.filter(c => !usedConds.includes(c));
+        cands.push({ ix, type, rows, klen, ref: range ? null : refs.join(','), cov, used: usedConds, rest, isJoin, cost: type === 'const' ? 0 : rows * (cov ? 0.2 : 1) });
+      }
+      const filteredOf = (rest, base) => {
+        let f = 1;
+        for (const c of rest) {
+          if (c.owner === r && c.cname && !c.mismatch && ['eq', 'range', 'in'].includes(c.kind) && indexedCol(r, c.cname) && base > 0) { const n = count(r, [c]); f *= Math.min(1, n / r.N); }
+          else f *= defaultSel(c);
+        }
+        return Math.round(f * 10000) / 100;
+      };
+      // najbolji indeks
+      cands.sort((a, b) => a.cost - b.cost || a.klen - b.klen);
+      const scanCost = r.N;
+      const possible = [...new Set([...cands.map(c => c.ix.name), ...r.idx.filter(ix => local.some(c => c.mismatch && lc(c.cname) === lc(ix.cols[0].name))).map(ix => ix.name)])];
+      // const bez reda
+
+      // Indeks koji nije pokrivajući isplati se samo ako uvjet obuhvaća manje od ~30 % redova (pojednostavljeni model troška).
+      const viable = c => c.type === 'const' || c.type === 'eq_ref' || c.cov || (c.isJoin && c.type === 'ref') || c.rows < 0.3 * scanCost;
+      const best = cands.filter(viable)[0];
+      if (best && best.type === 'const' && !best.isJoin && count(r, best.used) === 0) return { noMatch: true };
+      if (best) {
+        const extra = [];
+        const icp = !best.ix.primary && !best.cov;
+        if (best.rest.length) extra.push(icp && (best.type === 'range' || best.type === 'ref') && best.rest.every(c => best.ix.cols.some(x => lc(x.name) === lc(c.cname))) ? 'Using index condition' : 'Using where');
+        else if (best.type === 'range') extra.push(icp ? 'Using index condition' : 'Using where');
+        if (best.cov) extra.push('Using index');
+        return { type: best.type, possible, key: best.ix.name, key_len: best.klen, ref: best.ref, rows: best.rows, filtered: best.rest.length ? filteredOf(best.rest, best.rows) : 100, extra, ix: best.ix };
+      }
+      // bez korisnog uvjeta: pokrivajući indeks → index (puni prolaz indeksom)
+      const extra = []; const hasWhere = local.length > 0 || joins.length > 0;
+      const covIx = r.idx.filter(ix => !ix.primary && covers(r, ix)).sort((a, b) => a.cols.length - b.cols.length)[0];
+      if (covIx && !joins.length) {
+        if (local.length) extra.push('Using where'); extra.push('Using index');
+        return { type: 'index', possible: possible.length ? possible : null, key: covIx.name, key_len: covIx.cols.reduce((s, c) => s + keyLen(r.cols.find(x => lc(x.name) === lc(c.name)), c.sub), 0), ref: null, rows: r.N, filtered: local.length ? filteredOf(local, r.N) : 100, extra, ix: covIx };
+      }
+      if (hasWhere) extra.push('Using where');
+      if (joins.length) extra.push('Using join buffer (hash join)');
+      let filt = local.length ? filteredOf(local, r.N) : 100;
+      if (joins.length) filt = Math.round(filt * 10) / 100;
+      return { type: 'ALL', possible: possible.length ? possible : null, key: null, key_len: null, ref: null, rows: r.N, filtered: filt, extra, ix: null };
+    }
+
+    // redoslijed spajanja: probaj sve permutacije (najviše 4 tablice)
+    const perms = a => a.length <= 1 ? [a] : a.flatMap((x, i) => perms([...a.slice(0, i), ...a.slice(i + 1)]).map(p => [x, ...p]));
+    let bestPlan = null;
+    const orders = R.length <= 4 && !P.refs.leftJoin ? perms(R) : [R];
+    for (const ord of orders) {
+      let cost = 0, outer = 1; const prev = []; const plan = [];
+      for (const r of ord) { r.plan = null; const a = access(r, prev); r.plan = a; plan.push({ r, a }); if (a.noMatch) { cost = -1; break; } const rr = a.rows * (a.filtered / 100); cost += outer * (a.type === 'ALL' && prev.length ? a.rows * 0.1 : a.type === 'const' ? 0 : a.rows); outer *= Math.max(1, rr); prev.push(r); }
+      if (!bestPlan || cost < bestPlan.cost) bestPlan = { cost, plan: plan.map(p => ({ r: p.r, a: p.a })) };
+    }
+    const cols = ['id', 'select_type', 'table', 'partitions', 'type', 'possible_keys', 'key', 'key_len', 'ref', 'rows', 'filtered', 'Extra'];
+    if (bestPlan.plan.some(p => p.a.noMatch)) {
+      return { columns: cols, values: [[1, 'SIMPLE', null, null, null, null, null, null, null, null, null, 'no matching row in const table']], dec: { 10: 2 }, plan: bestPlan.plan, noMatch: true };
+    }
+    // ORDER BY / GROUP BY
+    const first = bestPlan.plan[0];
+    const sortedBy = (a, colsReq) => { if (!a.ix || !colsReq.length) return false; const ixc = a.ix.cols.map(c => lc(c.name)); const eqN = a.type === 'ref' || a.type === 'const' ? (a.ref || '').split(',').length : a.type === 'range' ? (a.key_len ? 0 : 0) : 0; const tail = ixc.slice(eqN); return colsReq.every((c, k) => lc(c.col) === tail[k]) || colsReq.every((c, k) => lc(c.col) === ixc[k]); };
+    if (groupCols.length && !(groupCols.every(g => g.r === first.r) && sortedBy(first.a, groupCols))) first.a.extra.push('Using temporary');
+    if (orderCols.length && !(orderCols.every(o => o.r === first.r) && sortedBy(first.a, orderCols))) {
+      // ORDER BY po primarnom ključu bez uvjeta: puni prolaz po PRIMARY
+      const pk = first.r.idx.find(i => i.primary);
+      if (first.a.type === 'ALL' && !conds.some(c => c.owner === first.r) && pk && orderCols.every((o, k) => o.r === first.r && pk.cols[k] && lc(pk.cols[k].name) === lc(o.col)) && bestPlan.plan.length === 1) {
+        Object.assign(first.a, { type: 'index', key: 'PRIMARY', key_len: pk.cols.reduce((s, c) => s + keyLen(first.r.cols.find(x => lc(x.name) === lc(c.name)), null), 0), ix: pk });
+      } else first.a.extra.push('Using filesort');
+    }
+    const values = bestPlan.plan.map(({ r, a }) => [1, 'SIMPLE', r.alias, null, a.type, a.possible ? a.possible.join(',') : null, a.key, a.key_len == null ? null : String(a.key_len), a.ref, a.rows, a.filtered, a.extra.length ? a.extra.join('; ') : null]);
+    return { columns: cols, values, dec: { 10: 2 }, plan: bestPlan.plan.map(({ r, a }) => ({ table: r.table, alias: r.alias, N: r.N, ...a, ix: a.ix ? a.ix.name : null })), limit };
+  }
+
+  // ---------- DDL za indekse ----------
+  function createIndex(db, name, table, colsSrc, unique) {
+    const t = findTable(db, table); if (!t || t.view) throw err(1146, '42S02', `Table '${SCHEMA}.${table}' doesn't exist`);
+    const tcols = columns(db, t.name);
+    if (indexes(db, t.name).some(i => lc(i.name) === lc(name))) throw err(1061, '42000', `Duplicate key name '${name}'`);
+    const parts = []; const pref = {};
+    for (const raw of splitTop(colsSrc)) {
+      const m = /^\s*`?(\w+)`?\s*(?:\(\s*(\d+)\s*\))?\s*(ASC|DESC)?\s*$/i.exec(raw);
+      if (!m) throw err(1064, '42000', `You have an error in your SQL syntax near '${raw.trim()}'`);
+      const col = tcols.find(c => lc(c.name) === lc(m[1]));
+      if (!col) throw err(1072, '42000', `Key column '${m[1]}' doesn't exist in table`);
+      const ti = typeInfo(col.type);
+      if (m[2]) {
+        if (!['varchar', 'char', 'text'].includes(ti.t)) throw err(1089, 'HY000', 'Incorrect prefix key; the used key part isn\'t a string, the used length is longer than the key part, or the storage engine doesn\'t support unique prefix keys');
+        if (ti.len && +m[2] > ti.len) throw err(1089, 'HY000', 'Incorrect prefix key; the used key part isn\'t a string, the used length is longer than the key part, or the storage engine doesn\'t support unique prefix keys');
+        if (+m[2] < (ti.len || Infinity)) pref[lc(col.name)] = +m[2];
+      } else if (ti.t === 'text') throw err(1170, '42000', `BLOB/TEXT column '${col.name}' used in key specification without a key length`);
+      parts.push(qi(col.name) + (m[3] ? ' ' + m[3].toUpperCase() : ''));
+    }
+    const iname = `${t.name}$${name}`;
+    db.exec(`CREATE ${unique ? 'UNIQUE ' : ''}INDEX main.${qi(iname)} ON ${qi(t.name)} (${parts.join(', ')})`);
+    if (Object.keys(pref).length) meta(db).prefix[lc(iname)] = pref;
+  }
+  function dropIndex(db, name, table) {
+    const t = findTable(db, table); if (!t) throw err(1146, '42S02', `Table '${SCHEMA}.${table}' doesn't exist`);
+    if (lc(name) === 'primary') throw err(1091, '42000', "Vježbaonica ne briše primarni ključ (ALTER TABLE … DROP PRIMARY KEY).");
+    const ix = indexes(db, t.name).find(i => lc(i.name) === lc(name));
+    if (!ix || !ix.sqlite || /^sqlite_autoindex/.test(ix.sqlite)) throw err(1091, '42000', `Can't DROP '${name}'; check that column/key exists`);
+    const fkCols = q(db, `PRAGMA main.foreign_key_list(${qi(t.name)})`).map(r => lc(r[3]));
+    const others = indexes(db, t.name).filter(i => i !== ix);
+    if (fkCols.includes(lc(ix.cols[0].name)) && !others.some(i => lc(i.cols[0].name) === lc(ix.cols[0].name))) throw err(1553, 'HY000', `Cannot drop index '${name}': needed in a foreign key constraint`);
+    db.exec(`DROP INDEX main.${qi(ix.sqlite)}`); delete meta(db).prefix[lc(ix.sqlite)];
+  }
+  function splitTop(s) { const out = []; let d = 0, cur = ''; for (const c of s) { if (c === '(') d++; if (c === ')') d--; if (c === ',' && d === 0) { out.push(cur); cur = ''; } else cur += c; } if (cur.trim()) out.push(cur); return out; }
+
+  // CREATE TABLE s MySQL INDEX/KEY stavkama: makni ih iz tablice i stvori kao zasebne indekse.
+  function createTable(db, s) {
+    const m = /^CREATE\s+TABLE\s+(IF\s+NOT\s+EXISTS\s+)?`?(\w+)`?\s*\(([\s\S]*)\)\s*([\s\S]*)$/i.exec(s);
+    if (!m) return null;
+    const items = splitTop(m[3]); const keep = [], idx = [];
+    for (const it of items) {
+      const x = /^\s*(UNIQUE\s+)?(?:INDEX|KEY)\s+`?(\w+)`?\s*\(([\s\S]*)\)\s*$/i.exec(it);
+      if (x && !/^\s*PRIMARY/i.test(it)) idx.push({ unique: !!x[1], name: x[2], cols: x[3] }); else keep.push(it);
+    }
+    const tail = m[4].replace(/\bENGINE\s*=\s*\w+/ig, '').replace(/\b(DEFAULT\s+)?(CHARSET|CHARACTER\s+SET)\s*=?\s*\w+/ig, '').replace(/\bCOLLATE\s*=?\s*\w+/ig, '').trim();
+    const body = keep.join(',').replace(/\bAUTO_INCREMENT\b/ig, '').replace(/`/g, '"');
+    db.exec(`CREATE TABLE ${m[1] || ''}main.${qi(m[2])} (${body}) ${tail.replace(/;$/, '')}`);
+    for (const i of idx) createIndex(db, i.name, m[2], i.cols, i.unique);
+    autoFkIndexes(db, m[2]);
+    return { msg: 'Query OK, 0 rows affected' };
+  }
+  // InnoDB stvara indeks za strani ključ ako ga nema (ime = prvi stupac).
+  function autoFkIndexes(db, t) {
+    const fks = q(db, `PRAGMA main.foreign_key_list(${qi(t)})`);
+    const ids = [...new Set(fks.map(f => f[0]))];
+    for (const id of ids) {
+      const cols = fks.filter(f => f[0] === id).sort((a, b) => a[1] - b[1]).map(f => f[3]);
+      const has = indexes(db, t).some(i => i.cols.slice(0, cols.length).every((c, k) => lc(c.name) === lc(cols[k])));
+      if (!has) { let name = cols[0], n = 2; while (indexes(db, t).some(i => lc(i.name) === lc(name))) name = cols[0] + '_' + n++; db.exec(`CREATE INDEX main.${qi(t + '$' + name)} ON ${qi(t)} (${cols.map(qi).join(', ')})`); }
+    }
+  }
+
+  function showCreate(db, t) {
+    const cols = columns(db, t.name), idx = indexes(db, t.name), fks = q(db, `PRAGMA main.foreign_key_list(${qi(t.name)})`);
+    const pref = c => ({ int: 'int', decimal: null })[c] ;
+    const lines = cols.map(c => `  \`${c.name}\` ${typeInfo(c.type).ct}${c.notnull ? ' NOT NULL' : ' DEFAULT NULL'}`);
+    for (const i of idx) lines.push(i.primary ? `  PRIMARY KEY (${i.cols.map(c => '`' + c.name + '`').join(',')})` : `  ${i.unique ? 'UNIQUE ' : ''}KEY \`${i.name}\` (${i.cols.map(c => '`' + c.name + '`' + (c.sub ? `(${c.sub})` : '')).join(',')})`);
+    const ids = [...new Set(fks.map(f => f[0]))].sort((a, b) => b - a);
+    ids.forEach((id, k) => { const f = fks.filter(x => x[0] === id).sort((a, b) => a[1] - b[1]); lines.push(`  CONSTRAINT \`${t.name}_ibfk_${k + 1}\` FOREIGN KEY (${f.map(x => '`' + x[3] + '`').join(',')}) REFERENCES \`${f[0][2]}\` (${f.map(x => '`' + (x[4] || indexes(db, f[0][2]).find(i => i.primary).cols[x[1]].name) + '`').join(',')})`); });
+    return `CREATE TABLE \`${t.name}\` (\n${lines.join(',\n')}\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci`;
+  }
+
+  // ---------- izvođenje ----------
+  function split(src) {
+    const out = []; let cur = '', i = 0, qch = null;
+    while (i < src.length) {
+      const c = src[i], n = src[i + 1];
+      if (qch) { cur += c; if (c === '\\' && qch !== '`') { cur += n || ''; i += 2; continue; } if (c === qch) { if (n === qch) { cur += n; i += 2; continue; } qch = null; } i++; continue; }
+      if (c === '-' && n === '-' || c === '#') { while (i < src.length && src[i] !== '\n') i++; continue; }
+      if (c === '/' && n === '*') { const e = src.indexOf('*/', i + 2); i = e < 0 ? src.length : e + 2; continue; }
+      if (c === "'" || c === '"' || c === '`') { qch = c; cur += c; i++; continue; }
+      if (c === ';') { if (cur.trim()) out.push(cur.trim()); cur = ''; i++; continue; }
+      cur += c; i++;
+    }
+    if (cur.trim()) out.push(cur.trim());
+    return out;
+  }
+
+  function translateError(e) {
+    const m = e.message || String(e); let x;
+    if ((x = /no such table: (?:main\.|information_schema\.)?(\S+)/.exec(m))) return err(1146, '42S02', `Table '${SCHEMA}.${x[1]}' doesn't exist`);
+    if ((x = /no such column: (\S+)/.exec(m))) return err(1054, '42S22', `Unknown column '${x[1]}' in 'field list'`);
+    if ((x = /near "([^"]*)": syntax error/.exec(m))) return err(1064, '42000', `You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '${x[1]}'`);
+    if (/incomplete input/.test(m)) return err(1064, '42000', 'You have an error in your SQL syntax; naredba je nepotpuna');
+    if ((x = /UNIQUE constraint failed: (\S+)/.exec(m))) return err(1062, '23000', `Duplicate entry for key '${x[1]}'`);
+    if (/FOREIGN KEY constraint failed/.test(m)) return err(1452, '23000', 'Cannot add or update a child row: a foreign key constraint fails');
+    if ((x = /NOT NULL constraint failed: (\S+)/.exec(m))) return err(1048, '23000', `Column '${x[1].split('.').pop()}' cannot be null`);
+    if ((x = /table "?(\S+?)"? already exists/.exec(m))) return err(1050, '42S01', `Table '${x[1]}' already exists`);
+    if ((x = /index (\S+) already exists/.exec(m))) return err(1061, '42000', `Duplicate key name '${x[1]}'`);
+    if ((x = /ambiguous column name: (\S+)/.exec(m))) return err(1052, '23000', `Column '${x[1]}' in field list is ambiguous`);
+    if ((x = /no such function: (\S+)/.exec(m))) return err(1305, '42000', `FUNCTION ${SCHEMA}.${x[1]} does not exist`);
+    return err(1105, 'HY000', m);
+  }
+
+  function execOne(db, stmt) {
+    let s = stmt.trim(), m;
+    if (/^(INSERT|UPDATE|DELETE|REPLACE|CREATE|DROP|ALTER|TRUNCATE)\b[\s\S]*\binformation_schema\s*\./i.test(s)) throw err(1044, '42000', "Access denied for user 'root'@'localhost' to database 'information_schema'");
+    if ((m = /^USE\s+`?(\w+)`?$/i.exec(s))) { if (lc(m[1]) === SCHEMA) return { msg: 'Database changed' }; throw err(1049, '42000', `Unknown database '${m[1]}'`); }
+    if ((m = /^EXPLAIN\s+(?:FORMAT\s*=\s*TRADITIONAL\s+)?([\s\S]+)$/i.exec(s)) && !/^EXPLAIN\s+(ANALYZE|FORMAT\s*=\s*(TREE|JSON))/i.test(s)) {
+      if (/^\s*(\w+)\s*$/.test(m[1])) return execOne(db, 'DESCRIBE ' + m[1]);
+      const r = explain(db, m[1]); meta(db).last = { sql: m[1], plan: r.plan, noMatch: r.noMatch };
+      return { result: r, explain: true };
+    }
+    if (/^EXPLAIN\s+(ANALYZE|FORMAT)/i.test(s)) throw err(1235, '42000', 'Vježbaonica podržava samo osnovni oblik EXPLAIN SELECT … (tablični ispis).');
+    if ((m = /^SHOW\s+(?:INDEX|INDEXES|KEYS)\s+(?:FROM|IN)\s+`?(\w+)`?(?:\s+(?:FROM|IN)\s+`?\w+`?)?$/i.exec(s))) {
+      const t = findTable(db, m[1]); if (!t || t.view) throw err(1146, '42S02', `Table '${SCHEMA}.${m[1]}' doesn't exist`);
+      refresh(db);
+      const rows = q(db, "SELECT TABLE_NAME, NON_UNIQUE, INDEX_NAME, SEQ_IN_INDEX, COLUMN_NAME, 'A', CARDINALITY, SUB_PART, NULL, NULLABLE, INDEX_TYPE, '', '', 'YES', NULL FROM information_schema.STATISTICS WHERE lower(TABLE_NAME) = lower(?) ORDER BY rowid", [t.name]);
+      return { result: { columns: ['Table', 'Non_unique', 'Key_name', 'Seq_in_index', 'Column_name', 'Collation', 'Cardinality', 'Sub_part', 'Packed', 'Null', 'Index_type', 'Comment', 'Index_comment', 'Visible', 'Expression'], values: rows } };
+    }
+    if (/^SHOW\s+(DATABASES|SCHEMAS)$/i.test(s)) return { result: { columns: ['Database'], values: [['information_schema'], [SCHEMA]] } };
+    if ((m = /^SHOW\s+(FULL\s+)?TABLES$/i.test(s))) return { result: { columns: ['Tables_in_' + SCHEMA], values: tables(db).map(r => [r[0]]) } };
+    if ((m = /^(?:DESCRIBE|DESC|SHOW\s+(?:FULL\s+)?(?:COLUMNS|FIELDS)\s+(?:FROM|IN))\s+`?(\w+)`?$/i.exec(s))) {
+      const t = findTable(db, m[1]); if (!t) throw err(1146, '42S02', `Table '${SCHEMA}.${m[1]}' doesn't exist`);
+      refresh(db);
+      return { result: { columns: ['Field', 'Type', 'Null', 'Key', 'Default', 'Extra'], values: q(db, "SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_KEY, NULL, '' FROM information_schema.COLUMNS WHERE lower(TABLE_NAME) = lower(?) ORDER BY ORDINAL_POSITION", [t.name]) } };
+    }
+    if ((m = /^SHOW\s+CREATE\s+TABLE\s+`?(\w+)`?$/i.exec(s))) { const t = findTable(db, m[1]); if (!t || t.view) throw err(1146, '42S02', `Table '${SCHEMA}.${m[1]}' doesn't exist`); return { result: { columns: ['Table', 'Create Table'], values: [[t.name, showCreate(db, t)]] } }; }
+    if ((m = /^CREATE\s+(UNIQUE\s+)?INDEX\s+`?(\w+)`?\s+(?:USING\s+BTREE\s+)?ON\s+`?(\w+)`?\s*\(([\s\S]+)\)\s*(?:USING\s+BTREE)?$/i.exec(s))) { createIndex(db, m[2], m[3], m[4], !!m[1]); refresh(db); return { msg: 'Query OK, 0 rows affected\nRecords: 0  Duplicates: 0  Warnings: 0' }; }
+    if (/^CREATE\s+(UNIQUE\s+)?INDEX\b[\s\S]*USING\s+HASH/i.test(s)) throw err(1235, '42000', 'InnoDB ne podržava hash indekse: USING HASH se zanemaruje i stvara se BTREE. Izostavi USING HASH.');
+    if ((m = /^DROP\s+INDEX\s+`?(\w+)`?\s+ON\s+`?(\w+)`?$/i.exec(s))) { dropIndex(db, m[1], m[2]); refresh(db); return { msg: 'Query OK, 0 rows affected' }; }
+    if (/^DROP\s+INDEX\s+`?\w+`?$/i.test(s)) throw err(1064, '42000', "You have an error in your SQL syntax; MySQL traži ime tablice: DROP INDEX ime ON tablica");
+    if ((m = /^ALTER\s+TABLE\s+`?(\w+)`?\s+([\s\S]+)$/i.exec(s))) {
+      const t = m[1]; let any = false;
+      for (const part of splitTop(m[2])) {
+        let x;
+        if ((x = /^\s*ADD\s+(UNIQUE\s+)?(?:INDEX|KEY)\s+`?(\w+)`?\s*\(([\s\S]+)\)\s*$/i.exec(part))) { createIndex(db, x[2], t, x[3], !!x[1]); any = true; }
+        else if ((x = /^\s*ADD\s+UNIQUE\s*\(([\s\S]+)\)\s*$/i.exec(part))) { createIndex(db, x[1].split(',')[0].replace(/[`\s(].*$/, '').trim(), t, x[1], true); any = true; }
+        else if ((x = /^\s*DROP\s+(?:INDEX|KEY)\s+`?(\w+)`?\s*$/i.exec(part))) { dropIndex(db, x[1], t); any = true; }
+        else if (!any) { try { db.exec(s.replace(/`/g, '"')); refresh(db); return { msg: 'Query OK, 0 rows affected' }; } catch (e) { throw translateError(e); } }
+        else throw err(1064, '42000', `Vježbaonica u ALTER TABLE podržava ADD INDEX, ADD UNIQUE i DROP INDEX: '${part.trim()}'`);
+      }
+      refresh(db); return { msg: 'Query OK, 0 rows affected\nRecords: 0  Duplicates: 0  Warnings: 0' };
+    }
+    if (/^CREATE\s+TABLE\b/i.test(s) && !/\bAS\s+SELECT\b/i.test(s)) { try { const r = createTable(db, s); if (r) { refresh(db); return r; } } catch (e) { throw e.mysql ? e : translateError(e); } }
+    s = s.replace(/`/g, '"');
+    try {
+      const r = db.exec(s);
+      if (!/^(SELECT|WITH|VALUES|PRAGMA|\()/i.test(s)) refresh(db);
+      if (r.length) return { result: r[r.length - 1] };
+      if (/^(INSERT|UPDATE|DELETE|REPLACE)\b/i.test(s)) return { msg: `Query OK, ${db.getRowsModified()} row(s) affected` };
+      return { msg: 'Query OK, 0 rows affected' };
+    } catch (e) { throw translateError(e); }
+  }
+
+  function run(db, src) {
+    const out = [];
+    for (const st of split(src)) {
+      try { out.push(Object.assign({ stmt: st }, execOne(db, st))); }
+      catch (e) { out.push({ stmt: st, error: e.mysql || ('ERROR: ' + e.message), errno: e.errno }); break; }
+    }
+    return out;
+  }
+
+  function fmtVal(v, dec) {
+    if (v === null || v === undefined) return 'NULL';
+    if (dec != null && typeof v === 'number') return v.toFixed(dec);
+    if (typeof v === 'number' && !Number.isInteger(v)) return String(Math.round(v * 1e6) / 1e6);
+    return String(v);
+  }
+  function table(res) {
+    const dec = res.dec || {};
+    const cols = res.columns, rows = res.values.map(r => r.map((v, i) => fmtVal(v, dec[i])));
+    const w = cols.map((c, i) => Math.max(String(c).length, ...rows.map(r => r[i].length)));
+    const line = '+' + w.map(n => '-'.repeat(n + 2)).join('+') + '+';
+    const isNum = i => res.values.some(r => typeof r[i] === 'number') && res.values.every(r => r[i] === null || typeof r[i] === 'number');
+    const fmt = (r, head) => '| ' + r.map((v, i) => (!head && isNum(i)) ? v.padStart(w[i]) : v.padEnd(w[i])).join(' | ') + ' |';
+    return [line, fmt(cols, true), line, ...rows.map(r => fmt(r)), line].join('\n') + `\n${rows.length} row${rows.length === 1 ? '' : 's'} in set`;
+  }
+
+  return { attach, refresh, run, table, split, explain, indexes, columns, meta, SCHEMA, autoFkIndexes, keyLen, typeInfo };
+})();
+</script>
+<script>
+// CHK – provjera odgovora u poljima (bez DOM-a).
+const CHK = (() => {
+  // Broj u hrvatskom ili engleskom zapisu: 57.077 / 57077 / 41,67 / 5e8 / 5·10^8 / 5*10^8.
+  function parseNum(s) {
+    if (s == null) return NaN;
+    let t = String(s).trim().replace(/\s+/g, '').replace(/[−–]/g, '-');
+    if (!t) return NaN;
+    let m = /^(-?[\d.,]+)[x*·×]10\^?(-?\d+)$/i.exec(t);
+    if (m) return parseNum(m[1]) * Math.pow(10, +m[2]);
+    if (/^-?\d+(\.\d+)?e-?\d+$/i.test(t)) return +t;
+    t = t.replace(/[a-zčćšđž%€]+$/i, '');
+    if (t.includes('.') && t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+    else if (t.includes(',')) t = t.replace(',', '.');
+    else if (/^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+    return /^-?\d+(\.\d+)?$/.test(t) ? +t : NaN;
+  }
+  const bits = s => String(s || '').replace(/[\s_]/g, '');
+  const nums = s => (String(s || '').match(/-?\d+/g) || []).map(Number);
+
+  function checkField(f, v) {
+    switch (f.type) {
+      case 'num': {
+        const x = parseNum(v);
+        if (Number.isNaN(x)) return { ok: false, empty: !String(v || '').trim() };
+        const tol = f.rel != null ? Math.abs(f.answer) * f.rel : (f.tol || 0);
+        return { ok: Math.abs(x - f.answer) <= tol + 1e-9 };
+      }
+      case 'bits': { const b = bits(v); if (!b) return { ok: false, empty: true }; return { ok: b === f.answer, badFormat: !/^[01]+$/.test(b) || b.length !== f.answer.length }; }
+      case 'text': { const t = String(v || '').trim().replace(/^`|`$/g, ''); if (!t) return { ok: false, empty: true }; return { ok: t.toLowerCase() === String(f.answer).toLowerCase() || (f.answer === 'NULL' && /^(null|-|—)$/i.test(t)) }; }
+      case 'choice': return { ok: v !== '' && v != null && +v === f.answer, empty: v === '' || v == null };
+      case 'list': { const n = nums(v); return { ok: n.length === f.answer.length && n.every((x, i) => x === f.answer[i]), empty: !n.length }; }
+      case 'set': { const n = [...new Set(nums(v))].sort((a, b) => a - b); const a = [...f.answer].sort((a, b) => a - b); return { ok: n.length === a.length && n.every((x, i) => x === a[i]), empty: !n.length }; }
+    }
+    return { ok: false };
+  }
+
+  // Provjera cijelog zadatka. ans: za 'fields' niz vrijednosti, za 'order' niz indeksa, za 'multi' niz označenih indeksa.
+  function check(task, ans) {
+    if (task.type === 'fields') {
+      const res = task.fields.map((f, i) => checkField(f, ans ? ans[i] : ''));
+      const good = res.filter(r => r.ok).length;
+      if (good === res.length) return { ok: true, res, msg: 'Točno! Svi odgovori su ispravni.' };
+      if (res.every(r => r.empty)) return { ok: false, res, msg: 'Upiši odgovore u polja pa ih provjeri.' };
+      const fmt = res.some(r => r.badFormat) ? ' Bitove upiši kao niz nula i jedinica iste duljine kao u zadatku.' : '';
+      return { ok: false, res, msg: `Točno je ${good} od ${res.length} odgovora. Netočna polja su označena.${fmt}` };
+    }
+    if (task.type === 'order') {
+      const wrong = ans.map((x, i) => x !== i);
+      const n = wrong.filter(Boolean).length;
+      return n ? { ok: false, wrong, msg: `Redoslijed nije točan: ${n} od ${ans.length} stavki nije na svom mjestu.` } : { ok: true, wrong, msg: 'Točno! Redoslijed odgovara hijerarhiji medija.' };
+    }
+    if (task.type === 'multi') {
+      const set = new Set(ans), exp = new Set(task.answer);
+      const miss = task.answer.filter(x => !set.has(x)).length, extra = ans.filter(x => !exp.has(x)).length;
+      if (!miss && !extra) return { ok: true, msg: 'Točno!' };
+      return { ok: false, msg: `Nije točno: ${miss ? `nedostaje ${miss} ${miss === 1 ? 'točan odgovor' : 'točna odgovora'}` : ''}${miss && extra ? ', a ' : ''}${extra ? `${extra} ${extra === 1 ? 'označeni odgovor nije točan' : 'označena odgovora nisu točna'}` : ''}.` };
+    }
+    return { ok: false, msg: '' };
+  }
+
+  // Buffer: refs je niz {b, w}; vraća korake i ukupne brojeve.
+  function parseRefs(s) {
+    return (String(s).match(/\d+\s*[wWrR]?/g) || []).map(t => ({ b: parseInt(t, 10), w: /w/i.test(t) }));
+  }
+  function buffer(refs, frames, policy) {
+    const buf = []; // {b, dirty}, poredano od najdavnije do najnovije korištenog
+    const steps = []; let hits = 0, reads = 0, writes = 0; const written = [];
+    for (const r of refs) {
+      const i = buf.findIndex(x => x.b === r.b);
+      let hit = i >= 0, evicted = null, wb = false;
+      if (hit) { hits++; const [x] = buf.splice(i, 1); if (r.w) x.dirty = true; buf.push(x); }
+      else {
+        reads++;
+        if (buf.length >= frames) {
+          const v = policy === 'MRU' ? buf.pop() : buf.shift();
+          evicted = v.b; if (v.dirty) { wb = true; writes++; written.push(v.b); }
+        }
+        buf.push({ b: r.b, dirty: r.w });
+      }
+      steps.push({ ref: r, hit, evicted, wb, buf: buf.map(x => ({ ...x })) });
+    }
+    return { steps, hits, reads, writes, written, final: buf.map(x => x.b) };
+  }
+
+  // RAID 5 s D diskova: skup k ima paritet na disku k mod D; vraća {disk, stripe} za podatkovni blok b.
+  function raid5Pos(b, D) {
+    const k = Math.floor(b / (D - 1)), j = b % (D - 1), p = k % D;
+    return { stripe: k, disk: j < p ? j : j + 1, parityDisk: p };
+  }
+  const xor = (...xs) => xs.reduce((a, b) => a ^ b, 0);
+  const b8 = n => (n >>> 0).toString(2).padStart(8, '0');
+
+  // Zapis varijabilne veličine kao na slajdu 40: vals = [ID, ime, fakultet, primanja].
+  function varRecord(vals) {
+    const varIdx = [0, 1, 2]; let pos = 12 + 8 + 1; const pairs = [];
+    for (const i of varIdx) { const v = vals[i]; const len = v == null ? 0 : new TextEncoder().encode(v).length; pairs.push([pos, len]); pos += len; }
+    const bitmap = vals.map(v => v == null ? '1' : '0').join('');
+    return { pairs, bitmap, length: pos };
+  }
+
+  return { parseNum, checkField, check, parseRefs, buffer, raid5Pos, xor, b8, varRecord };
+})();
+</script>
+<script>
+// SQLCHK – provjera SQL zadataka: korisnikove naredbe i referentno rješenje izvode se na svježim kopijama baze,
+// a zatim se uspoređuju rezultati probnih naredbi (SHOW INDEX, EXPLAIN …), zadnji rezultat ili plan upita.
+const SQLCHK = (() => {
+  const norm = v => v === null || v === undefined ? null : (typeof v === 'number' ? Math.round(v * 100) / 100 : (/^-?\d+(\.\d+)?$/.test(String(v).trim()) ? Math.round(+v * 100) / 100 : String(v).trim()));
+  const key = r => JSON.stringify(r.map(norm));
+  function fresh(SQL, init, setup) {
+    const d = new SQL.Database(); d.exec('PRAGMA foreign_keys = ON;'); d.exec(init); SQL8.attach(d);
+    if (setup) SQL8.run(d, setup);
+    return d;
+  }
+  const lastResult = outs => { const r = [...outs].reverse().find(o => o.result); return r ? r.result : null; };
+  function same(a, b, ordered) {
+    if (!a || !b) return 'nema rezultata';
+    if (a.columns.length !== b.columns.length) return `rezultat ima ${a.columns.length} stupaca, a očekuje se ${b.columns.length}`;
+    if (a.values.length !== b.values.length) return `rezultat ima ${a.values.length} redaka, a očekuje se ${b.values.length}`;
+    let x = a.values.map(key), y = b.values.map(key);
+    if (!ordered) { x = [...x].sort(); y = [...y].sort(); }
+    for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return `vrijednosti se ne slažu (prvi različit redak: ${i + 1})`;
+    return null;
+  }
+  function check(SQL, init, task, userSql) {
+    const dU = fresh(SQL, init, task.setup), dE = fresh(SQL, init, task.setup);
+    try {
+      const outU = SQL8.run(dU, userSql);
+      const bad = outU.find(o => o.error);
+      if (bad) return { ok: false, msg: 'Naredba javlja grešku:\n' + bad.error };
+      if (!outU.length) return { ok: false, msg: 'Upiši naredbe u editor pa ih provjeri.' };
+      const outE = SQL8.run(dE, task.sol);
+      if (task.expectSql || task.explainKey) {
+        const got = lastResult(outU);
+        if (!got) return { ok: false, msg: 'Nema rezultata: zadatak traži upit SELECT.' };
+        const exp = lastResult(SQL8.run(fresh(SQL, init, task.setup), task.expectSql || task.sol));
+        const d = same(got, exp, task.ordered);
+        if (d) return { ok: false, msg: `Upit ne vraća iste retke kao izvorni upit: ${d}.`, exp };
+      }
+      if (task.explainKey) {
+        const lastSel = [...SQL8.split(userSql)].reverse().find(s => /^\s*SELECT\b/i.test(s));
+        if (!lastSel) return { ok: false, msg: 'Nije pronađen upit SELECT.' };
+        let plan; try { plan = SQL8.explain(dU, lastSel); } catch (e) { return { ok: false, msg: 'Plan upita nije moguće prikazati: ' + (e.mysql || e.message) }; }
+        const k = plan.values[0][6];
+        if (String(k).toLowerCase() !== task.explainKey.toLowerCase()) return { ok: false, msg: `Upit vraća točne retke, ali plan ne koristi indeks ${task.explainKey} (key = ${k === null ? 'NULL' : k}). Izvrši EXPLAIN za svoj upit.` };
+      }
+      for (const t of task.tests || []) {
+        const a = lastResult(SQL8.run(dU, t.sql)), b = lastResult(SQL8.run(dE, t.sql));
+        const d = same(a, b, true);
+        if (d) return { ok: false, msg: `Provjera „${t.sql}” nije prošla: ${t.why}.`, exp: b, got: a };
+      }
+      return { ok: true, msg: 'Točno! Sve provjere su prošle.' };
+    } finally { dU.close(); dE.close(); }
+  }
+  return { check, fresh };
+})();
+</script>
+<script>
+// BPT – B+ stablo za laboratorij (umetanje s dijeljenjem čvorova, traženje, raspon).
+// n = najveći broj djece; list ima najviše n − 1 ključeva. Pri dijeljenju lista u starom ostaje prvih ⌈n/2⌉ ključeva
+// (DSC), a prvi ključ novog lista ide u roditelja. Unutarnji čvor s n + 1 djece dijeli se na ⌈(n+1)/2⌉ i ostatak.
+const BPT = (() => {
+  const cmp = (a, b) => typeof a === 'number' && typeof b === 'number' ? a - b : String(a).localeCompare(String(b), 'hr');
+  let uid = 0;
+  const leaf = keys => ({ id: ++uid, leaf: true, keys, next: null });
+  const inner = (keys, kids) => ({ id: ++uid, leaf: false, keys, kids });
+  function create(n) { return { n, root: leaf([]) }; }
+  // stablo sa slajda 28
+  function slide28() {
+    const L = ['Bjelovar|Daruvar', 'Karlovac', 'Makarska', 'Petrinja|Zagreb'].map(s => leaf(s.split('|')));
+    for (let i = 0; i < 3; i++) L[i].next = L[i + 1];
+    const a = inner(['Karlovac'], [L[0], L[1]]), b = inner(['Petrinja'], [L[2], L[3]]);
+    return { n: 3, root: inner(['Makarska'], [a, b]) };
+  }
+  function childIdx(node, k) { let i = 0; while (i < node.keys.length && cmp(k, node.keys[i]) >= 0) i++; return i; }
+  function search(t, k) {
+    const path = []; let node = t.root;
+    while (true) { path.push(node); if (node.leaf) break; node = node.kids[childIdx(node, k)]; }
+    const found = node.keys.some(x => cmp(x, k) === 0);
+    return { path, found, leaf: node };
+  }
+  function range(t, lo, hi) {
+    const { path, leaf: l } = search(t, lo); const leaves = []; const keys = [];
+    let node = l;
+    while (node) { leaves.push(node); let stop = false; for (const k of node.keys) { if (cmp(k, hi) > 0) { stop = true; break; } if (cmp(k, lo) >= 0) keys.push(k); } if (stop) break; node = node.next; }
+    return { path, leaves, keys, nodes: path.length + leaves.length - 1 };
+  }
+  // vraća {splits:[opis], up}
+  function insert(t, k) {
+    const log = [];
+    if (search(t, k).found) return { dup: true, log: [`Ključ ${k} već postoji.`] };
+    const rec = node => {
+      if (node.leaf) {
+        let i = 0; while (i < node.keys.length && cmp(node.keys[i], k) < 0) i++;
+        node.keys.splice(i, 0, k);
+        if (node.keys.length <= t.n - 1) return null;
+        const cut = Math.ceil(t.n / 2), right = leaf(node.keys.slice(cut));
+        node.keys = node.keys.slice(0, cut); right.next = node.next; node.next = right;
+        log.push(`List se dijeli: ${node.keys.join(' | ')}  i  ${right.keys.join(' | ')}; u roditelja ide ${right.keys[0]}.`);
+        return { key: right.keys[0], node: right };
+      }
+      const i = childIdx(node, k), up = rec(node.kids[i]);
+      if (!up) return null;
+      node.keys.splice(i, 0, up.key); node.kids.splice(i + 1, 0, up.node);
+      if (node.kids.length <= t.n) return null;
+      const cut = Math.ceil((t.n + 1) / 2), midKey = node.keys[cut - 1];
+      const right = inner(node.keys.slice(cut), node.kids.slice(cut));
+      node.keys = node.keys.slice(0, cut - 1); node.kids = node.kids.slice(0, cut);
+      log.push(`Unutarnji čvor se dijeli: ${node.keys.join(' | ')}  i  ${right.keys.join(' | ')}; u roditelja ide ${midKey}.`);
+      return { key: midKey, node: right };
+    };
+    const up = rec(t.root);
+    if (up) { t.root = inner([up.key], [t.root, up.node]); log.push(`Korijen se podijelio: novi korijen ${up.key}, stablo je naraslo za jednu razinu.`); }
+    if (!log.length) log.push(`${k} je upisan u list koji je imao mjesta; ništa se ne dijeli.`);
+    return { log };
+  }
+  function levels(t) { const out = []; let cur = [t.root]; while (cur.length) { out.push(cur); cur = cur.flatMap(n => n.leaf ? [] : n.kids); } return out; }
+  return { create, slide28, search, range, insert, levels, cmp };
+})();
+</script>
+<script>
+// Zadaci za vježbaonicu 08 (Performanse baze podataka i indeksi). Slajdovi prema ispravljenoj prezentaciji.
+// Podaci se generiraju deterministički: 250 nastavnika (135 s primanjima > 10000, kao 54 % na slajdu 37),
+// 2000 računa (racun_id '1' … '2000', kao '591' na slajdu 17) i 120 djelatnika s opisom (slajd 38).
+const INIT_SQL = (() => {
+  let seed = 20261125;
+  const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const pick = a => a[Math.floor(rnd() * a.length)];
+  const q = s => "'" + String(s).replace(/'/g, "''") + "'";
+  const IME = ['Ana', 'Ivan', 'Marko', 'Petra', 'Luka', 'Maja', 'Josip', 'Ivana', 'Tomislav', 'Lucija', 'Nikola', 'Katarina', 'Filip', 'Sara', 'Dario', 'Mia', 'Matej', 'Lana', 'Karlo', 'Ema'];
+  const PREZ = ['Horvat', 'Kovačević', 'Babić', 'Marić', 'Jurić', 'Novak', 'Kovačić', 'Knežević', 'Vuković', 'Marković', 'Petrović', 'Matić', 'Tomić', 'Pavlović', 'Kovač', 'Božić', 'Blažević', 'Grgić', 'Pavić', 'Radić', 'Perić', 'Filipović', 'Šarić', 'Lovrić', 'Vidović', 'Perković', 'Popović', 'Bošnjak', 'Jukić', 'Barišić', 'Hrvatin', 'Horvatić'];
+  const FAK = [['Informatika', 'Zgrada A', 900000, 80], ['Ekonomija', 'Zgrada B', 700000, 60], ['Fizika', 'Zgrada C', 650000, 45], ['Matematika', 'Zgrada C', 500000, 40], ['Glazba', 'Zgrada D', 300000, 25]];
+  // primanja: 115 redova u [4000, 10000], 115 u (10000, 15000], 20 u (15000, 20000]; od toga 6 iznad 18000
+  const pr = [];
+  for (let i = 0; i < 115; i++) pr.push(4000 + Math.round(rnd() * 6000));
+  for (let i = 0; i < 115; i++) pr.push(10001 + Math.round(rnd() * 4999));
+  for (let i = 0; i < 14; i++) pr.push(15001 + Math.round(rnd() * 2998));
+  for (let i = 0; i < 6; i++) pr.push(18001 + Math.round(rnd() * 1999));
+  for (let i = pr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [pr[i], pr[j]] = [pr[j], pr[i]]; }
+  const fak = []; FAK.forEach(f => { for (let i = 0; i < f[3]; i++) fak.push(f[0]); });
+  for (let i = fak.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [fak[i], fak[j]] = [fak[j], fak[i]]; }
+  const nast = []; for (let id = 1; id <= 250; id++) nast.push(`(${id}, ${q(pick(IME))}, ${q(pick(PREZ))}, ${q(fak[id - 1])}, ${pr[id - 1].toFixed(2)})`);
+  const rac = []; for (let i = 1; i <= 2000; i++) { const d = new Date(2015, 0, 1 + Math.floor(rnd() * 4000)); rac.push(`(${q(String(i))}, ${1 + Math.floor(rnd() * 250)}, ${(Math.round(rnd() * 5000000) / 100 - 2000).toFixed(2)}, '${d.toISOString().slice(0, 10)}')`); }
+  const OPIS = ['Voditelj odjela nabave', 'Voditelj odjela prodaje', 'Voditelj projekta digitalizacije', 'Voditelj projekta obnove', 'Viši referent za studente', 'Viši referent za nabavu', 'Referent za studente', 'Referent za međunarodnu suradnju', 'Asistent na projektu', 'Asistentica dekana', 'Administrator sustava', 'Administratorica baze podataka', 'Savjetnik za kvalitetu', 'Savjetnica za odnose s javnošću'];
+  const dj = []; for (let i = 1; i <= 120; i++) dj.push(`(${i}, ${q(pick(IME) + ' ' + pick(PREZ))}, ${q(OPIS[(i * 5) % OPIS.length] + ', ured ' + (100 + i))})`);
+  return `
+CREATE TABLE fakultet (
+  naziv VARCHAR(20) PRIMARY KEY,
+  zgrada VARCHAR(15) NOT NULL,
+  proracun NUMERIC(12,2)
+);
+CREATE TABLE nastavnik (
+  id INT PRIMARY KEY,
+  ime VARCHAR(20) NOT NULL,
+  prezime VARCHAR(30) NOT NULL,
+  fakultet VARCHAR(20) NOT NULL REFERENCES fakultet (naziv),
+  primanja NUMERIC(8,2)
+);
+CREATE TABLE racun (
+  racun_id VARCHAR(10) PRIMARY KEY,
+  nastavnik_id INT NOT NULL REFERENCES nastavnik (id),
+  saldo NUMERIC(12,2) NOT NULL,
+  otvoren DATE NOT NULL
+);
+CREATE TABLE djelatnik (
+  id INT PRIMARY KEY,
+  ime VARCHAR(30) NOT NULL,
+  opis VARCHAR(200) NOT NULL
+);
+INSERT INTO fakultet VALUES ${FAK.map(f => `(${q(f[0])}, ${q(f[1])}, ${f[2]})`).join(', ')};
+INSERT INTO nastavnik VALUES ${nast.join(',\n')};
+INSERT INTO racun VALUES ${rac.join(',\n')};
+INSERT INTO djelatnik VALUES ${dj.join(',\n')};
+`;
+})();
+
+const SECTIONS = [
+  { id: 'A', title: 'Pristup disku i stranice', slides: '11–17', lab: 'trosak' },
+  { id: 'B', title: 'Vrste indeksa', slides: '19–23', lab: 'bstablo' },
+  { id: 'C', title: 'B+ stablo', slides: '24–29', lab: 'bstablo' },
+  { id: 'D', title: 'EXPLAIN', slides: '31–34', lab: 'plan' },
+  { id: 'E', title: 'Dodavanje indeksa', slides: '35–38', lab: 'plan' },
+  { id: 'F', title: 'Kada indeks ne pomaže', slides: '36–39', lab: 'plan' },
+];
+
+const TIP = ['ALL', 'index', 'range', 'ref', 'eq_ref', 'const'];
+const DA_NE = ['koristi indeks', 'ne koristi indeks'];
+const VRSTE = ['dense', 'sparse', 'primarni (clustering)', 'sekundarni (nonclustering)', 'hash', 'bitmap', 'R-tree'];
+const GRADOVI = ['Bjelovar', 'Daruvar', 'Karlovac', 'Makarska', 'Osijek', 'Petrinja', 'Rijeka', 'Zagreb'];
+
+const TASKS = [
+  // A — pristup disku
+  { id: 'A1', s: 'A', slide: 11, type: 'fields', title: 'Koliko je disk sporiji?',
+    text: 'Pristup zapisu u memoriji traje 100 ns, na magnetnom disku 10 ms, a na SSD-u 100 µs. Koliko je puta pristup disku sporiji od pristupa memoriji?',
+    fields: [
+      { label: 'magnetni disk / memorija', type: 'num', answer: 100000, tol: 0, unit: '×' },
+      { label: 'SSD / memorija', type: 'num', answer: 1000, tol: 0, unit: '×' },
+    ],
+    explain: '10 ms = 10.000.000 ns, pa je 10.000.000 / 100 = 100.000 puta; 100 µs = 100.000 ns, pa je SSD 1000 puta sporiji od memorije (slajd 11). Zato baza nastoji smanjiti broj pristupa disku.',
+    hints: ['Pretvori sve u nanosekunde: 1 ms = 1.000.000 ns, 1 µs = 1000 ns.'] },
+
+  { id: 'A2', s: 'A', slide: 13, star: true, type: 'fields', title: 'Scan datoteke',
+    text: 'Tablica ima 1.000.000 zapisa od po 200 B. Stranica ima 16 KB (16.384 B, kao u MySQL InnoDB), a zapis se ne dijeli na dvije stranice. Koliko stranica treba pročitati za scan datoteke i koliko to traje ako čitanje jedne stranice traje 0,1 ms?',
+    fields: [
+      { label: 'zapisa po stranici', type: 'num', answer: 81, tol: 0, unit: '' },
+      { label: 'broj stranica', type: 'num', answer: 12346, tol: 0, unit: '' },
+      { label: 'trajanje scana', type: 'num', answer: 1.2346, tol: 0.01, unit: 's' },
+    ],
+    explain: '⌊16.384 / 200⌋ = 81 zapis po stranici; ⌈1.000.000 / 81⌉ = 12.346 stranica; 12.346 · 0,1 ms = 1234,6 ms ≈ 1,23 s. Usporedi s dohvatom preko B+ stabla u zadatku C2: samo 4 stranice. Laboratorij računa isto za druge vrijednosti.',
+    hints: ['Isto kao u predavanju 7: ⌊veličina stranice / veličina zapisa⌋.', 'Broj stranica zaokruži prema gore; 0,1 ms = 0,0001 s.'] },
+
+  // B — vrste indeksa
+  { id: 'B1', s: 'B', slide: 21, star: true, type: 'fields', title: 'Koja vrsta indeksa?',
+    text: 'Za svaki opis odaberi vrstu indeksa sa slajdova 21–23.',
+    fields: [
+      { label: 'indeks ima zapis za svaku vrijednost ključa pretrage', type: 'choice', options: VRSTE, answer: 0 },
+      { label: 'indeks ima zapise samo za neke vrijednosti (npr. prvu u svakom bloku)', type: 'choice', options: VRSTE, answer: 1 },
+      { label: 'datoteka tablice sortirana je po ključu tog indeksa', type: 'choice', options: VRSTE, answer: 2 },
+      { label: 'indeks na stupcu po kojem datoteka nije sortirana', type: 'choice', options: VRSTE, answer: 3 },
+      { label: 'stupac s malo različitih vrijednosti, uvjeti se kombiniraju s AND i OR', type: 'choice', options: VRSTE, answer: 5 },
+      { label: 'upiti nad prostornim podacima (npr. točke na karti)', type: 'choice', options: VRSTE, answer: 6 },
+    ],
+    explain: 'Dense indeks sadrži svaku vrijednost, sparse samo neke (pa radi samo uz sortiranu datoteku). Primarni (clustering) indeks određuje redoslijed zapisa u datoteci, a sekundarni ne. Bitmap indeksi služe stupcima s malo vrijednosti, a R-stabla prostornim podacima (slajd 23). Napomena: u MySQL InnoDB primarni ključ je ujedno clustering indeks.',
+    hints: ['Slajd 21: dense vs. sparse, primarni vs. sekundarni.', 'Slajd 23: drugi tipovi indeksa.'] },
+
+  { id: 'B2', s: 'B', slide: 20, type: 'fields', title: 'Cijena indeksa pri izmjeni',
+    text: 'Prema modelu sa slajda 22 tablica racun je u heap datoteci, a svaki indeks u zasebnoj datoteci. Tablica ima tri indeksa: PRIMARY (racun_id), nastavnik_id i idx_saldo (saldo). Koliko struktura (tablica + indeksi) treba izmijeniti za pojedinu naredbu?',
+    fields: [
+      { label: 'INSERT jednog računa', type: 'num', answer: 4, tol: 0, unit: '' },
+      { label: 'UPDATE racun SET saldo = saldo - 100 WHERE racun_id = \'591\'', type: 'num', answer: 2, tol: 0, unit: '' },
+      { label: 'UPDATE racun SET otvoren = \'2026-01-01\' WHERE racun_id = \'591\'', type: 'num', answer: 1, tol: 0, unit: '' },
+    ],
+    explain: 'Novi red ide u tablicu i u svaki indeks: 1 + 3 = 4. Promjena salda mijenja tablicu i indeks idx_saldo (stara vrijednost se briše, nova umeće): 2. Stupac otvoren nije ni u jednom indeksu, pa se mijenja samo tablica: 1. Zato indeks na saldu, koji se stalno mijenja, usporava izmjene (slajd 36).',
+    hints: ['Indeks se mora ažurirati samo ako se promijeni neki od njegovih stupaca (slajd 20).'] },
+
+  // C — B+ stablo
+  { id: 'C1', s: 'C', slide: 25, star: true, type: 'fields', title: 'Faktor grananja',
+    text: 'Čvor B+ stabla stane u blok od 4096 B. Ključ ima 8 B, a pokazivač 8 B. Čvor ima n pokazivača i n − 1 ključeva. Koliki je najveći n?',
+    fields: [{ label: 'n', type: 'num', answer: 256, tol: 0, unit: '' }],
+    explain: '8n + 8(n − 1) ≤ 4096 ⇒ 16n ≤ 4104 ⇒ n ≤ 256,5, pa je n = 256. Jedan čvor može imati 256 djece: B+ stabla su široka i plitka (slajd 25).',
+    hints: ['Postavi nejednadžbu: n · (veličina pokazivača) + (n − 1) · (veličina ključa) ≤ veličina bloka.'] },
+
+  { id: 'C2', s: 'C', slide: 25, star: true, type: 'fields', title: 'Visina stabla',
+    text: 'Stablo iz C1 (n = 256) indeksira 1.000.000 ključeva. Prema DSC-u put od korijena do lista nije dulji od ⌈log⌈n/2⌉(N)⌉. Koliko je to razina i koliko stranica treba pročitati za dohvat jednog zapisa (put kroz stablo + stranica tablice)?',
+    fields: [
+      { label: 'najveća duljina puta (razina)', type: 'num', answer: 3, tol: 0, unit: '' },
+      { label: 'stranica za dohvat jednog zapisa', type: 'num', answer: 4, tol: 0, unit: '' },
+    ],
+    explain: '⌈n/2⌉ = 128; log₁₂₈(1.000.000) = ln 10⁶ / ln 128 ≈ 13,82 / 4,85 ≈ 2,85, pa su najviše 3 razine. Dohvat: 3 čvora stabla + 1 stranica tablice = 4 stranice, prema 12.346 stranica za scan iz zadatka A2.',
+    hints: ['log_b(N) = ln N / ln b.', 'Svaki čvor na putu je jedna stranica; na kraju treba pročitati i stranicu sa zapisom.'] },
+
+  { id: 'C3', s: 'C', slide: 29, type: 'fields', title: 'Dugi ključevi',
+    text: 'Isti blok od 4096 B i pokazivač od 8 B, ali ključ je niz znakova od 40 B. Koliki je sada n i koliko je razina za 1.000.000 ključeva (⌈log⌈n/2⌉(N)⌉)?',
+    fields: [
+      { label: 'n', type: 'num', answer: 86, tol: 0, unit: '' },
+      { label: 'najveća duljina puta (razina)', type: 'num', answer: 4, tol: 0, unit: '' },
+    ],
+    explain: '8n + 40(n − 1) ≤ 4096 ⇒ 48n ≤ 4136 ⇒ n = 86. ⌈86/2⌉ = 43; ln 10⁶ / ln 43 ≈ 13,82 / 3,76 ≈ 3,67, pa su 4 razine. Veliki ključevi smanjuju faktor grananja i produbljuju stablo (slajdovi 29 i 38); zato se koristi sažimanje prefiksa ili indeks na prvih N znakova.',
+    hints: ['Ista nejednadžba kao u C1, samo s ključem od 40 B.'] },
+
+  { id: 'C4', s: 'C', slide: 28, star: true, type: 'fields', title: 'Pretraga u B+ stablu',
+    text: 'Pogledaj B+ stablo sa slajda 28 (n = 3), koje je i u laboratoriju. Koliko čvorova treba pročitati da se pronađe Daruvar? Koliko listova treba pročitati za upit na raspon od Karlovca do Petrinje (uključivo) i koliko je to ukupno čvorova?',
+    fields: [
+      { label: 'čvorova za Daruvar', type: 'num', answer: 3, tol: 0, unit: '' },
+      { label: 'listova za raspon Karlovac–Petrinja', type: 'num', answer: 3, tol: 0, unit: '' },
+      { label: 'ukupno čvorova za raspon', type: 'num', answer: 5, tol: 0, unit: '' },
+    ],
+    explain: 'Daruvar: korijen (Makarska) → čvor Karlovac → list Bjelovar | Daruvar: 3 čvora. Raspon: put do prvog lista (korijen, Karlovac, list Karlovac) pa se listovi čitaju redom preko pokazivača Pn: Makarska, Petrinja | Zagreb. To su 3 lista i ukupno 5 čvorova (slajd 26: listovi su povezani u niz).',
+    hints: ['U laboratoriju upiši Daruvar u polje za traženje.', 'Za raspon se samo do prvog lista ide od korijena; dalje se ide pokazivačem na sljedeći list.'] },
+
+  { id: 'C5', s: 'C', slide: 28, type: 'fields', title: 'Umetanje i dijeljenje čvora',
+    text: 'U stablo sa slajda 28 (n = 3, list ima najviše 2 ključa) umeće se Osijek, a zatim Rijeka. Pri dijeljenju lista u starom listu ostaje prvih ⌈n/2⌉ = 2 ključa, a prvi ključ novog lista upisuje se u roditelja.',
+    fields: [
+      { label: 'dijeli li se neki čvor pri umetanju Osijeka? (0 = ne, 1 = da)', type: 'num', answer: 0, tol: 0, unit: '' },
+      { label: 'koji ključ se pri umetanju Rijeke upisuje u roditelja?', type: 'choice', options: GRADOVI, answer: 7 },
+      { label: 'broj listova nakon oba umetanja', type: 'num', answer: 5, tol: 0, unit: '' },
+      { label: 'broj razina nakon oba umetanja', type: 'num', answer: 3, tol: 0, unit: '' },
+    ],
+    explain: 'Osijek ide u list Makarska, koji ima mjesta: Makarska | Osijek. Rijeka ide u list Petrinja | Zagreb, koji je pun: Petrinja, Rijeka, Zagreb dijele se u Petrinja | Rijeka i Zagreb, a Zagreb se upisuje u roditelja (Petrinja → Petrinja | Zagreb). Roditelj ima mjesta, pa se dalje ništa ne dijeli: listova je 5 (bilo ih je 4), i dalje 3 razine. Provjeri u laboratoriju.',
+    hints: ['Gdje bi Osijek stajao po abecedi? Ima li taj list mjesta?', 'Rijeka ide između Petrinje i Zagreba; taj list već ima 2 ključa.'] },
+
+  // D — EXPLAIN
+  { id: 'D1', s: 'D', slide: 33, star: true, type: 'fields', sandbox: true, title: 'EXPLAIN po primarnom ključu',
+    text: 'U editoru izvrši EXPLAIN SELECT * FROM nastavnik WHERE id = 240; i pročitaj plan.',
+    fields: [
+      { label: 'type', type: 'choice', options: TIP, answer: 5 },
+      { label: 'key', type: 'text', answer: 'PRIMARY' },
+      { label: 'key_len', type: 'num', answer: 4, tol: 0, unit: 'B' },
+      { label: 'rows', type: 'num', answer: 1, tol: 0, unit: '' },
+    ],
+    explain: 'Uvjet na cijelom primarnom ključu jednakošću daje najviše jedan red: type const, key PRIMARY, rows 1. key_len 4 je duljina ključa INT u bajtovima (slajd 33).',
+    hints: ['Upiši EXPLAIN ispred SELECT-a i izvrši (Ctrl + Enter).', 'Laboratorij desno objašnjava svaki stupac plana.'] },
+
+  { id: 'D2', s: 'D', slide: 34, star: true, type: 'fields', sandbox: true, title: 'Nepostojeći ključ',
+    text: 'Izvrši EXPLAIN SELECT * FROM nastavnik WHERE id = 1040;',
+    fields: [
+      { label: 'Extra', type: 'choice', options: ['Using where', 'Using index', 'no matching row in const table', 'Impossible WHERE'], answer: 2 },
+      { label: 'zašto je table NULL?', type: 'choice', options: ['tablica nastavnik ne postoji', 'planer je već iz indeksa primarnog ključa saznao da takav red ne postoji', 'upit nije ispravan'], answer: 1 },
+    ],
+    explain: 'Kod tipa const planer odmah, još tijekom planiranja, pogleda indeks primarnog ključa. Kad red ne postoji, plan se svodi na „no matching row in const table” i tablica se uopće ne čita (slajd 34).',
+    hints: ['Usporedi s planom iz D1.'] },
+
+  { id: 'D3', s: 'D', slide: 34, star: true, type: 'fields', sandbox: true, title: 'Upit bez indeksa',
+    text: 'Izvrši EXPLAIN SELECT * FROM nastavnik WHERE primanja > 10000;',
+    fields: [
+      { label: 'type', type: 'choice', options: TIP, answer: 0 },
+      { label: 'possible_keys', type: 'text', answer: 'NULL' },
+      { label: 'rows', type: 'num', answer: 250, tol: 0, unit: '' },
+      { label: 'filtered', type: 'num', answer: 33.33, tol: 0.005, unit: '%' },
+    ],
+    explain: 'Na stupcu primanja nema indeksa, pa nema ni mogućih ključeva: baza čita svih 250 redova (type ALL, scan datoteke). Bez indeksa i statistike MySQL za uvjet s > pretpostavlja da prolazi trećina redova (filtered 33.33), kao na slajdu 34.',
+    hints: ['ALL znači scan cijele tablice.', 'filtered je procjena postotka pročitanih redova koji zadovoljavaju uvjet.'] },
+
+  { id: 'D4', s: 'D', slide: 17, type: 'fields', sandbox: true, title: 'Broj ili niz znakova?',
+    text: "Stupac racun_id je VARCHAR(10). Izvrši EXPLAIN za upit sa slajda 17 (WHERE racun_id = '591'), a zatim za isti upit bez navodnika (WHERE racun_id = 591).",
+    fields: [
+      { label: "type za racun_id = '591'", type: 'choice', options: TIP, answer: 5 },
+      { label: "key_len za racun_id = '591'", type: 'num', answer: 42, tol: 0, unit: 'B' },
+      { label: 'type za racun_id = 591', type: 'choice', options: TIP, answer: 0 },
+      { label: 'key za racun_id = 591', type: 'text', answer: 'NULL' },
+    ],
+    explain: "S navodnicima se niz uspoređuje s nizom i koristi se primarni ključ: const, key_len 4 · 10 + 2 = 42 (utf8mb4 ima do 4 B po znaku, plus 2 B za duljinu). Bez navodnika MySQL svaki racun_id pretvara u broj, a to se ne može tražiti u indeksu ('591', '0591' i ' 591' svi su jednaki 591): type ALL, iako je PRIMARY među possible_keys.",
+    hints: ['Usporedi stupce possible_keys i key u oba plana.'] },
+
+  { id: 'D5', s: 'D', slide: 32, type: 'fields', sandbox: true, title: 'Plan spoja',
+    text: 'Izvrši EXPLAIN SELECT n.prezime, r.saldo FROM nastavnik n JOIN racun r ON r.nastavnik_id = n.id WHERE n.id BETWEEN 1 AND 10;',
+    fields: [
+      { label: 'type za n', type: 'choice', options: TIP, answer: 2 },
+      { label: 'type za r', type: 'choice', options: TIP, answer: 3 },
+      { label: 'key za r', type: 'text', answer: 'nastavnik_id' },
+      { label: 'rows za r (procjena po jednom nastavniku)', type: 'num', answer: 8, tol: 0, unit: '' },
+    ],
+    explain: 'Nastavnici se čitaju rasponom po primarnom ključu (range, 10 redova). Za svakog se računi traže indeksom nastavnik_id, koji je baza stvorila uz strani ključ (slajd 32): type ref, oko 2000 / 250 = 8 računa po nastavniku. Spoj primarnog i stranog ključa tako ne treba scan tablice racun.',
+    hints: ['Plan spoja ima po jedan red za svaku tablicu, redom kojim se čitaju.'] },
+
+  // E — dodavanje indeksa
+  { id: 'E1', s: 'E', slide: 35, star: true, type: 'sql', title: 'CREATE INDEX',
+    text: 'Stvori indeks idx_primanja na stupcu primanja tablice nastavnik (slajd 35).',
+    sol: 'CREATE INDEX idx_primanja ON nastavnik (primanja);',
+    tests: [{ sql: 'SHOW INDEX FROM nastavnik;', why: 'popis indeksa tablice nastavnik mora sadržavati idx_primanja' }],
+    explain: 'CREATE INDEX stvara B+ stablo i puni ga postojećim podacima. Isto radi i ALTER TABLE nastavnik ADD INDEX idx_primanja (primanja);.',
+    hints: ['CREATE INDEX ime ON tablica (stupac);', 'Provjeri rezultat sa SHOW INDEX FROM nastavnik;.'] },
+
+  { id: 'E2', s: 'E', slide: 37, star: true, type: 'fields', sandbox: true, setup: 'CREATE INDEX idx_primanja ON nastavnik (primanja);', title: 'Koristi li baza novi indeks?',
+    text: 'Indeks idx_primanja postoji. Izvrši EXPLAIN za WHERE primanja > 10000, a zatim za WHERE primanja > 15000 (SELECT * FROM nastavnik).',
+    fields: [
+      { label: 'key za primanja > 10000', type: 'text', answer: 'NULL' },
+      { label: 'filtered za primanja > 10000', type: 'num', answer: 54, tol: 0.005, unit: '%' },
+      { label: 'type za primanja > 15000', type: 'choice', options: TIP, answer: 2 },
+      { label: 'rows za primanja > 15000', type: 'num', answer: 20, tol: 0, unit: '' },
+    ],
+    explain: 'Za > 10000 indeks je među possible_keys, ali ga baza ne koristi: uvjet obuhvaća 54 % redova, pa je scan jeftiniji od 135 skokova iz indeksa u tablicu (slajd 37). Za > 15000 prolazi samo 20 redova (8 %), pa baza čita raspon iz indeksa (type range).',
+    note: 'Vježbaonica koristi pojednostavljeni model troška: indeks koji nije pokrivajući koristi se ako uvjet obuhvaća manje od oko 30 % redova. MySQL tu granicu računa iz statistike i cijene pristupa.',
+    hints: ['Usporedi possible_keys i key.', 'Koliki je udio redova koji prolaze u jednom i u drugom slučaju?'] },
+
+  { id: 'E3', s: 'E', slide: 35, star: true, type: 'sql', title: 'Indeks na više stupaca',
+    text: "Upit SELECT * FROM nastavnik WHERE fakultet = 'Fizika' AND primanja > 12000; treba brže izvoditi. Stvori indeks idx_fak_primanja na stupcima fakultet i primanja (tim redom) i provjeri plan s EXPLAIN.",
+    sol: 'CREATE INDEX idx_fak_primanja ON nastavnik (fakultet, primanja);',
+    tests: [
+      { sql: 'SHOW INDEX FROM nastavnik;', why: 'idx_fak_primanja mora imati stupce fakultet (1) i primanja (2)' },
+      { sql: "EXPLAIN SELECT * FROM nastavnik WHERE fakultet = 'Fizika' AND primanja > 12000;", why: 'plan mora koristiti idx_fak_primanja (type range)' },
+    ],
+    explain: 'Uz složeni indeks baza traži fakultet = Fizika i unutar njega raspon primanja: type range, key_len 82 + 5 = 87 (oba stupca). Indeks fakultet (uz strani ključ) dao bi svih 45 nastavnika Fizike.',
+    hints: ['CREATE INDEX ime ON tablica (stupac1, stupac2);', 'Redoslijed stupaca je važan: prvo stupac s jednakošću.'] },
+
+  { id: 'E4', s: 'E', slide: 35, type: 'multi', title: 'Pravilo lijevog prefiksa',
+    text: 'Postoji indeks idx_fak_primanja (fakultet, primanja). Koje uvjete WHERE taj indeks može iskoristiti za pretragu? Provjeri u editoru nakon što stvoriš indeks.',
+    options: ["fakultet = 'Fizika'", 'primanja > 12000', "fakultet = 'Fizika' AND primanja > 12000", "fakultet LIKE 'Fiz%'", "primanja = 9000 AND prezime = 'Horvat'"],
+    answer: [0, 2, 3],
+    explain: 'Složeni indeks sortiran je prvo po fakultetu, a unutar fakulteta po primanjima. Može se koristiti kad uvjet ograničava prvi stupac (jednakošću ili rasponom, kao LIKE s prefiksom), a drugi samo uz jednakost na prvom. Uvjet samo na primanjima nema početnu točku u indeksu, kao što se u imeniku ne može tražiti samo po imenu.',
+    hints: ['Zamisli telefonski imenik sortiran po prezimenu pa imenu.'] },
+
+  { id: 'E5', s: 'E', slide: 38, type: 'sql', title: 'Indeks na prefiksu',
+    text: 'Stvori indeks idx_opis na prvih 5 znakova stupca opis tablice djelatnik (slajd 38).',
+    sol: 'CREATE INDEX idx_opis ON djelatnik (opis(5));',
+    tests: [{ sql: 'SHOW INDEX FROM djelatnik;', why: 'idx_opis mora imati Sub_part 5' }],
+    explain: 'Duljina u zagradi iza stupca ograničava ključ na prvih N znakova; SHOW INDEX to pokazuje u stupcu Sub_part. Za stupce TEXT i BLOB MySQL prefiks traži obavezno.',
+    hints: ['Sintaksa je stupac(N) unutar zagrade s popisom stupaca.'] },
+
+  { id: 'E6', s: 'E', slide: 38, type: 'fields', sandbox: true, title: 'Koliko dug prefiks?',
+    text: 'Prefiks je dobar ako dobro razlikuje vrijednosti. Upitom s COUNT(DISTINCT LEFT(opis, n)) izračunaj koliko različitih vrijednosti imaju prvih 5 i prvih 20 znakova opisa, i koliko cijeli opis.',
+    fields: [
+      { label: 'različitih LEFT(opis, 5)', type: 'num', answer: 'calc', calc: 'SELECT COUNT(DISTINCT LEFT(opis, 5)) FROM djelatnik', tol: 0, unit: '' },
+      { label: 'različitih LEFT(opis, 20)', type: 'num', answer: 'calc', calc: 'SELECT COUNT(DISTINCT LEFT(opis, 20)) FROM djelatnik', tol: 0, unit: '' },
+      { label: 'različitih opisa', type: 'num', answer: 'calc', calc: 'SELECT COUNT(DISTINCT opis) FROM djelatnik', tol: 0, unit: '' },
+      { label: 'je li 5 znakova dobar prefiks?', type: 'choice', options: ['da, vrijednosti se razlikuju već u prvih 5 znakova', 'ne, prvih 5 znakova slabo razlikuje vrijednosti'], answer: 1 },
+    ],
+    explain: "Opisi počinju istim riječima (Voditelj, Viši referent, Administrator …), pa prvih 5 znakova daje malo različitih vrijednosti i indeks malo pomaže (slajd 38). Dulji prefiks razlikuje više vrijednosti, a i dalje je manji od cijelog stupca.",
+    hints: ['SELECT COUNT(DISTINCT LEFT(opis, 5)), COUNT(DISTINCT LEFT(opis, 20)), COUNT(DISTINCT opis) FROM djelatnik;'] },
+
+  // F — kada indeks ne pomaže
+  { id: 'F1', s: 'F', slide: 37, star: true, type: 'fields', sandbox: true, setup: 'CREATE INDEX idx_primanja ON nastavnik (primanja);\nCREATE INDEX idx_prezime ON nastavnik (prezime);', title: 'Koristi li upit indeks?',
+    text: 'Postoje indeksi idx_primanja i idx_prezime. Za svaki uvjet (SELECT * FROM nastavnik WHERE …) predvidi koristi li plan indeks, pa provjeri s EXPLAIN.',
+    fields: [
+      { label: 'primanja = 8000', type: 'choice', options: DA_NE, answer: 0 },
+      { label: 'primanja * 12 > 216000', type: 'choice', options: DA_NE, answer: 1 },
+      { label: "prezime LIKE 'Hor%'", type: 'choice', options: DA_NE, answer: 0 },
+      { label: "prezime LIKE '%vić'", type: 'choice', options: DA_NE, answer: 1 },
+      { label: 'ROUND(primanja) = 8000', type: 'choice', options: DA_NE, answer: 1 },
+      { label: 'primanja > 10000', type: 'choice', options: DA_NE, answer: 1 },
+    ],
+    explain: 'Indeks se može koristiti kad je stupac sam na jednoj strani usporedbe. Izraz nad stupcem (primanja * 12, ROUND(primanja)) skriva vrijednost koja je u indeksu. LIKE s fiksnim početkom je raspon u indeksu, a LIKE koji počinje s % nema početnu točku. Za primanja > 10000 indeks bi se mogao koristiti, ali je scan jeftiniji (54 % redova, slajd 37).',
+    hints: ['Pitaj se: može li baza iz uvjeta odrediti od kojeg mjesta u sortiranom indeksu početi?'] },
+
+  { id: 'F2', s: 'F', slide: 39, star: true, type: 'sql', setup: 'CREATE INDEX idx_primanja ON nastavnik (primanja);', title: 'Prepiši upit da koristi indeks',
+    text: 'Upit SELECT id, prezime FROM nastavnik WHERE primanja * 12 > 216000; ne koristi idx_primanja. Prepiši ga tako da vrati iste retke, a plan koristi indeks.',
+    sol: 'SELECT id, prezime FROM nastavnik WHERE primanja > 18000;',
+    expectSql: 'SELECT id, prezime FROM nastavnik WHERE primanja * 12 > 216000;',
+    explainKey: 'idx_primanja',
+    explain: 'primanja · 12 > 216.000 ⇔ primanja > 18.000. Kad je stupac sam na lijevoj strani, baza traži raspon u indeksu (range, 6 redova). Isto vrijedi za funkcije: umjesto YEAR(datum) = 2026 piše se datum BETWEEN \'2026-01-01\' AND \'2026-12-31\'.',
+    hints: ['Podijeli obje strane nejednakosti s 12.'] },
+
+  { id: 'F3', s: 'F', slide: 38, type: 'fields', sandbox: true, setup: 'CREATE INDEX idx_fak_primanja ON nastavnik (fakultet, primanja);', title: 'Pokrivajući indeks',
+    text: "Postoji idx_fak_primanja (fakultet, primanja). Usporedi EXPLAIN za SELECT * FROM nastavnik WHERE fakultet = 'Fizika' i za SELECT fakultet, primanja FROM nastavnik WHERE fakultet = 'Fizika'.",
+    fields: [
+      { label: 'key za SELECT *', type: 'text', answer: 'fakultet' },
+      { label: 'key za SELECT fakultet, primanja', type: 'text', answer: 'idx_fak_primanja' },
+      { label: 'Extra za SELECT fakultet, primanja', type: 'choice', options: ['Using where', 'Using index', 'Using filesort', 'Using temporary'], answer: 1 },
+    ],
+    explain: 'Kad indeks sadrži sve stupce koje upit treba, baza čita samo indeks, bez skokova u tablicu: Extra Using index (pokrivajući indeks). Za SELECT * treba čitati i tablicu, pa je oba indeksa jednako dobra; plan bira kraći indeks fakultet.',
+    hints: ['Koje stupce upit treba, a koji su u indeksu?'] },
+
+  { id: 'F4', s: 'F', slide: 39, type: 'sql', setup: 'CREATE INDEX idx_saldo ON racun (saldo);', title: 'Brisanje nekorištenog indeksa',
+    text: 'Indeks idx_saldo na tablici racun ne koristi nijedan važan upit, a usporava svaku promjenu salda (slajd 36). Obriši ga.',
+    sol: 'DROP INDEX idx_saldo ON racun;',
+    tests: [{ sql: 'SHOW INDEX FROM racun;', why: 'tablica racun više ne smije imati idx_saldo' }],
+    explain: 'U MySQL-u se uz ime indeksa navodi i tablica: DROP INDEX ime ON tablica (ili ALTER TABLE racun DROP INDEX idx_saldo). Indeks potreban za strani ključ ne može se obrisati (ERROR 1553).',
+    hints: ['DROP INDEX ime ON tablica;'] },
+];
+</script>
+<script>
+(() => {
+  const NB_URL = 'NB_URL_08';
+  const $ = id => document.getElementById(id);
+  const h = (tag, attrs = {}, ...kids) => {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'class') e.className = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+      else if (v === true) e.setAttribute(k, ''); else if (v !== false && v != null) e.setAttribute(k, v);
+    }
+    for (const k of kids.flat()) if (k != null && k !== false) e.append(k.nodeType ? k : document.createTextNode(String(k)));
+    return e;
+  };
+  if (!/^https:/.test(NB_URL)) $('askLink').hidden = true;
+
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('sqlvj8:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('sqlvj8:' + k, JSON.stringify(v)); } catch (e) { } },
+  };
+  let solved = new Set(store.get('solved', []));
+  let cur = 0;
+  const secOf = id => SECTIONS.find(s => s.id === id);
+  const fmtNum = x => typeof x !== 'number' ? String(x) : Number.isInteger(x) ? x.toLocaleString('hr-HR') : x.toLocaleString('hr-HR', { maximumFractionDigits: 4 });
+
+  // ---------- popis zadataka ----------
+  function renderNav() {
+    const nav = $('taskNav'); nav.innerHTML = '';
+    for (const s of SECTIONS) {
+      const list = TASKS.map((t, i) => [t, i]).filter(([t]) => t.s === s.id);
+      const done = list.filter(([t]) => solved.has(t.id)).length;
+      nav.append(h('div', { class: 'sec' },
+        h('h3', {}, `${s.id} · ${s.title}`, h('span', {}, `${done}/${list.length}`)),
+        h('ul', {}, list.map(([t, i]) => h('li', {}, h('button', { class: 'tbtn', 'data-i': i, 'aria-current': i === cur ? 'true' : 'false', onclick: () => go(i) },
+          h('span', { class: 'tid' }, t.id), h('span', { class: 'ttl' }, t.title + (t.star ? ' ★' : '')), h('span', { class: 'dot' }, solved.has(t.id) ? '✓' : '')))))));
+    }
+    $('progTxt').textContent = `${solved.size} / ${TASKS.length} riješeno`;
+    $('progBar').style.width = (100 * solved.size / TASKS.length) + '%';
+  }
+
+  // ---------- odgovori ----------
+  function renderAnswer(t) {
+    const box = $('answer'); box.innerHTML = '';
+    $('sqlBox').hidden = !(t.type === 'sql' || t.sandbox); box.hidden = t.type === 'sql';
+    const draft = store.get('draft:' + t.id, null);
+    if (t.type === 'fields') {
+      const g = h('div', { class: 'fields' });
+      t.fields.forEach((f, i) => {
+        const id = `f_${t.id}_${i}`; let input;
+        if (f.type === 'choice') input = h('select', { id }, h('option', { value: '' }, '— odaberi —'), f.options.map((o, k) => h('option', { value: k }, o)));
+        else input = h('input', { id, type: 'text', inputmode: f.type === 'num' ? 'decimal' : 'text', autocomplete: 'off', spellcheck: 'false', class: f.type === 'text' ? 'mono' : '', placeholder: f.type === 'text' ? 'npr. PRIMARY ili NULL' : '' });
+        if (draft && draft[i] != null) input.value = draft[i];
+        input.addEventListener('input', saveDraft); input.addEventListener('change', saveDraft);
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doCheck(); } });
+        g.append(h('label', { class: 'fl', for: id }, f.label), h('div', { class: 'fi' }, input, f.unit ? h('span', { class: 'unit' }, f.unit) : null, h('span', { class: 'mark', id: id + '_m', 'aria-live': 'polite' })));
+      });
+      box.append(g);
+    } else if (t.type === 'multi') {
+      const ul = h('div', { class: 'multi' });
+      t.options.forEach((o, i) => {
+        const cb = h('input', { type: 'checkbox', id: `m_${t.id}_${i}`, value: i });
+        if (Array.isArray(draft) && draft.includes(i)) cb.checked = true;
+        cb.addEventListener('change', saveDraft);
+        ul.append(h('label', { class: 'chk' }, cb, ' ', h('code', {}, o)));
+      });
+      box.append(ul);
+    }
+    if (t.type === 'sql') $('sql').value = draft || '';
+    else if (t.sandbox) $('sql').value = store.get('sandbox:' + t.id, '');
+  }
+  function collect(t) {
+    if (t.type === 'fields') return t.fields.map((f, i) => $(`f_${t.id}_${i}`).value);
+    if (t.type === 'multi') return t.options.map((_, i) => i).filter(i => $(`m_${t.id}_${i}`).checked);
+    if (t.type === 'sql') return $('sql').value;
+  }
+  function saveDraft() { const t = TASKS[cur]; store.set('draft:' + t.id, collect(t)); if (t.sandbox) store.set('sandbox:' + t.id, $('sql').value); }
+  function feedback(ok, msg) { const f = $('feedback'); f.hidden = false; f.className = 'feedback ' + (ok ? 'ok' : 'err'); f.textContent = msg; }
+  function markSolved(t) { if (!solved.has(t.id)) { solved.add(t.id); store.set('solved', [...solved]); renderNav(); } }
+
+  function doCheck() {
+    const t = TASKS[cur];
+    $('expPanel').hidden = true;
+    if (t.type === 'sql') {
+      if (!SQLOBJ) { feedback(false, 'Baza se još učitava, pokušaj za trenutak.'); return; }
+      saveDraft();
+      const r = SQLCHK.check(SQLOBJ, INIT_SQL, t, $('sql').value);
+      feedback(r.ok, r.msg);
+      if (r.exp && !r.ok) { $('expPanel').hidden = false; $('expOut').textContent = SQL8.table(r.exp); }
+      if (r.ok) markSolved(t);
+      return;
+    }
+    if (t.fields && t.fields.some(f => f.answer === 'calc')) { feedback(false, 'Baza se još učitava, pokušaj za trenutak.'); return; }
+    const r = CHK.check(t, collect(t));
+    if (t.type === 'fields') r.res.forEach((x, i) => { const m = $(`f_${t.id}_${i}_m`); m.textContent = x.ok ? '✓' : (x.empty ? '' : '✗'); m.className = 'mark ' + (x.ok ? 'ok' : 'err'); });
+    feedback(r.ok, r.msg);
+    if (r.ok) markSolved(t);
+  }
+
+  // ---------- prikaz zadatka ----------
+  let hintN = 0;
+  function go(i) {
+    cur = Math.max(0, Math.min(TASKS.length - 1, i)); store.set('current', TASKS[cur].id);
+    const t = TASKS[cur], s = secOf(t.s);
+    $('tMeta').textContent = `${t.id}${t.star ? ' ★' : ''} · ${s.title}`; $('tSlide').textContent = 'slajd ' + t.slide;
+    $('tTitle').textContent = t.title; $('tText').textContent = t.text;
+    $('tNote').hidden = !t.note; $('tNote').textContent = t.note || '';
+    $('feedback').hidden = true; $('expPanel').hidden = true; $('hints').innerHTML = ''; hintN = 0; $('solPanel').hidden = true;
+    $('hintBtn').disabled = false;
+    renderAnswer(t); renderNav(); showLab(s);
+    if (t.type === 'sql' || t.sandbox) {
+      $('resTitle').textContent = 'Rezultat'; $('resInfo').textContent = ''; $('resOut').className = 'out msg';
+      $('resOut').textContent = !SQLOBJ ? 'Učitavam bazu podataka…' : (ensureSetup(t) || 'Napiši naredbu i pritisni Izvrši (Ctrl + Enter).');
+    }
+  }
+  $('prevBtn').onclick = () => go(cur - 1); $('nextBtn').onclick = () => go(cur + 1);
+  $('checkBtn').onclick = doCheck;
+  $('hintBtn').onclick = () => {
+    const t = TASKS[cur]; if (hintN >= t.hints.length) return;
+    $('hints').append(h('div', { class: 'hint' }, h('b', {}, `Naputak ${hintN + 1}`), t.hints[hintN])); hintN++;
+    if (hintN >= t.hints.length) $('hintBtn').disabled = true;
+  };
+  $('solBtn').onclick = () => {
+    const t = TASKS[cur], p = $('solBody'); p.innerHTML = '';
+    if (t.type === 'fields') p.append(h('ul', { class: 'solist' }, t.fields.map(f => h('li', {}, h('span', {}, f.label + ': '), h('b', {}, f.type === 'choice' ? f.options[f.answer] : f.type === 'num' ? fmtNum(f.answer) + (f.unit ? ' ' + f.unit : '') : String(f.answer))))));
+    if (t.type === 'multi') p.append(h('ul', { class: 'solist' }, t.answer.map(i => h('li', {}, h('code', {}, t.options[i])))));
+    if (t.type === 'sql') p.append(h('pre', { class: 'code' }, t.sol));
+    p.append(h('p', { class: 'expl' }, t.explain));
+    $('solCopy').hidden = t.type !== 'sql';
+    $('solPanel').hidden = false;
+  };
+  $('solCopy').onclick = () => { $('sql').value = TASKS[cur].sol; saveDraft(); $('sql').focus(); };
+
+  // ---------- SQL ----------
+  let SQLOBJ = null, db = null; const applied = new Set();
+  function freshDb() { const d = new SQLOBJ.Database(); d.exec('PRAGMA foreign_keys = ON;'); d.exec(INIT_SQL); SQL8.attach(d); return d; }
+  // Priprema zadatka (npr. indeks idx_primanja) izvodi se jednom u studentovoj kopiji baze.
+  function ensureSetup(t) {
+    if (!t.setup || applied.has(t.id)) return '';
+    applied.add(t.id);
+    const outs = SQL8.run(db, t.setup);
+    const made = SQL8.split(t.setup).map(s => (/INDEX\s+`?(\w+)`?\s+ON\s+`?(\w+)/i.exec(s) || []).slice(1)).filter(x => x.length).map(x => `${x[0]} na tablici ${x[1]}`);
+    const dup = outs.some(o => o.errno === 1061);
+    renderLabIfPlan();
+    return `Pripremljeno u tvojoj kopiji baze: indeks ${made.join(', ')}${dup ? ' (već je postojao)' : ''}.\nNapiši naredbu i pritisni Izvrši (Ctrl + Enter).`;
+  }
+  function hintFor(no) {
+    if (no === 1061) return '\n\nIndeks s tim imenom već postoji na toj tablici. Obriši ga s DROP INDEX ime ON tablica; ili odaberi drugo ime. Popis indeksa je desno.';
+    if (no === 1091) return '\n\nTakav indeks ne postoji na toj tablici. Provjeri ime sa SHOW INDEX FROM tablica;.';
+    if (no === 1553) return '\n\nOvaj indeks treba strani ključ: bez njega baza ne bi mogla brzo provjeravati referencijalni integritet.';
+    if (no === 1170) return '\n\nZa stupce TEXT i BLOB MySQL traži duljinu prefiksa, npr. (opis(10)).';
+    if (no === 1089) return '\n\nDuljina prefiksa ne smije biti veća od duljine stupca, a prefiks se može zadati samo nizovima znakova.';
+    if (no === 1235) return '';
+    if (no === 1146) return '\n\nTablica ne postoji. Tablice baze su fakultet, nastavnik, racun i djelatnik.';
+    if (no === 1054) return '\n\nStupac ne postoji. Popis stupaca vidiš s DESCRIBE tablica;.';
+    if (no === 1064) return '\n\nProvjeri sintaksu. Indeks se briše s DROP INDEX ime ON tablica; (MySQL traži i ime tablice).';
+    return '';
+  }
+  function runSql(src) {
+    if (!db) return;
+    const t = TASKS[cur]; if (t.sandbox || t.type === 'sql') ensureSetup(t);
+    const outs = SQL8.run(db, src);
+    const o = $('resOut'), parts = []; let err = false;
+    for (const x of outs) {
+      if (x.error) { parts.push(x.error + hintFor(x.errno)); err = true; }
+      else if (x.result) parts.push((outs.length > 1 ? x.stmt.replace(/\s+/g, ' ') + '\n' : '') + SQL8.table(x.result));
+      else parts.push((outs.length > 1 ? x.stmt.replace(/\s+/g, ' ') + '\n' : '') + x.msg);
+    }
+    o.className = 'out' + (err ? ' error' : ''); o.textContent = parts.join('\n\n') || 'Nema naredbi.';
+    $('resTitle').textContent = outs.some(x => x.explain) ? 'Plan izvođenja' : 'Rezultat';
+    $('resInfo').textContent = outs.length ? `${outs.length} naredb${outs.length === 1 ? 'a' : outs.length < 5 ? 'e' : 'i'}` : '';
+    renderLabIfPlan();
+  }
+  $('runBtn').onclick = () => { saveDraft(); runSql($('sql').value); };
+  $('sql').addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); $('runBtn').click(); } });
+  $('sql').addEventListener('input', saveDraft);
+  $('resetBtn').onclick = () => { if (!db) return; db.close(); db = freshDb(); applied.clear(); $('resOut').className = 'out msg'; $('resOut').textContent = 'Baza je vraćena na početno stanje (obrisani su i svi tvoji indeksi).'; SQL8.meta(db).last = null; renderLabIfPlan(); };
+
+  // ---------- laboratorij ----------
+  let labNow = null; const LAB = {};
+  function showLab(s) {
+    if (labNow === s.lab) return;
+    labNow = s.lab; $('labTitle').textContent = 'Laboratorij · ' + ({ trosak: 'trošak pristupa', bstablo: 'B+ stablo', plan: 'plan izvođenja' })[s.lab]; $('labInfo').textContent = 'slajdovi ' + s.slides;
+    const b = $('labBody'); b.innerHTML = ''; LAB[s.lab](b);
+  }
+  function renderLabIfPlan() { if (labNow === 'plan' && $('planBox')) drawPlan(); }
+
+  LAB.trosak = b => {
+    const inp = (id, v, lab) => h('label', { class: 'li' }, lab, h('input', { id, type: 'text', inputmode: 'decimal', value: v }));
+    const out = h('pre', { class: 'lab-out mono', id: 'tOut' });
+    b.append(h('p', { class: 'lab-p' }, 'Usporedba scana datoteke i dohvata jednog zapisa preko B+ stabla. Mijenjaj vrijednosti i prati rezultat.'),
+      h('div', { class: 'lgrid' }, inp('tN', '500.000', 'broj zapisa'), inp('tR', '120', 'veličina zapisa (B)'), inp('tP', '8192', 'veličina stranice (B)'), inp('tMs', '0,1', 'čitanje stranice (ms)'), inp('tK', '8', 'ključ (B)'), inp('tPtr', '8', 'pokazivač (B)')), out);
+    const calc = () => {
+      const [N, R, P, ms, K, Ptr] = ['tN', 'tR', 'tP', 'tMs', 'tK', 'tPtr'].map(id => CHK.parseNum($(id).value));
+      if ([N, R, P, ms, K, Ptr].some(x => !(x > 0)) || R > P) { out.textContent = 'Upiši pozitivne brojeve (zapis ne smije biti veći od stranice).'; return; }
+      const per = Math.floor(P / R), pages = Math.ceil(N / per), n = Math.floor((P + K) / (Ptr + K)), half = Math.ceil(n / 2);
+      const height = N <= 1 ? 1 : Math.max(1, Math.ceil(Math.log(N) / Math.log(half)));
+      out.textContent = `scan datoteke\n  zapisa po stranici: ⌊${P} / ${R}⌋ = ${per}\n  stranica: ⌈${fmtNum(N)} / ${per}⌉ = ${fmtNum(pages)}\n  vrijeme: ${fmtNum(pages)} · ${fmtNum(ms)} ms = ${fmtNum(Math.round(pages * ms * 100) / 100)} ms\n\nB+ stablo\n  n: ${Ptr}n + ${K}(n − 1) ≤ ${P} ⇒ n = ${n}\n  razina (najviše): ⌈log${half}(${fmtNum(N)})⌉ = ${height}\n  dohvat zapisa: ${height} + 1 = ${height + 1} stranica ≈ ${fmtNum(Math.round((height + 1) * ms * 100) / 100)} ms\n\nindeks je ${fmtNum(Math.round(pages / (height + 1)))} puta brži za jedan zapis`;
+    };
+    b.querySelectorAll('input').forEach(x => x.addEventListener('input', calc)); calc();
+  };
+
+  // B+ stablo
+  let T = BPT.slide28(), hl = { nodes: new Set(), leaves: new Set() }, blog = 'Stablo sa slajda 28 (n = 3). Upiši ključ i umetni ga, ili traži ključ ili raspon.';
+  LAB.bstablo = b => {
+    const nSel = h('select', { id: 'bN', 'aria-label': 'n' }, [3, 4, 5, 6].map(n => h('option', { value: n }, 'n = ' + n)));
+    nSel.value = T.n;
+    nSel.onchange = () => { T = BPT.create(+nSel.value); hl = { nodes: new Set(), leaves: new Set() }; blog = `Prazno stablo, n = ${T.n} (list ima najviše ${T.n - 1} ključ${T.n - 1 < 5 ? 'a' : 'eva'}).`; drawTree(); };
+    const val = () => { const v = $('bKey').value.trim(); return /^-?\d+$/.test(v) ? +v : v; };
+    b.append(h('p', { class: 'lab-p' }, 'B+ stablo (slajdovi 25–28). Ključevi su gradovi ili brojevi; listovi su povezani pokazivačem na sljedeći list.'),
+      h('div', { class: 'lrow' }, nSel, h('button', { class: 'btn', onclick: () => { T = BPT.slide28(); nSel.value = 3; hl = { nodes: new Set(), leaves: new Set() }; blog = 'Stablo sa slajda 28 (n = 3).'; drawTree(); } }, 'Stablo sa slajda 28'),
+        h('button', { class: 'btn', onclick: () => { for (let i = 1; i <= 15; i++) BPT.insert(T, i * 10); hl = { nodes: new Set(), leaves: new Set() }; blog = 'Umetnuti su ključevi 10, 20, … 150.'; drawTree(); } }, 'Dodaj 10 … 150')),
+      h('div', { class: 'lrow' }, h('input', { id: 'bKey', type: 'text', placeholder: 'ključ, npr. Osijek', 'aria-label': 'Ključ', style: 'flex:1;min-width:120px' }),
+        h('button', { class: 'btn', onclick: () => { const k = val(); if (k === '') return; const r = BPT.insert(T, k); hl = { nodes: new Set(BPT.search(T, k).path.map(x => x.id)), leaves: new Set() }; blog = r.log.join('\n'); drawTree(); } }, 'Umetni'),
+        h('button', { class: 'btn', onclick: () => { const k = val(); if (k === '') return; const r = BPT.search(T, k); hl = { nodes: new Set(r.path.map(x => x.id)), leaves: new Set() }; blog = `Traženje ${k}: ${r.path.map(x => x.keys.join(' | ') || '∅').join(' → ')}\npročitano čvorova: ${r.path.length}; ključ ${r.found ? 'postoji' : 'ne postoji'}.`; drawTree(); } }, 'Traži')),
+      h('div', { class: 'lrow' }, h('input', { id: 'bLo', type: 'text', placeholder: 'od', 'aria-label': 'Raspon od', style: 'width:110px' }), h('input', { id: 'bHi', type: 'text', placeholder: 'do', 'aria-label': 'Raspon do', style: 'width:110px' }),
+        h('button', { class: 'btn', onclick: () => { const p = id => { const v = $(id).value.trim(); return /^-?\d+$/.test(v) ? +v : v; }; const lo = p('bLo'), hi = p('bHi'); if (lo === '' || hi === '') return; const r = BPT.range(T, lo, hi); hl = { nodes: new Set(r.path.map(x => x.id)), leaves: new Set(r.leaves.map(x => x.id)) }; blog = `Raspon ${lo} – ${hi}: ${r.keys.join(', ') || 'nema ključeva'}\nput do prvog lista: ${r.path.length} čvora; listova: ${r.leaves.length}; ukupno čvorova: ${r.nodes}.`; drawTree(); } }, 'Raspon')),
+      h('div', { id: 'treeBox', class: 'tree', tabindex: '0', 'aria-label': 'B+ stablo; široko stablo pomiči vodoravno' }), h('pre', { class: 'lab-out mono', id: 'treeLog' }));
+    drawTree();
+  };
+  function drawTree() {
+    const box = $('treeBox'); if (!box) return; box.innerHTML = '';
+    BPT.levels(T).forEach(level => box.append(h('div', { class: 'tlevel' }, level.flatMap((n, k) => [
+      h('div', { class: 'tnode' + (n.leaf ? ' leaf' : '') + (hl.nodes.has(n.id) ? ' on' : '') + (hl.leaves.has(n.id) ? ' scan' : '') }, n.keys.length ? n.keys.map(x => h('span', {}, String(x))) : h('span', { class: 'empty' }, '∅')),
+      n.leaf && n.next && k < level.length - 1 ? h('span', { class: 'tarrow', 'aria-hidden': 'true' }, '→') : null]))));
+    const lv = BPT.levels(T);
+    $('treeLog').textContent = `${blog}\n\nrazina: ${lv.length}, listova: ${lv[lv.length - 1].length}, n = ${T.n}`;
+  }
+
+  // Plan izvođenja
+  const TYPE = { const: 'najviše jedan red, preko primarnog ili jedinstvenog ključa; baza ga pročita već pri planiranju', eq_ref: 'za svaki red prethodne tablice točno jedan red, preko primarnog ili jedinstvenog ključa', ref: 'svi redovi s istom vrijednošću ključa, preko indeksa koji nije jedinstven', range: 'raspon iz indeksa (>, <, BETWEEN, IN, LIKE \'abc%\')', index: 'čita se cijeli indeks umjesto tablice', ALL: 'scan cijele tablice: čita se svaki red' };
+  const EXTRA = { 'Using where': 'uvjet se provjerava na pročitanim redovima', 'Using index': 'pokrivajući indeks: tablica se ne čita', 'Using index condition': 'dio uvjeta provjerava se već u indeksu', 'Using filesort': 'rezultat se dodatno sortira', 'Using temporary': 'za grupiranje se stvara privremena tablica', 'Using join buffer (hash join)': 'spoj bez indeksa, preko hash tablice u memoriji', 'no matching row in const table': 'traženi red ne postoji, tablica se ne čita' };
+  LAB.plan = b => { b.append(h('p', { class: 'lab-p' }, 'Nakon svake naredbe EXPLAIN ovdje je plan objašnjen riječima, s brojem redova koje baza čita. Ispod je popis indeksa (SHOW INDEX).'), h('div', { id: 'planBox' })); drawPlan(); };
+  function drawPlan() {
+    const box = $('planBox'); if (!box) return; box.innerHTML = '';
+    if (!db) { box.append(h('p', { class: 'lab-p' }, 'Učitavam bazu…')); return; }
+    const last = SQL8.meta(db).last;
+    box.append(h('h5', { class: 'lab-h' }, 'Zadnji plan'));
+    if (!last) box.append(h('p', { class: 'lab-p' }, 'Izvrši naredbu EXPLAIN SELECT … u editoru.'));
+    else if (last.noMatch) box.append(h('div', { class: 'pstep' }, h('b', {}, 'no matching row in const table'), h('p', {}, EXTRA['no matching row in const table'] + '. Planer je to saznao iz indeksa primarnog ključa, pa se tablica uopće ne čita.')));
+    else {
+      box.append(h('pre', { class: 'lab-out mono psql' }, last.sql.replace(/\s+/g, ' ')));
+      last.plan.forEach((p, k) => {
+        const pct = Math.max(1, Math.round(100 * Math.min(p.rows, p.N) / Math.max(1, p.N)));
+        box.append(h('div', { class: 'pstep' },
+          h('div', { class: 'phead' }, h('b', {}, `${k + 1}. ${p.alias}`), h('code', { class: 'ptype t-' + p.type }, p.type), p.key ? h('code', {}, p.key) : h('span', { class: 'muted' }, 'bez indeksa')),
+          h('p', {}, TYPE[p.type] + '.'),
+          h('div', { class: 'pbar', title: `${p.rows} od ${p.N} redova` }, h('i', { style: `width:${pct}%` })),
+          h('p', { class: 'small2' }, `${k ? 'po redu prethodne tablice: ' : ''}čita ${p.rows} od ${p.N} redova${p.filtered < 100 ? `, a uvjet prolazi oko ${p.filtered.toFixed(2)} %` : ''}`),
+          p.extra.length ? h('ul', { class: 'pex' }, p.extra.map(e => h('li', {}, h('code', {}, e), ' ', EXTRA[e] || ''))) : null,
+          p.possible && !p.key ? h('p', { class: 'small2' }, `Indeks ${p.possible.join(', ')} postoji, ali ga plan ne koristi.`) : null));
+      });
+    }
+    box.append(h('h5', { class: 'lab-h' }, 'Indeksi u tvojoj kopiji baze'));
+    for (const t of ['fakultet', 'nastavnik', 'racun', 'djelatnik', ...SQL8.run(db, 'SHOW TABLES')[0].result.values.map(r => r[0]).filter(x => !['fakultet', 'nastavnik', 'racun', 'djelatnik'].includes(x))]) {
+      let ix; try { ix = SQL8.indexes(db, t); } catch (e) { continue; }
+      const n = db.exec(`SELECT COUNT(*) FROM "${t}"`)[0].values[0][0];
+      box.append(h('div', { class: 'tbl' }, h('h4', {}, t, h('em', {}, `${n} redova`)), h('ul', {}, ix.map(i => h('li', { class: i.primary ? 'pk' : '' }, h('span', {}, i.name), h('span', {}, i.cols.map(c => c.name + (c.sub ? `(${c.sub})` : '')).join(', ')))))));
+    }
+    box.append(h('div', { class: 'foot' }, 'Naredbe u editoru mijenjaju tvoju kopiju baze. Provjera rješenja uvijek radi na izvornoj bazi.', h('button', { class: 'btn', id: 'resetBtn2', onclick: () => $('resetBtn').click() }, 'Vrati bazu na početno stanje')));
+  }
+
+  // ---------- pokretanje ----------
+  const startId = store.get('current', 'A1');
+  go(Math.max(0, TASKS.findIndex(t => t.id === startId)));
+  if (typeof initSqlJs !== 'function') { $('resOut').textContent = 'Biblioteka sql.js nije učitana. Provjeri internetsku vezu i osvježi stranicu.'; return; }
+  initSqlJs().then(S => {
+    SQLOBJ = S; db = freshDb(); $('runBtn').disabled = false;
+    for (const t of TASKS) if (t.fields) for (const f of t.fields) if (f.answer === 'calc') { const d = freshDb(); f.answer = SQL8.run(d, f.calc)[0].result.values[0][0]; d.close(); }
+    go(cur);
+  }).catch(e => { $('resOut').textContent = 'Baza se nije učitala: ' + e.message; });
+})();
+</script>
+</body>
+</html>
