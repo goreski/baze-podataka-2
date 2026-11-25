@@ -15,7 +15,7 @@ Svaka vježbaonica je jedna samostalna HTML stranica. Baza podataka (SQLite, bib
 | 05 | [Skladište](05-skladiste/) (vizualizacija zadatka) · [asistent](https://notebook.google.com/notebook/e4dcc377-d8b2-4585-a8c6-59bce7174ae6) | – |
 | 06 | [Napredni SQL DDL](06-napredni-sql-ddl/) · [asistent](https://notebook.google.com/notebook/4fee5d0d-34fb-42b9-b96b-8a9e04ad0c53) | 25 |
 | 07 | [Sustavi fizičke pohrane](07-fizicka-pohrana/) · [asistent](https://notebook.google.com/notebook/d949cdca-497c-410b-bc50-f1e7f4e70b11) | 30 |
-| 08 | [Performanse baze podataka i indeksi](08-performanse-indeksi/) | 24 |
+| 08 | [Performanse baze podataka i indeksi](08-performanse-indeksi/) · [asistent](https://notebook.google.com/notebook/7c32235c-ac02-425a-91eb-5a0e109a5e3f) | 24 |
 
 ## Struktura
 
